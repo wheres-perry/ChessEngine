@@ -94,6 +94,7 @@ instance/
 
 # Scrapy stuff:
 .scrapy
+*.code-workspace
 
 # Sphinx documentation
 docs/_build/
