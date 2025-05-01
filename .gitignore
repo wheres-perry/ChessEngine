@@ -200,3 +200,15 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.devcontainer/.devcontainer.json.history
+.devcontainer/.last_build_state
+.cache/
+logs/
+*.log
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+/.venv
