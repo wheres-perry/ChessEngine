@@ -1,6 +1,6 @@
 import chess
 from typing import Optional, Final
-from engine.constants import *
+from .constants import *
 
 class SimpleEval:
 
