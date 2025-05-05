@@ -1,4 +1,13 @@
 import chess
+import eval
+import load_games
 
-board = chess.Board() 
-print(board)
+
+
+
+b = load_games.random_board()
+e = eval.SimpleEval(b)
+
+print(b)
+
+print(e.basic_evaluate())

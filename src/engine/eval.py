@@ -1,6 +1,6 @@
 import chess
 from typing import Optional, Final
-from engine.constants import *
+from constants import *
 
 class SimpleEval:
 
@@ -9,13 +9,12 @@ class SimpleEval:
     
     def __init__(self, board):
         self.currentBoard = board
-        
-    # Simple eval, counts pieces and checks for checkmate/stalemate
+
     def basic_evaluate(self) -> float:
         self.score = 0
         if self.currentBoard.is_checkmate():
-            if self.currentBoard.turn == chess.WHITE: self.score = -float('inf') # Black wins
-            else: self.score = float('inf') # White wins
+            if self.currentBoard.turn == chess.WHITE: self.score = -float('inf') 
+            else: self.score = float('inf') 
         elif self.currentBoard.is_stalemate():
             self.score = 0.0
         else:
