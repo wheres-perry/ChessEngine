@@ -4,12 +4,8 @@ import eval
 import load_games
 import argparse
 import logging
-
-
-b = load_games.random_board()
-e = eval.SimpleEval(b)
-
-print(b)
+import minimax
+import chess.pgn
 
 
 def handle_args():
@@ -50,15 +46,27 @@ def main():
         return
     logger.debug(f"Random board loaded: {b}")
 
-    e = eval.SimpleEval(b)
+    ev = eval.SimpleEval(b)
     logger.debug(f"SimpleEval initialized with board: {b}")
     try:
-        score = e.basic_evaluate()
+        score = ev.basic_evaluate()
     except Exception as e:
         logger.error(f"Error evaluating board: {e}")
         return
+    print(f"Simple eval score: {score}")
 
-    print(f"Score: {score}")
+    if b:
+        try:
+            mm = minimax.Minimax(b, ev)
+            score, move = mm.find_top_move(depth=7)
+            print(f"Best Move {move}, score for that move: {score}")
+            print(b)
+            print("PGN of current position:")
+            print(chess.pgn.Game.from_board(b))
+
+        except Exception as e:
+            logger.error(f"Error evaluating board: {e}")
+            return
 
 
 if __name__ == "__main__":
