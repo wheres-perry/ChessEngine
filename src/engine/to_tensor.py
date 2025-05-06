@@ -19,21 +19,32 @@ WHITE_QUEEN_PLANE = 8
 BLACK_QUEEN_PLANE = 9
 WHITE_KING_PLANE = 10
 BLACK_KING_PLANE = 11
+
 TURN_COUNT_PLANE = 12
+
 WHITE_K_CASTLE_PLANE = 13
 BLACK_K_CASTLE_PLANE = 14
 WHITE_Q_CASTLE_PLANE = 15
 BLACK_Q_CASTLE_PLANE = 16
+
 EN_PASSANT_PLANE = 17
+
 DRAW_PLANE_1 = 18
 DRAW_PLANE_2 = 19
 DRAW_PLANE_3 = 20
+
 WHITE_ATTACK_PLANE = 21
 BLACK_ATTACK_PLANE = 22
+
 WHITE_PIN_PLANE = 23
 BLACK_PIN_PLANE = 24
+
 WHITE_PASSED_PAWN_PLANE = 25
 BLACK_PASSED_PAWN_PLANE = 26
+
+CURRENT_COLOR_PLANE = 27
+
+NUM_PLANES = 28
 
 
 def create_piece_plane(board: chess.Board, color: chess.Color, type: chess.PieceType) -> torch.Tensor:
@@ -203,5 +214,9 @@ def create_tensor(board: chess.Board):
     # Index 26: Black passed pawns
     logger.debug("Adding black passed pawns plane")
     out[idx] = create_passed_pawns_plane(board, color=chess.BLACK)
+    idx += 1
+    # Index 27: Current color
+    logger.debug("Adding current color plane")
+    out[idx].fill_(float(board.turn))
 
     return out
