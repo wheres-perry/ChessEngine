@@ -1,7 +1,7 @@
 import torch
 import chess
 import numpy as np
-import constants
+from . import constants
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,6 @@ WHITE_PASSED_PAWN_PLANE = 25
 BLACK_PASSED_PAWN_PLANE = 26
 
 CURRENT_COLOR_PLANE = 27
-
 NUM_PLANES = 28
 
 
@@ -137,15 +136,15 @@ def create_tensor(board: chess.Board):
     if not board.is_valid():
         raise ValueError("Invalid board state")
 
-    out: torch.Tensor = torch.zeros((27, 8, 8), dtype=torch.float32)
+    out: torch.Tensor = torch.zeros((NUM_PLANES, 8, 8), dtype=torch.float32)
 
     idx: int = 0
-    # Indices 0-9: Piece planes
-    for c in (chess.WHITE, chess.BLACK):
-        for t in constants.EVAL_PIECES:
-            logger.debug("Adding piece plane for c: %s, type: %s", c, t)
+    for t in constants.EVAL_PIECES:
+        for c in (chess.WHITE, chess.BLACK):
+            logger.debug("Adding piece plane for type %s, color %s", t, c)
             out[idx] = create_piece_plane(board, color=c, type=t)
             idx += 1
+
     # Index 10: White King
     logger.debug("Adding piece plane for white king")
     out[idx] = create_piece_plane(board, color=chess.WHITE, type=chess.KING)
