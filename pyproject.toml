@@ -17,6 +17,7 @@ packages = [{include = "ChessEngine", from = "src"}]
 torch = "^2.7.0"
 numpy = "^2.2.5"
 python-chess = "^1.999"
+pytest = "^8.3.5"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
