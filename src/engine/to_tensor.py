@@ -216,6 +216,6 @@ def create_tensor(board: chess.Board):
     idx += 1
     # Index 27: Current color
     logger.debug("Adding current color plane")
-    out[idx].fill_(float(board.turn))
+    out[idx].fill_(float(board.turn)) # 0 = Black, 1 = White
 
     return out
