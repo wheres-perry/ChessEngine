@@ -6,6 +6,7 @@ import argparse
 import logging
 import minimax
 import chess.pgn
+import to_tensor
 
 
 def handle_args():
@@ -55,17 +56,25 @@ def main():
         return
     print(f"Simple eval score: {score}")
 
+    # if b:
+    #     try:
+    #         mm = minimax.Minimax(b, ev)
+    #         score, move = mm.find_top_move(depth=7)
+    #         print(f"Best Move {move}, score for that move: {score}")
+    #         print(b)
+    #         print("PGN of current position:")
+    #         print(chess.pgn.Game.from_board(b))
+
+    #     except Exception as e:
+    #         logger.error(f"Error evaluating board: {e}")
+    #         return
     if b:
         try:
-            mm = minimax.Minimax(b, ev)
-            score, move = mm.find_top_move(depth=7)
-            print(f"Best Move {move}, score for that move: {score}")
-            print(b)
-            print("PGN of current position:")
-            print(chess.pgn.Game.from_board(b))
-
+            tensor = to_tensor.create_tensor(b)
+            print(f"Tensor shape: {tensor.shape}")
+            print(tensor)
         except Exception as e:
-            logger.error(f"Error evaluating board: {e}")
+            logger.error(f"Error creating tensor: {e}")
             return
 
 
