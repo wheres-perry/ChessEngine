@@ -38,12 +38,22 @@ BLACK_PASSED_PAWN_PLANE = 26
 
 def create_piece_plane(board: chess.Board, color: chess.Color, type: chess.PieceType) -> torch.Tensor:
     out = torch.zeros((8, 8), dtype=torch.float32)
-    w_pawns = board.pieces(piece_type=chess.PAWN, color=chess.WHITE)
-    for sqr in w_pawns:
+    pieces = board.pieces(piece_type=type, color=color)
+    for sqr in pieces:
         r = 7 - (sqr // 8)
         c = sqr % 8
         out[r, c] = 1.0
     return out
+
+
+def create_en_passant_plane(board: chess.Board) -> torch.Tensor:
+    en_passant_plane = torch.zeros((8, 8), dtype=torch.float32)
+    if board.ep_square is not None:
+        ep_sq_index = board.ep_square
+        row = 7 - (ep_sq_index // 8)
+        col = ep_sq_index % 8
+        en_passant_plane[row, col] = 1.0
+    return en_passant_plane
 
 
 def create_repetition_planes(board: chess.Board) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -159,6 +169,8 @@ def create_tensor(board: chess.Board):
     idx += 1
     # Index 17: En passant
     # TODO: implement en passant
+    logger.debug("Adding en passant plane")
+    out[idx] = create_en_passant_plane(board)
     idx += 1
     # Index 18-20: Draw planes
     p1, p2, p3 = create_repetition_planes(board)  # Debug log in function
