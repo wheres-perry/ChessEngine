@@ -1,7 +1,7 @@
 import torch
 import chess
 import numpy as np
-from constants import *
+from ..engine.constants import *
 import logging
 
 logger = logging.getLogger(__name__)
