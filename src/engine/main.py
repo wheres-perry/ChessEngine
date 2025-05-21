@@ -1,12 +1,12 @@
 import random
 import chess
-import simple_eval as simple_eval
-import load_games
+import simple_eval
+import io.load_games as load_games
 import argparse
 import logging
 import minimax
 import chess.pgn
-import to_tensor
+import io.to_tensor as to_tensor
 
 
 def handle_args():
