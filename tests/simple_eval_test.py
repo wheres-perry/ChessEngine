@@ -50,11 +50,13 @@ def test_material_advantage_white():
     assert score == expected_score
 
 
-def test_material_advantage_black():
-    board = chess.Board("k1n5/8/8/8/8/8/8/K7 w - - 0 1")
+def test_complex_material_advantage():
+    board = chess.Board("8/8/8/8/8/k7/B7/K1Q5 w - - 0 1")
     evaluator = SimpleEval(board)
-    score = evaluator.basic_evaluate()
-    expected_score = -PIECE_VALUES[chess.KNIGHT]
+
+    expected_score = PIECE_VALUES[chess.QUEEN] + PIECE_VALUES[chess.BISHOP]
+
+    score = evaluator.evaluate()
     assert score == expected_score
 
 

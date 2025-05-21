@@ -100,13 +100,14 @@ def test_material_advantage_white(evaluator_fixture):
 @pytest.mark.parametrize(
     "evaluator_fixture",
     [
-        (chess.Board("k1n5/8/8/8/8/8/8/K7 w - - 0 1"), SimpleEval),
+        (chess.Board("k1rb4/8/8/8/8/8/8/K7 w - - 0 1"), SimpleEval),
     ],
     indirect=True
 )
-def test_material_advantage_black(evaluator_fixture):
+def test_material_advantage_black_multiple_pieces(evaluator_fixture):
+    """Test that evaluates a position where Black has multiple piece advantage"""
     score = evaluator_fixture.evaluate()
-    expected_score = -PIECE_VALUES[chess.KNIGHT]
+    expected_score = -(PIECE_VALUES[chess.ROOK] + PIECE_VALUES[chess.BISHOP])
     assert score == expected_score
 
 
