@@ -7,7 +7,7 @@ import io
 import pytest
 import torch
 import chess
-from src.engine.to_tensor import *
+from src.io.to_tensor import *
 
 
 def print_tensor(tensor):
