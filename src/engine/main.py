@@ -1,6 +1,6 @@
 import random
 import chess
-import eval
+import simple_eval as simple_eval
 import load_games
 import argparse
 import logging
@@ -47,7 +47,7 @@ def main():
         return
     logger.debug(f"Random board loaded: {b}")
 
-    ev = eval.SimpleEval(b)
+    ev = simple_eval.SimpleEval(b)
     logger.debug(f"SimpleEval initialized with board: {b}")
     try:
         score = ev.basic_evaluate()
