@@ -3,21 +3,27 @@ name = "ChessEngine"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Ethan Perry",email = "86326912+wheres-perry@users.noreply.github.com"}
+    {name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
 
-
 [tool.poetry]
-packages = [{include = "ChessEngine", from = "src"}]
-
+# name, version, description, authors, and readme are inherited from the [project] table above.
+# This 'packages' directive tells Poetry where to find your actual Python package(s).
+# We're pointing it to the 'engine' directory within 'src'.
+packages = [{include = "engine", from = "src"}]
 
 [tool.poetry.dependencies]
-torch = "^2.7.0"
-numpy = "^2.2.5"
+python = ">=3.12" # Matches the 'requires-python' from the [project] table
 python-chess = "^1.999"
-pytest = "^8.3.5"
+torch = "^2.7.0"
+numpy = "^2.2.6"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5" # pytest is a development dependency
+
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

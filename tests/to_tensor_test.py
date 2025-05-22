@@ -4,9 +4,7 @@ import torch
 import chess
 from chess import pgn
 import io
-import pytest
-import torch
-import chess
+
 from src.io.to_tensor import *
 
 
