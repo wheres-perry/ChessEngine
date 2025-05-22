@@ -1,6 +1,6 @@
 import random
 import chess
-import simple_eval
+import engine.evaluators.simple_eval as simple_eval
 import io.load_games as load_games
 import argparse
 import logging

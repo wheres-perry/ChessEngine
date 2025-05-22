@@ -1,6 +1,6 @@
 from xml.dom import minicompat
 import chess
-from simple_eval import SimpleEval
+from engine.evaluators.simple_eval import SimpleEval
 import logging
 
 logger = logging.getLogger(__name__)

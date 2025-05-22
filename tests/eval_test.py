@@ -1,8 +1,8 @@
 import chess
 import pytest
 from src.engine.constants import *
-from src.engine.simple_eval import SimpleEval
-from src.engine.eval import Eval
+from engine.evaluators.simple_eval import SimpleEval
+from engine.evaluators.eval import Eval
 
 
 @pytest.fixture

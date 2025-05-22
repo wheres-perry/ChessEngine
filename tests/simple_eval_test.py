@@ -1,7 +1,7 @@
 import chess
 import pytest
 from src.engine.constants import *
-from src.engine.simple_eval import SimpleEval
+from engine.evaluators.simple_eval import SimpleEval
 
 
 def test_starting_position():
