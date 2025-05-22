@@ -1,166 +1,123 @@
-import os
 import chess
 import pytest
-from dotenv import load_dotenv
-from stockfish import Stockfish
-from src.engine.eval import SimpleEval
-from src.engine.load_games import random_board
+from src.engine.constants import *
+from src.engine.simple_eval import SimpleEval
+from src.engine.eval import Eval
 
-load_dotenv()
-stockfish_path_from_env = os.getenv("STOCKFISH_PATH")
 
 @pytest.fixture
-def stockfish_engine():
-    if not stockfish_path_from_env:
-         raise ValueError("STOCKFISH_PATH not found in environment variables (.env).")
-    if not os.path.exists(stockfish_path_from_env):
-         raise FileNotFoundError(f"Stockfish executable not found at specified path: {stockfish_path_from_env}.")
+def evaluator_fixture(request):
+    board_spec, eval_class_to_use = request.param
+    if not issubclass(eval_class_to_use, Eval):
+        raise TypeError(
+            f"{eval_class_to_use.__name__} must be a subclass of Eval")
 
-    try:
-        engine = Stockfish(path=stockfish_path_from_env, depth=1, parameters={"Threads": 1, "Hash": 128})
-        engine.get_parameters()
-    except Exception as e:
-         raise RuntimeError(f"Stockfish engine failed to initialize or respond: {e}") from e
-
-    return engine
-
-@pytest.fixture
-def random_chess_board() -> chess.Board:
-    return random_board()
-
-@pytest.mark.parametrize("i", range(5))
-def test_basic_vs_stockfish(random_chess_board: chess.Board, stockfish_engine: Stockfish, i: int):
-    board = random_chess_board
-
-    if board.is_game_over(claim_draw=True):
-        pytest.skip(f"Skipping game over position: {board.fen()}")
-
-    simple_evaluator = SimpleEval(board)
-    basic_score = simple_evaluator.basic_evaluate()
-
-    stockfish_engine.set_fen_position(board.fen())
-    eval_dict = stockfish_engine.get_evaluation()
-
-    assert eval_dict is not None, f"Stockfish returned None evaluation for FEN: {board.fen()}"
-
-    stockfish_score = 0.0
-
-    if eval_dict["type"] == "cp":
-        stockfish_score = eval_dict["value"] / 100.0
-    elif eval_dict["type"] == "mate":
-        mate_val = eval_dict["value"]
-        if mate_val > 0:
-             stockfish_score = float('inf')
-        elif mate_val < 0:
-             stockfish_score = float('-inf')
-        else:
-             if board.turn == chess.WHITE:
-                 stockfish_score = float('-inf')
-             else:
-                 stockfish_score = float('inf')
-
-    tolerance = 2.0
-
-    print(f"\n--- Test Run {i+1} ---")
-    print(f"FEN: {board.fen()}")
-    print(f"SimpleEval Score: {basic_score}")
-    print(f"Stockfish Score ({eval_dict['type']}): {stockfish_score} (Raw: {eval_dict['value']})")
-
-
-    if basic_score == float('inf'):
-        assert stockfish_score == float('inf'), f"SimpleEval: inf, Stockfish: {eval_dict}"
-    elif basic_score == float('-inf'):
-        assert stockfish_score == float('-inf'), f"SimpleEval: -inf, Stockfish: {eval_dict}"
-    elif stockfish_score == float('inf'):
-         assert basic_score == float('inf'), f"SimpleEval: {basic_score}, Stockfish: mate inf"
-    elif stockfish_score == float('-inf'):
-         assert basic_score == float('-inf'), f"SimpleEval: {basic_score}, Stockfish: mate -inf"
+    if board_spec is None:
+        return lambda board: eval_class_to_use(board)
     else:
-        assert isinstance(basic_score, (int, float)) and basic_score != float('inf') and basic_score != float('-inf'), f"Basic score is not a finite number: {basic_score}"
-        assert isinstance(stockfish_score, (int, float)) and stockfish_score != float('inf') and stockfish_score != float('-inf'), f"Stockfish score is not a finite number: {stockfish_score}"
-        assert abs(basic_score - stockfish_score) < tolerance, \
-            f"Score difference |{basic_score:.2f} - {stockfish_score:.2f}| = {abs(basic_score - stockfish_score):.2f} > tolerance {tolerance}"
-
-import os
-import chess
-import pytest
-from dotenv import load_dotenv
-from stockfish import Stockfish
-from src.engine.eval import SimpleEval
-from src.engine.load_games import random_board
-
-load_dotenv()
-stockfish_path_from_env = os.getenv("STOCKFISH_PATH")
-
-@pytest.fixture
-def stockfish_engine():
-    if not stockfish_path_from_env:
-         raise ValueError("STOCKFISH_PATH not found in environment variables (.env).")
-    if not os.path.exists(stockfish_path_from_env):
-         raise FileNotFoundError(f"Stockfish executable not found at specified path: {stockfish_path_from_env}.")
-
-    try:
-        engine = Stockfish(path=stockfish_path_from_env, depth=1, parameters={"Threads": 1, "Hash": 128})
-        engine.get_parameters()
-    except Exception as e:
-         raise RuntimeError(f"Stockfish engine failed to initialize or respond: {e}") from e
-
-    return engine
-
-@pytest.fixture
-def random_chess_board() -> chess.Board:
-    return random_board()
-
-@pytest.mark.parametrize("i", range(5))
-def test_basic_vs_stockfish(random_chess_board: chess.Board, stockfish_engine: Stockfish, i: int):
-    board = random_chess_board
-
-    if board.is_game_over(claim_draw=True):
-        pytest.skip(f"Skipping game over position: {board.fen()}")
-
-    simple_evaluator = SimpleEval(board)
-    basic_score = simple_evaluator.basic_evaluate()
-
-    stockfish_engine.set_fen_position(board.fen())
-    eval_dict = stockfish_engine.get_evaluation()
-
-    assert eval_dict is not None, f"Stockfish returned None evaluation for FEN: {board.fen()}"
-
-    stockfish_score = 0.0
-
-    if eval_dict["type"] == "cp":
-        stockfish_score = eval_dict["value"] / 100.0
-    elif eval_dict["type"] == "mate":
-        mate_val = eval_dict["value"]
-        if mate_val > 0:
-             stockfish_score = float('inf')
-        elif mate_val < 0:
-             stockfish_score = float('-inf')
-        else:
-             if board.turn == chess.WHITE:
-                 stockfish_score = float('-inf')
-             else:
-                 stockfish_score = float('inf')
-
-    tolerance = 2.0
-
-    print(f"\n--- Test Run {i+1} ---")
-    print(f"FEN: {board.fen()}")
-    print(f"SimpleEval Score: {basic_score}")
-    print(f"Stockfish Score ({eval_dict['type']}): {stockfish_score} (Raw: {eval_dict['value']})")
+        return eval_class_to_use(board_spec)
 
 
-    if basic_score == float('inf'):
-        assert stockfish_score == float('inf'), f"SimpleEval: inf, Stockfish: {eval_dict}"
-    elif basic_score == float('-inf'):
-        assert stockfish_score == float('-inf'), f"SimpleEval: -inf, Stockfish: {eval_dict}"
-    elif stockfish_score == float('inf'):
-         assert basic_score == float('inf'), f"SimpleEval: {basic_score}, Stockfish: mate inf"
-    elif stockfish_score == float('-inf'):
-         assert basic_score == float('-inf'), f"SimpleEval: {basic_score}, Stockfish: mate -inf"
-    else:
-        assert isinstance(basic_score, (int, float)) and basic_score != float('inf') and basic_score != float('-inf'), f"Basic score is not a finite number: {basic_score}"
-        assert isinstance(stockfish_score, (int, float)) and stockfish_score != float('inf') and stockfish_score != float('-inf'), f"Stockfish score is not a finite number: {stockfish_score}"
-        assert abs(basic_score - stockfish_score) < tolerance, \
-            f"Score difference |{basic_score:.2f} - {stockfish_score:.2f}| = {abs(basic_score - stockfish_score):.2f} > tolerance {tolerance}"
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (chess.Board(), SimpleEval),
+    ],
+    indirect=True
+)
+def test_starting_position(evaluator_fixture):
+    score = evaluator_fixture.evaluate()
+    assert score == 0.0
 
+
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (None, SimpleEval),
+    ],
+    indirect=True
+)
+def test_white_checkmate(evaluator_fixture):
+    eval_factory = evaluator_fixture
+    board = chess.Board()
+    moves = ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"]
+    for move_san in moves:
+        board.push_san(move_san)
+
+    evaluator_instance = eval_factory(board)
+    score = evaluator_instance.evaluate()
+    assert board.is_checkmate()
+    assert score == float('inf')
+
+
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (None, SimpleEval),
+    ],
+    indirect=True
+)
+def test_black_checkmate(evaluator_fixture):
+    eval_factory = evaluator_fixture
+    board = chess.Board()
+    moves = ["f3", "e5", "g4", "Qh4#"]
+    for move_san in moves:
+        board.push_san(move_san)
+
+    evaluator_instance = eval_factory(board)
+    score = evaluator_instance.evaluate()
+    assert board.is_checkmate()
+    assert score == float('-inf')
+
+
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (chess.Board("7k/8/8/8/8/8/2q5/K7 w - - 0 1"), SimpleEval),
+    ],
+    indirect=True
+)
+def test_stalemate(evaluator_fixture):
+    board = evaluator_fixture.board
+    assert board.is_stalemate()
+    score = evaluator_fixture.evaluate()
+    assert score == 0.0
+
+
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (chess.Board("k7/8/8/8/8/8/R7/K7 w - - 0 1"), SimpleEval),
+    ],
+    indirect=True
+)
+def test_material_advantage_white(evaluator_fixture):
+    score = evaluator_fixture.evaluate()
+    expected_score = PIECE_VALUES[chess.ROOK]
+    assert score == expected_score
+
+
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (chess.Board("k1rb4/8/8/8/8/8/8/K7 w - - 0 1"), SimpleEval),
+    ],
+    indirect=True
+)
+def test_material_advantage_black_multiple_pieces(evaluator_fixture):
+    """Test that evaluates a position where Black has multiple piece advantage"""
+    score = evaluator_fixture.evaluate()
+    expected_score = -(PIECE_VALUES[chess.ROOK] + PIECE_VALUES[chess.BISHOP])
+    assert score == expected_score
+
+
+@pytest.mark.parametrize(
+    "evaluator_fixture",
+    [
+        (chess.Board("k7/8/K7/8/8/8/8/8 w - - 0 1"), SimpleEval),
+    ],
+    indirect=True
+)
+def test_kings_only(evaluator_fixture):
+    score = evaluator_fixture.evaluate()
+    assert score == 0.0

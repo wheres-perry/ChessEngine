@@ -1,31 +1,20 @@
 import chess
-from typing import Optional, Final
-from .constants import *
+from abc import ABC, abstractmethod
+from typing import Optional
 
-class SimpleEval:
 
+class Eval(ABC):
+    """Abstract base class for chess position evaluators."""
+    
     currentBoard: chess.Board
     score: Optional[float]
     
-    def __init__(self, board):
-        self.currentBoard = board
-        
-    # Simple eval, counts pieces and checks for checkmate/stalemate
-    def basic_evaluate(self) -> float:
-        self.score = 0
-        if self.currentBoard.is_checkmate():
-            if self.currentBoard.turn == chess.WHITE: self.score = -float('inf') # Black wins
-            else: self.score = float('inf') # White wins
-        elif self.currentBoard.is_stalemate():
-            self.score = 0.0
-        else:
-            for p in EVAL_PIECES:
-                try:
-                    val: float = PIECE_VALUES[p]
-                except KeyError:
-                    print("Key not found")
-                    return 0     
-                self.score += val * len(self.currentBoard.pieces(p, chess.WHITE))
-                self.score -= val * len(self.currentBoard.pieces(p, chess.BLACK))
-        return self.score
+    def __init__(self, board: chess.Board):
+        self.board = board
+        self.score = None
     
+    @abstractmethod
+    def evaluate(self) -> float:
+        """Evaluate the current position and return a score.
+        Positive values favor white, negative values favor black."""
+        pass
