@@ -41,6 +41,11 @@ Follow these steps to set up the project locally:
     ```bash
     poetry install
     ```
+6.  **Install Stockfish:**
+    Stockfish is required for some tests.
+    *   **Download Stockfish:** Go to the [Stockfish download page](https://stockfishchess.org/download/) and download the appropriate version for your operating system (Linux).
+    *   **Extract the executable:** Extract the downloaded archive.
+    *   **Make it accessible:** Add the directory containing the Stockfish executable to your system's PATH environment variable. For example, if you extracted Stockfish to `~/stockfish`, you would add `export PATH="$HOME/stockfish:$PATH"` to your shell configuration file (e.g., `~/.bashrc` or `~/.zshrc`) and then source it or open a new terminal. Alternatively, you can place the Stockfish executable in a directory already in your PATH (e.g., `/usr/local/bin`).
 
 ## Running Tests
 
