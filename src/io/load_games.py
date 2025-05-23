@@ -10,12 +10,12 @@ def get_all_files(directory: Union[str, Path]) -> List[Path]:
     return [p for p in dir_path.iterdir() if p.is_file()]
 
 
-def random_file(games_dir: Union[str, Path] = Path("./src/games")) -> Path:
+def random_file(games_dir: Union[str, Path] = Path("./data/raw/simple_games")) -> Path:
     files = get_all_files(games_dir)
     return random.choice(files)
 
 
-def random_board(games_dir: Union[str, Path] = Path("./src/games")) -> Optional[chess.Board]:
+def random_board(games_dir: Union[str, Path] = Path("./data/raw/simple_games")) -> Optional[chess.Board]:
 
     pgnfile = random_file(games_dir)
     if pgnfile is None:
