@@ -19,6 +19,13 @@ python = ">=3.12" # Matches the 'requires-python' from the [project] table
 python-chess = "^1.999"
 torch = "^2.7.0"
 numpy = "^2.2.6"
+matplotlib = "^3.10.3"
+tqdm = "^4.67.1"
+pandas = "^2.2.3"
+ipython = "^9.2.0"
+ipykernel = "^6.29.5"
+fastparquet = "^2024.11.0"
+pyarrow = "^20.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

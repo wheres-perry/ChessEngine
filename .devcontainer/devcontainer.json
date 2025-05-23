@@ -1,5 +1,5 @@
 {
-    "name": "Miniconda (Python 3)",
+    "name": "Miniconda Poetry 3.13.2",
     "build": {
         "context": "..",
         "dockerfile": "Dockerfile"
@@ -8,8 +8,9 @@
         "ghcr.io/devcontainers-extra/features/poetry:2": {}
     },
     "mounts": [
-        "source=C:/dev/data/lichess_eval,target=/mnt/data,type=bind,consistency=cached"
+        "source=C:/dev/data/lichess_eval,target=/workspaces/ChessEngine/data/raw/lichess_eval,type=bind,consistency=cached"
     ],
+    "postCreateCommand": "poetry lock && poetry install",
     "customizations": {
         "vscode": {
             "extensions": [
