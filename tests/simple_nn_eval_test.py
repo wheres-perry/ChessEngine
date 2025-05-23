@@ -19,7 +19,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.io.load_games import random_board
 from src.io.to_tensor import create_tensor
-from src.engine.evaluators.nn_eval import ChessNN, NN_Eval
+from engine.evaluators.simple_nn_eval import ChessNN, NN_Eval
 
 
 # Set random seed for reproducibility
