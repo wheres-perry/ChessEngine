@@ -10,7 +10,7 @@
     "mounts": [
         "source=C:/dev/data/lichess_eval,target=/workspaces/ChessEngine/data/raw/lichess_eval,type=bind,consistency=cached"
     ],
-    "postCreateCommand": "poetry lock && poetry install",
+    "runArgs": ["--gpus=all"],
     "customizations": {
         "vscode": {
             "extensions": [
