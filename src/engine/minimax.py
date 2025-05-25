@@ -1,6 +1,6 @@
 from xml.dom import minicompat
 import chess
-from engine.evaluators.simple_eval import SimpleEval
+from .evaluators.eval import Eval 
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 class Minimax:
     # TODO: Store calculated line, can work up backwards from that node rather than top down approach.
     board: chess.Board
-    evaluator: SimpleEval
+    evaluator: Eval
     node_count: int
     score: float
     alpha: float
     beta: float
 
-    def __init__(self, board: chess.Board, evaluator: SimpleEval):
+    def __init__(self, board: chess.Board, evaluator: Eval):
         logger.debug("Minimax initialized with board: %s", board)
         self.board = board
         self.evaluator = evaluator
@@ -74,7 +74,7 @@ class Minimax:
                 score = 0
             else:
                 # Depth limit reached, evaluate the position statically
-                score = self.evaluator.basic_evaluate()
+                score = self.evaluator.evaluate()
                 logger.debug("Leaf node reached with score: %f", score)
             return score
 
