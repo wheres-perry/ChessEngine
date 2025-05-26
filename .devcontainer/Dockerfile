@@ -6,11 +6,18 @@ COPY environment.yml* .devcontainer/noop.txt /tmp/conda-tmp/
 RUN if [ -f "/tmp/conda-tmp/environment.yml" ]; then umask 0002 && /opt/conda/bin/conda env update -n base -f /tmp/conda-tmp/environment.yml; fi \
     && rm -rf /tmp/conda-tmp
 
-# [Optional] Uncomment to install a different version of Python than the default
-# RUN conda install -y python=3.6 \
-#     && pip install --no-cache-dir pipx \
-#     && pipx reinstall-all
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - \
+    && echo 'export PATH="/root/.local/bin:$PATH"' >> ~/.bashrc
 
-# [Optional] Uncomment this section to install additional OS packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
+# Set Poetry in PATH for this build
+ENV PATH="/root/.local/bin:$PATH"
+
+# Copy Poetry files
+COPY pyproject.toml poetry.lock* /workspaces/ChessEngine/
+
+# Set working directory and install dependencies
+WORKDIR /workspaces/ChessEngine
+RUN poetry config virtualenvs.create false \
+    && poetry lock \
+    && poetry install --no-root --no-interaction --no-ansi

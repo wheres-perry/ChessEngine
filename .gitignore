@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 package.sh
 *.zip
-
+*.pt
 *lichess_db_eval.jsonl
 
 # Poetry
