@@ -179,39 +179,41 @@ class TestMoveOrdering:
         ordered_moves = minimax.order_moves(all_legal_moves)
         assert len(ordered_moves) == expected_total_moves, f"Expected {expected_total_moves} ordered moves, got {len(ordered_moves)}"
         
-        # Define the expected high-priority captures (in order of piece value)
-        expected_priority_captures = [
-            chess.Move.from_uci("h1f2"),  # Knight captures queen (highest value)
-            chess.Move.from_uci("b4a5"),  # Pawn captures rook
-            chess.Move.from_uci("f4e5"),  # Pawn captures bishop
-            chess.Move.from_uci("b4c5"),  # Pawn captures pawn (lowest value capture)
+        # Define the expected high-priority captures (in order of piece value) - UCI strings only
+        expected_priority_capture_ucis = [
+            "h1f2",  # Knight captures queen (highest value)
+            "b4a5",  # Pawn captures rook
+            "f4e5",  # Pawn captures bishop
+            "b4c5",  # Pawn captures pawn (lowest value capture)
         ]
         
+        # Convert to UCI strings for comparison
+        all_legal_move_ucis = [move.uci() for move in all_legal_moves]
+        ordered_move_ucis = [move.uci() for move in ordered_moves]
+        
         # Verify these moves are actually legal in the position
-        for i, move in enumerate(expected_priority_captures):
-            assert move in all_legal_moves, f"Priority capture {i+1} ({move.uci()}) not in legal moves: {[m.uci() for m in all_legal_moves]}"
+        for i, move_uci in enumerate(expected_priority_capture_ucis):
+            assert move_uci in all_legal_move_ucis, f"Priority capture {i+1} ({move_uci}) not in legal moves: {all_legal_move_ucis}"
         
         # The first 4 moves should be the captures in exact order (by piece value)
-        for i, expected_move in enumerate(expected_priority_captures):
-            assert ordered_moves[i] == expected_move, f"Move {i+1} should be {expected_move.uci()}, got {ordered_moves[i].uci()}"
+        for i, expected_uci in enumerate(expected_priority_capture_ucis):
+            assert ordered_move_ucis[i] == expected_uci, f"Move {i+1} should be {expected_uci}, got {ordered_move_ucis[i]}"
         
-        # Define the expected quiet moves (order doesn't matter for these)
-        expected_quiet_moves = {
-            chess.Move.from_uci("a1b3"),  # Knight move
-            chess.Move.from_uci("a1c2"),  # Knight move  
-            chess.Move.from_uci("h1g3"),  # Knight move
+        # Define the expected quiet moves UCI strings (order doesn't matter for these)
+        expected_quiet_move_ucis = {
+            "a1b3",  # Knight move
+            "a1c2",  # Knight move  
+            "h1g3",  # Knight move
         }
         
         # Verify quiet moves are legal
-        for move in expected_quiet_moves:
-            assert move in all_legal_moves, f"Quiet move {move.uci()} not in legal moves: {[m.uci() for m in all_legal_moves]}"
+        for move_uci in expected_quiet_move_ucis:
+            assert move_uci in all_legal_move_ucis, f"Quiet move {move_uci} not in legal moves: {all_legal_move_ucis}"
         
         # The remaining moves should be the quiet moves (order doesn't matter)
-        priority_capture_set = set(expected_priority_captures)
-        calculated_quiet_moves = set(all_legal_moves) - priority_capture_set
-        actual_quiet_moves = set(ordered_moves[4:])
+        calculated_quiet_move_ucis = set(all_legal_move_ucis) - set(expected_priority_capture_ucis)
+        actual_quiet_move_ucis = set(ordered_move_ucis[4:])
         
         # Verify we have the expected quiet moves
-        assert actual_quiet_moves == expected_quiet_moves, f"Expected quiet moves: {[m.uci() for m in expected_quiet_moves]}, Got: {[m.uci() for m in actual_quiet_moves]}"
-        assert calculated_quiet_moves == expected_quiet_moves, f"Calculated quiet moves don't match expected. Calculated: {[m.uci() for m in calculated_quiet_moves]}, Expected: {[m.uci() for m in expected_quiet_moves]}"
-            
+        assert actual_quiet_move_ucis == expected_quiet_move_ucis, f"Expected quiet moves: {sorted(expected_quiet_move_ucis)}, Got: {sorted(actual_quiet_move_ucis)}"
+        assert calculated_quiet_move_ucis == expected_quiet_move_ucis, f"Calculated quiet moves don't match expected. Calculated: {sorted(calculated_quiet_move_ucis)}, Expected: {sorted(expected_quiet_move_ucis)}"
