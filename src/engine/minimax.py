@@ -58,6 +58,7 @@ class Minimax:
 
     # uses MVV-LVA (Most Valuable Victim - Least Valuable Aggressor) to order moves
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
+        logger.debug("Ordering %d moves", len(moves))
 
         ordered_moves = []
         
@@ -104,6 +105,9 @@ class Minimax:
         
         # Combine the ordered moves: checks first, then captures, then other moves
         ordered_moves = checks + captures + other_moves
+        
+        logger.debug("Move ordering complete: %d checks, %d captures, %d other moves", 
+                     len(checks), len(captures), len(other_moves))
         
         return ordered_moves
 
