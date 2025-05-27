@@ -1,4 +1,3 @@
-from xml.dom import minicompat
 import chess
 from .evaluators.eval import Eval 
 import logging
@@ -57,8 +56,12 @@ class Minimax:
         logger.info("Total nodes visited: %d", self.node_count)
         return best_score, best_move
 
+    def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
+        # For now, just return the moves as is
+        return list(moves)
+
+
     def minimax_alpha_beta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> float:
-        # TODO: prefer capture moves, checks, and checkmates, perhaps sort the moves before for loop.
 
         self.node_count += 1
         logger.debug("Minimax called with depth: %d, alpha: %f, beta: %f, maximizing_player: %s, node %d",
