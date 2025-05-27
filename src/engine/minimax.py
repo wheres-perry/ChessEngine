@@ -57,8 +57,56 @@ class Minimax:
         return best_score, best_move
 
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
-        # For now, just return the moves as is
-        return list(moves)
+        """Order moves to improve alpha-beta pruning efficiency.
+        Prioritizes checks and captures.
+        """
+        ordered_moves = []
+        
+        # First, separate moves into different categories
+        checks = []
+        captures = []
+        other_moves = []
+        
+        for move in moves:
+            # Check if the move is a capture
+            if self.board.is_capture(move):
+                captures.append(move)
+            else:
+                # Make the move to see if it gives check
+                self.board.push(move)
+                gives_check = self.board.is_check()
+                self.board.pop()
+                
+                if gives_check:
+                    checks.append(move)
+                else:
+                    other_moves.append(move)
+        
+        # Sort captures by MVV-LVA (Most Valuable Victim - Least Valuable Aggressor)
+        # Higher score means better capture
+        def capture_score(move):
+            from .constants import PIECE_VALUES
+            
+            # Get the captured piece value (victim)
+            to_square = move.to_square
+            victim_piece = self.board.piece_at(to_square)
+            victim_value = PIECE_VALUES.get(victim_piece.piece_type, 0) if victim_piece else 0
+            
+            # Get the moving piece value (aggressor)
+            from_square = move.from_square
+            aggressor_piece = self.board.piece_at(from_square)
+            aggressor_value = PIECE_VALUES.get(aggressor_piece.piece_type, 0) if aggressor_piece else 0
+            
+            # MVV-LVA score: higher victim value and lower aggressor value is better
+            return victim_value * 10 - aggressor_value
+        
+        # Sort captures by MVV-LVA score in descending order
+        captures.sort(key=capture_score, reverse=True)
+        
+        # Combine the ordered moves: checks first, then captures, then other moves
+        ordered_moves = checks + captures + other_moves
+        
+        return ordered_moves
 
 
     def minimax_alpha_beta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> float:
@@ -81,12 +129,13 @@ class Minimax:
                 logger.debug("Leaf node reached with score: %f", score)
             return score
 
-        # Dummy player is maximizing
+               # Dummy player is maximizing
         # This player is trying to maximize the score
         if maximizing_player:
             max_eval = float(-2147483648)
 
-            for m in self.board.legal_moves:
+            # Use ordered moves instead of iterating directly
+            for m in self.order_moves(list(self.board.legal_moves)):
                 self.board.push(m)
                 eval = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
                 self.board.pop()
@@ -106,7 +155,8 @@ class Minimax:
         # This player is trying to minimize the score
         else:
             min_eval = float(2147483647)
-            for m in self.board.legal_moves:
+            # Use ordered moves instead of iterating directly
+            for m in self.order_moves(list(self.board.legal_moves)):
                 self.board.push(m)
                 eval = self.minimax_alpha_beta(depth - 1, alpha, beta, True)
                 self.board.pop()
@@ -117,7 +167,7 @@ class Minimax:
                 # prune
                 if beta <= alpha:
                     logger.debug(
-                        f"Pruning (Max): depth={depth}, move={m}, alpha={alpha}, beta={beta}")
+                        f"Pruning (Min): depth={depth}, move={m}, alpha={alpha}, beta={beta}")
                     break
             logger.info("Minimizing player evaluation: %f", min_eval)
             return min_eval
