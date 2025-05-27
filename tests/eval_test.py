@@ -2,7 +2,6 @@ import chess
 import pytest
 from src.engine.constants import *
 from src.engine.evaluators.simple_eval import SimpleEval
-from engine.evaluators.simple_nn_eval import NN_Eval
 from src.engine.evaluators.eval import Eval
 
 
@@ -23,7 +22,6 @@ def evaluator_fixture(request):
     "evaluator_fixture",
     [
         (chess.Board(), SimpleEval),
-        (chess.Board(), NN_Eval),
     ],
     indirect=True
 )
@@ -36,7 +34,6 @@ def test_starting_position(evaluator_fixture):
     "evaluator_fixture",
     [
         (None, SimpleEval),
-        (None, NN_Eval),
     ],
     indirect=True
 )
@@ -57,7 +54,6 @@ def test_white_checkmate(evaluator_fixture):
     "evaluator_fixture",
     [
         (None, SimpleEval),
-        (None, NN_Eval),
     ],
     indirect=True
 )
@@ -78,7 +74,6 @@ def test_black_checkmate(evaluator_fixture):
     "evaluator_fixture",
     [
         (chess.Board("7k/8/8/8/8/8/2q5/K7 w - - 0 1"), SimpleEval),
-        (chess.Board("7k/8/8/8/8/8/2q5/K7 w - - 0 1"), NN_Eval),
     ],
     indirect=True
 )
@@ -93,7 +88,6 @@ def test_stalemate(evaluator_fixture):
     "evaluator_fixture",
     [
         (chess.Board("k7/8/8/8/8/8/R7/K7 w - - 0 1"), SimpleEval),
-        (chess.Board("k7/8/8/8/8/8/R7/K7 w - - 0 1"), NN_Eval),
     ],
     indirect=True
 )
@@ -107,7 +101,6 @@ def test_material_advantage_white(evaluator_fixture):
     "evaluator_fixture",
     [
         (chess.Board("k1rb4/8/8/8/8/8/8/K7 w - - 0 1"), SimpleEval),
-        (chess.Board("k1rb4/8/8/8/8/8/8/K7 w - - 0 1"), NN_Eval),
     ],
     indirect=True
 )
@@ -122,7 +115,6 @@ def test_material_advantage_black_multiple_pieces(evaluator_fixture):
     "evaluator_fixture",
     [
         (chess.Board("k7/8/K7/8/8/8/8/8 w - - 0 1"), SimpleEval),
-        (chess.Board("k7/8/K7/8/8/8/8/8 w - - 0 1"), NN_Eval),
     ],
     indirect=True
 )

@@ -6,7 +6,7 @@ import argparse
 import logging
 import minimax
 import chess.pgn
-import io.to_tensor as to_tensor
+
 
 
 def handle_args():
