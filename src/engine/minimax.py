@@ -33,7 +33,7 @@ class Minimax:
         else:
             best_score = float(2147483647)
 
-        for m in self.board.legal_moves:
+        for m in self.order_moves(list(self.board.legal_moves)):
             self.board.push(m)
             score = self.minimax_alpha_beta(depth - 1,
                                             alpha,
@@ -56,10 +56,9 @@ class Minimax:
         logger.info("Total nodes visited: %d", self.node_count)
         return best_score, best_move
 
+    # uses MVV-LVA (Most Valuable Victim - Least Valuable Aggressor) to order moves
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
-        """Order moves to improve alpha-beta pruning efficiency.
-        Prioritizes checks and captures.
-        """
+
         ordered_moves = []
         
         # First, separate moves into different categories
@@ -134,7 +133,6 @@ class Minimax:
         if maximizing_player:
             max_eval = float(-2147483648)
 
-            # Use ordered moves instead of iterating directly
             for m in self.order_moves(list(self.board.legal_moves)):
                 self.board.push(m)
                 eval = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
@@ -155,7 +153,6 @@ class Minimax:
         # This player is trying to minimize the score
         else:
             min_eval = float(2147483647)
-            # Use ordered moves instead of iterating directly
             for m in self.order_moves(list(self.board.legal_moves)):
                 self.board.push(m)
                 eval = self.minimax_alpha_beta(depth - 1, alpha, beta, True)
