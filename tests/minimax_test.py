@@ -162,3 +162,56 @@ class TestMoveOrdering:
         ordered_moves = minimax.order_moves(moves)
 
         assert len(ordered_moves) == 0, "In checkmate, there should be no legal moves."
+        
+        
+    def test_complex_move_ordering(self):
+        """Test complex move ordering with captures, checks, and quiet moves."""
+        board = chess.Board("1k6/8/8/rpp1bp2/1P3P2/3K4/5q2/N6N w - - 0 1")
+        evaluator = MockEval(board, 0.0)
+        minimax = Minimax(board, evaluator)
+
+        # Get all legal moves and verify we have the expected number
+        all_legal_moves = list(board.legal_moves)
+        expected_total_moves = 7
+        assert len(all_legal_moves) == expected_total_moves, f"Expected {expected_total_moves} legal moves, got {len(all_legal_moves)}: {[move.uci() for move in all_legal_moves]}"
+        
+        # Order the moves
+        ordered_moves = minimax.order_moves(all_legal_moves)
+        assert len(ordered_moves) == expected_total_moves, f"Expected {expected_total_moves} ordered moves, got {len(ordered_moves)}"
+        
+        # Define the expected high-priority captures (in order of piece value)
+        expected_priority_captures = [
+            chess.Move.from_uci("h1f2"),  # Knight captures queen (highest value)
+            chess.Move.from_uci("b4a5"),  # Pawn captures rook
+            chess.Move.from_uci("f4e5"),  # Pawn captures bishop
+            chess.Move.from_uci("b4c5"),  # Pawn captures pawn (lowest value capture)
+        ]
+        
+        # Verify these moves are actually legal in the position
+        for i, move in enumerate(expected_priority_captures):
+            assert move in all_legal_moves, f"Priority capture {i+1} ({move.uci()}) not in legal moves: {[m.uci() for m in all_legal_moves]}"
+        
+        # The first 4 moves should be the captures in exact order (by piece value)
+        for i, expected_move in enumerate(expected_priority_captures):
+            assert ordered_moves[i] == expected_move, f"Move {i+1} should be {expected_move.uci()}, got {ordered_moves[i].uci()}"
+        
+        # Define the expected quiet moves (order doesn't matter for these)
+        expected_quiet_moves = {
+            chess.Move.from_uci("a1b3"),  # Knight move
+            chess.Move.from_uci("a1c2"),  # Knight move  
+            chess.Move.from_uci("h1g3"),  # Knight move
+        }
+        
+        # Verify quiet moves are legal
+        for move in expected_quiet_moves:
+            assert move in all_legal_moves, f"Quiet move {move.uci()} not in legal moves: {[m.uci() for m in all_legal_moves]}"
+        
+        # The remaining moves should be the quiet moves (order doesn't matter)
+        priority_capture_set = set(expected_priority_captures)
+        calculated_quiet_moves = set(all_legal_moves) - priority_capture_set
+        actual_quiet_moves = set(ordered_moves[4:])
+        
+        # Verify we have the expected quiet moves
+        assert actual_quiet_moves == expected_quiet_moves, f"Expected quiet moves: {[m.uci() for m in expected_quiet_moves]}, Got: {[m.uci() for m in actual_quiet_moves]}"
+        assert calculated_quiet_moves == expected_quiet_moves, f"Calculated quiet moves don't match expected. Calculated: {[m.uci() for m in calculated_quiet_moves]}, Expected: {[m.uci() for m in expected_quiet_moves]}"
+            
