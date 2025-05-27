@@ -128,8 +128,8 @@ class TestMoveOrdering:
         minimax = Minimax(board, evaluator)
         
         expected_ordered_moves = [
-            chess.Move.from_uci("d3d4"),  # Check move
-            chess.Move.from_uci("e3e4")  # Quiet move
+            chess.Move.from_uci("e3e4")  # Check move
+            chess.Move.from_uci("d3d4"),  #  quiet move
         ]
         
         moves = list(board.legal_moves)
