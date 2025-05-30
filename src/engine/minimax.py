@@ -2,6 +2,7 @@ import logging
 
 import chess
 from src.engine.evaluators.eval import Eval
+from src.engine.zobrist import Zobrist
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,11 @@ class Minimax:
     alpha: float
     beta: float
 
-    def __init__(self, board: chess.Board, evaluator: Eval):
+    def __init__(self, board: chess.Board, evaluator: Eval, use_zobrist: bool = True):
+        self.use_zobrist = use_zobrist
+        if use_zobrist:
+            self.zobrist = Zobrist()
+            self.transposition_table = {}
         logger.debug("Minimax initialized with board: %s", board)
         self.board = board
         self.evaluator = evaluator
@@ -135,6 +140,13 @@ class Minimax:
     def minimax_alpha_beta(
         self, depth: int, alpha: float, beta: float, maximizing_player: bool
     ) -> float:
+        hash_val = None
+        if self.use_zobrist:
+            hash_val = self.zobrist.hash_board(self.board)
+            if hash_val in self.transposition_table:
+                stored_depth, stored_score = self.transposition_table[hash_val]
+                if stored_depth >= depth:
+                    return stored_score
 
         self.node_count += 1
         logger.debug(
@@ -160,6 +172,8 @@ class Minimax:
 
                 score = self.evaluator.evaluate()
                 logger.debug("Leaf node reached with score: %f", score)
+            if self.use_zobrist:
+                self.transposition_table[hash_val] = (depth, score)
             return score
         # Dummy player is maximizing
         # This player is trying to maximize the score
@@ -182,6 +196,8 @@ class Minimax:
                     )
                     break
             logger.info("Maximizing player evaluation: %f", max_eval)
+            if self.use_zobrist:
+                self.transposition_table[hash_val] = (depth, max_eval)
             return max_eval
         # Dummy player is minimizing
         # This player is trying to minimize the score
@@ -204,4 +220,6 @@ class Minimax:
                     )
                     break
             logger.info("Minimizing player evaluation: %f", min_eval)
+            if self.use_zobrist:
+                self.transposition_table[hash_val] = (depth, min_eval)
             return min_eval

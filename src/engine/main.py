@@ -73,19 +73,33 @@ def main():
 
     if b:
         try:
-            # Using Simple Eval
+            # Using Simple Eval without Zobrist
             start_time = time.time()
-            mm_simple = minimax.Minimax(b, ev)
-            score_simple, move_simple = mm_simple.find_top_move(depth=5)  # Use smaller depth for speed
+            mm_simple = minimax.Minimax(b, ev, use_zobrist=False)
+            score_simple, move_simple = mm_simple.find_top_move(depth=6)
             time_simple = time.time() - start_time
-            print(f"Simple Eval Minimax: Best Move {move_simple}, Score: {score_simple}, Time: {time_simple:.2f}s")
+            print(f"Simple Eval Minimax (no Zobrist): Best Move {move_simple}, Score: {score_simple}, Time: {time_simple:.2f}s")
 
-            # Using NN Eval
+            # Using Simple Eval with Zobrist
             start_time = time.time()
-            mm_nn = minimax.Minimax(b, nn_evaluator)
-            score_nn, move_nn = mm_nn.find_top_move(depth=5)
+            mm_simple_z = minimax.Minimax(b, ev, use_zobrist=True)
+            score_simple_z, move_simple_z = mm_simple_z.find_top_move(depth=6)
+            time_simple_z = time.time() - start_time
+            print(f"Simple Eval Minimax (with Zobrist): Best Move {move_simple_z}, Score: {score_simple_z}, Time: {time_simple_z:.2f}s")
+
+            # Using NN Eval without Zobrist
+            start_time = time.time()
+            mm_nn = minimax.Minimax(b, nn_evaluator, use_zobrist=False)
+            score_nn, move_nn = mm_nn.find_top_move(depth=6)
             time_nn = time.time() - start_time
-            print(f"NN Eval Minimax: Best Move {move_nn}, Score: {score_nn}, Time: {time_nn:.2f}s")
+            print(f"NN Eval Minimax (no Zobrist): Best Move {move_nn}, Score: {score_nn}, Time: {time_nn:.2f}s")
+
+            # Using NN Eval with Zobrist
+            start_time = time.time()
+            mm_nn_z = minimax.Minimax(b, nn_evaluator, use_zobrist=True)
+            score_nn_z, move_nn_z = mm_nn_z.find_top_move(depth=6)
+            time_nn_z = time.time() - start_time
+            print(f"NN Eval Minimax (with Zobrist): Best Move {move_nn_z}, Score: {score_nn_z}, Time: {time_nn_z:.2f}s")
 
             print(b)
             print("PGN of current position:")
