@@ -10,6 +10,7 @@ import src.io_utils.to_tensor as to_tensor
 
 import engine.evaluators.simple_eval as simple_eval
 import engine.evaluators.simple_nn_eval as nn_eval
+import engine.evaluators.deep_cnn_eval as deep_cnn_eval
 import engine.minimax as minimax
 import time
 
@@ -70,6 +71,28 @@ def main():
     nn_evaluator = nn_eval.NN_Eval(b, model_path=model_path)
     nn_score = nn_evaluator.evaluate()
     print(f"NN eval score: {nn_score}")
+
+    # Deep CNN Eval - Lightweight
+    deep_cnn_light = deep_cnn_eval.DeepCNN_Eval(
+        b, 
+        architecture="lightweight",
+        num_residual_blocks=2,
+        base_channels=64
+    )
+    deep_cnn_score_light = deep_cnn_light.evaluate()
+    print(f"Deep CNN (lightweight) eval score: {deep_cnn_score_light}")
+    print(f"Deep CNN (lightweight) model info: {deep_cnn_light.get_model_info()}")
+
+    # Deep CNN Eval - Full
+    deep_cnn_full = deep_cnn_eval.DeepCNN_Eval(
+        b,
+        architecture="deep", 
+        num_residual_blocks=4,
+        base_channels=128
+    )
+    deep_cnn_score_full = deep_cnn_full.evaluate()
+    print(f"Deep CNN (full) eval score: {deep_cnn_score_full}")
+    print(f"Deep CNN (full) model info: {deep_cnn_full.get_model_info()}")
 
     if b:
         try:
