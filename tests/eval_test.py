@@ -4,18 +4,25 @@ import pytest
 from src.engine.constants import *
 from src.engine.evaluators.eval import Eval
 from src.engine.evaluators.simple_eval import SimpleEval
-from src.engine.evaluators.simple_nn_eval import NN_Eval
+from src.engine.evaluators.simple_nn_eval import NN_Eval, ChessNN
+
+
+def create_nn_eval(board):
+    model = ChessNN()
+    return NN_Eval(board, model_instance=model)
 
 
 @pytest.fixture
 def evaluator_fixture(request):
-    board_spec, eval_class_to_use = request.param
-    if not issubclass(eval_class_to_use, Eval):
-        raise TypeError(f"{eval_class_to_use.__name__} must be a subclass of Eval")
-    if board_spec is None:
-        return lambda board: eval_class_to_use(board)
+    param = request.param
+    if isinstance(param, tuple):
+        board, evaluator = param
     else:
-        return eval_class_to_use(board_spec)
+        board = chess.Board()
+        evaluator = param
+    if board is None:
+        return lambda b: evaluator(b)
+    return evaluator(board)
 
 
 @pytest.mark.parametrize(
@@ -109,7 +116,6 @@ def test_material_advantage_white(evaluator_fixture):
     indirect=True,
 )
 def test_material_advantage_black_multiple_pieces(evaluator_fixture):
-    """Test that evaluates a position where Black has multiple piece advantage"""
     score = evaluator_fixture.evaluate()
     expected_score = -(PIECE_VALUES[chess.ROOK] + PIECE_VALUES[chess.BISHOP])
     assert score == expected_score

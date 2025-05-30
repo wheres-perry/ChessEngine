@@ -9,8 +9,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from src.engine.evaluators.simple_nn_eval import ChessNN, NN_Eval
-from src.io.load_games import random_board
-from src.io.to_tensor import create_tensor
+from src.io_utils.load_games import random_board
+from src.io_utils.to_tensor import create_tensor
 from tqdm import tqdm
 
 

@@ -6,7 +6,7 @@ import pytest
 import torch
 from chess import pgn
 
-from src.io.to_tensor import *
+from src.io_utils.to_tensor import *
 
 
 def print_tensor(tensor):

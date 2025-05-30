@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from src.engine.constants import *
 from src.engine.evaluators.eval import Eval
-from src.io.to_tensor import create_tensor, NUM_PLANES
+from src.io_utils.to_tensor import create_tensor, NUM_PLANES
 
 
 class ChessNN(nn.Module):

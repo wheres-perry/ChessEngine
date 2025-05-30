@@ -1,9 +1,9 @@
 import argparse
-import io.load_games as load_games
+import io_utils.load_games as load_games
 import logging
 
 import chess.pgn
-import src.io.to_tensor as to_tensor
+import src.io_utils.to_tensor as to_tensor
 
 import engine.evaluators.simple_eval as simple_eval
 
