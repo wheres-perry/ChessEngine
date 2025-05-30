@@ -1,18 +1,17 @@
 import chess
 import pytest
+
 from src.engine.constants import *
-from src.engine.evaluators.simple_eval import SimpleEval
-from engine.evaluators.simple_nn_eval import NN_Eval
 from src.engine.evaluators.eval import Eval
+from src.engine.evaluators.simple_eval import SimpleEval
+from src.engine.evaluators.simple_nn_eval import NN_Eval
 
 
 @pytest.fixture
 def evaluator_fixture(request):
     board_spec, eval_class_to_use = request.param
     if not issubclass(eval_class_to_use, Eval):
-        raise TypeError(
-            f"{eval_class_to_use.__name__} must be a subclass of Eval")
-
+        raise TypeError(f"{eval_class_to_use.__name__} must be a subclass of Eval")
     if board_spec is None:
         return lambda board: eval_class_to_use(board)
     else:
@@ -25,7 +24,7 @@ def evaluator_fixture(request):
         (chess.Board(), SimpleEval),
         (chess.Board(), NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_starting_position(evaluator_fixture):
     score = evaluator_fixture.evaluate()
@@ -38,7 +37,7 @@ def test_starting_position(evaluator_fixture):
         (None, SimpleEval),
         (None, NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_white_checkmate(evaluator_fixture):
     eval_factory = evaluator_fixture
@@ -46,11 +45,10 @@ def test_white_checkmate(evaluator_fixture):
     moves = ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"]
     for move_san in moves:
         board.push_san(move_san)
-
     evaluator_instance = eval_factory(board)
     score = evaluator_instance.evaluate()
     assert board.is_checkmate()
-    assert score == float('inf')
+    assert score == float("inf")
 
 
 @pytest.mark.parametrize(
@@ -59,7 +57,7 @@ def test_white_checkmate(evaluator_fixture):
         (None, SimpleEval),
         (None, NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_black_checkmate(evaluator_fixture):
     eval_factory = evaluator_fixture
@@ -67,11 +65,10 @@ def test_black_checkmate(evaluator_fixture):
     moves = ["f3", "e5", "g4", "Qh4#"]
     for move_san in moves:
         board.push_san(move_san)
-
     evaluator_instance = eval_factory(board)
     score = evaluator_instance.evaluate()
     assert board.is_checkmate()
-    assert score == float('-inf')
+    assert score == float("-inf")
 
 
 @pytest.mark.parametrize(
@@ -80,7 +77,7 @@ def test_black_checkmate(evaluator_fixture):
         (chess.Board("7k/8/8/8/8/8/2q5/K7 w - - 0 1"), SimpleEval),
         (chess.Board("7k/8/8/8/8/8/2q5/K7 w - - 0 1"), NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_stalemate(evaluator_fixture):
     board = evaluator_fixture.board
@@ -95,7 +92,7 @@ def test_stalemate(evaluator_fixture):
         (chess.Board("k7/8/8/8/8/8/R7/K7 w - - 0 1"), SimpleEval),
         (chess.Board("k7/8/8/8/8/8/R7/K7 w - - 0 1"), NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_material_advantage_white(evaluator_fixture):
     score = evaluator_fixture.evaluate()
@@ -109,7 +106,7 @@ def test_material_advantage_white(evaluator_fixture):
         (chess.Board("k1rb4/8/8/8/8/8/8/K7 w - - 0 1"), SimpleEval),
         (chess.Board("k1rb4/8/8/8/8/8/8/K7 w - - 0 1"), NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_material_advantage_black_multiple_pieces(evaluator_fixture):
     """Test that evaluates a position where Black has multiple piece advantage"""
@@ -124,7 +121,7 @@ def test_material_advantage_black_multiple_pieces(evaluator_fixture):
         (chess.Board("k7/8/K7/8/8/8/8/8 w - - 0 1"), SimpleEval),
         (chess.Board("k7/8/K7/8/8/8/8/8 w - - 0 1"), NN_Eval),
     ],
-    indirect=True
+    indirect=True,
 )
 def test_kings_only(evaluator_fixture):
     score = evaluator_fixture.evaluate()

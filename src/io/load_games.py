@@ -1,6 +1,7 @@
 import random
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import List, Optional, Union
+
 import chess
 import chess.pgn
 
@@ -15,7 +16,9 @@ def random_file(games_dir: Union[str, Path] = Path("./data/raw/simple_games")) -
     return random.choice(files)
 
 
-def random_board(games_dir: Union[str, Path] = Path("./data/raw/simple_games")) -> Optional[chess.Board]:
+def random_board(
+    games_dir: Union[str, Path] = Path("./data/raw/simple_games"),
+) -> Optional[chess.Board]:
 
     pgnfile = random_file(games_dir)
     if pgnfile is None:
@@ -24,7 +27,7 @@ def random_board(games_dir: Union[str, Path] = Path("./data/raw/simple_games")) 
 
     games = []
     try:
-        with open(pgnfile, 'r', encoding='utf-8', errors='ignore') as pgn_handle:
+        with open(pgnfile, "r", encoding="utf-8", errors="ignore") as pgn_handle:
             while True:
                 game = chess.pgn.read_game(pgn_handle)
                 if game is None:

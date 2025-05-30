@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
+
 import chess
 import chess.pgn
-from src.io.load_games import get_all_files, random_file, random_board
+import pytest
+from src.io.load_games import get_all_files, random_board, random_file
 
 
 @pytest.fixture
@@ -15,22 +16,113 @@ def temp_games_dir(tmp_path):
 @pytest.fixture
 def populated_games_dir(temp_games_dir):
     pgn_content_1 = """
+
+
+
+
+
+
+
 [Event "Test Game 1"]
+
+
+
+
+
+
+
 [Site "?"]
+
+
+
+
+
+
+
 [Date "?"]
+
+
+
+
+
+
+
 [Round "?"]
+
+
+
+
+
+
+
 [White "?"]
+
+
+
+
+
+
+
 [Black "?"]
+
+
+
+
+
+
+
 [Result "*"]
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 1. e4 e5 2. Nf3 Nc6 *
+
+
+
+
+
+
+
 """
     pgn_file_1 = temp_games_dir / "game1.pgn"
     pgn_file_1.write_text(pgn_content_1)
 
     pgn_content_2 = """
+
+
+
+
+
+
+
 [Event "Test Game 2"]
+
+
+
+
+
+
+
 1. d4 d5 *
+
+
+
+
+
+
+
 """
     pgn_file_2 = temp_games_dir / "game2.pgn"
     pgn_file_2.write_text(pgn_content_2)
@@ -50,22 +142,7 @@ def empty_pgn_file_dir(temp_games_dir):
 @pytest.fixture
 def no_games_pgn_file_dir(temp_games_dir):
     no_games_pgn = temp_games_dir / "no_games.pgn"
-    no_games_pgn.write_text(
-        "[Event \"Only Headers\"]\n[Result \"*\"]\n")
-    return temp_games_dir
-
-
-@pytest.fixture
-def multi_game_pgn_dir(temp_games_dir):
-    pgn_content = """
-[Event "Game A"]
-1. e4 *
-
-[Event "Game B"]
-1. d4 *
-"""
-    multi_pgn = temp_games_dir / "multi.pgn"
-    multi_pgn.write_text(pgn_content)
+    no_games_pgn.write_text('[Event "Only Headers"]\n[Result "*"]\n')
     return temp_games_dir
 
 

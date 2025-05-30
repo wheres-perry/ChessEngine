@@ -1,6 +1,6 @@
-import torch
 import chess
-from ..engine.constants import *
+import torch
+from src.engine.constants import *
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,9 @@ CURRENT_COLOR_PLANE = 27
 NUM_PLANES = 28
 
 
-def create_piece_plane(board: chess.Board, color: chess.Color, type: chess.PieceType) -> torch.Tensor:
+def create_piece_plane(
+    board: chess.Board, color: chess.Color, type: chess.PieceType
+) -> torch.Tensor:
     out = torch.zeros((8, 8), dtype=torch.float32)
     pieces = board.pieces(piece_type=type, color=color)
     for sqr in pieces:
@@ -65,7 +67,9 @@ def create_en_passant_plane(board: chess.Board) -> torch.Tensor:
     return en_passant_plane
 
 
-def create_repetition_planes(board: chess.Board) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def create_repetition_planes(
+    board: chess.Board,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     is_2nd_occurrence = torch.zeros((8, 8), dtype=torch.float32)
     is_3rd_or_4th_occurrence = torch.zeros((8, 8), dtype=torch.float32)
     is_5th_or_more_occurrence = torch.zeros((8, 8), dtype=torch.float32)
@@ -79,7 +83,6 @@ def create_repetition_planes(board: chess.Board) -> tuple[torch.Tensor, torch.Te
     if board.is_repetition(5):
         is_5th_or_more_occurrence.fill_(1.0)
         logger.debug("Board %s has 5+ repetitions (Auto draw)", board)
-
     return is_2nd_occurrence, is_3rd_or_4th_occurrence, is_5th_or_more_occurrence
 
 
@@ -95,7 +98,9 @@ def create_pinned_pieces_plane(board: chess.Board, color: chess.Color) -> torch.
     return out
 
 
-def create_attacked_squares_plane(board: chess.Board, color: chess.Color) -> torch.Tensor:
+def create_attacked_squares_plane(
+    board: chess.Board, color: chess.Color
+) -> torch.Tensor:
     attack_plane = torch.zeros((8, 8), dtype=torch.float32)
     for i in chess.SQUARES:
         if board.is_attacked_by(color, i):
@@ -134,7 +139,6 @@ def create_tensor(board: chess.Board):
     logger.debug("Creating tensor for board: %s", board)
     if not board.is_valid():
         raise ValueError("Invalid board state")
-
     out: torch.Tensor = torch.zeros((NUM_PLANES, 8, 8), dtype=torch.float32)
 
     idx: int = 0
@@ -143,45 +147,69 @@ def create_tensor(board: chess.Board):
             logger.debug("Adding piece plane for type %s, color %s", t, c)
             out[idx] = create_piece_plane(board, color=c, type=t)
             idx += 1
-
     # Index 10: White King
+
     logger.debug("Adding piece plane for white king")
     out[idx] = create_piece_plane(board, color=chess.WHITE, type=chess.KING)
     idx += 1
+
     # Index 11: Black King
+
     logger.debug("Adding piece plane for black king")
     out[idx] = create_piece_plane(board, color=chess.BLACK, type=chess.KING)
     idx += 1
+
     # Index 12: Turn count
+
     logger.debug("Adding turn count: %d", board.fullmove_number)
-    out[idx].fill_(board.fullmove_number/100)
+    out[idx].fill_(board.fullmove_number / 100)
     idx += 1
+
     # Index 13: White King-side castle
-    logger.debug("Adding white kingside castle rights: %s",
-                 board.has_kingside_castling_rights(chess.WHITE))
+
+    logger.debug(
+        "Adding white kingside castle rights: %s",
+        board.has_kingside_castling_rights(chess.WHITE),
+    )
     out[idx].fill_(float(board.has_kingside_castling_rights(chess.WHITE)))
     idx += 1
+
     # Index 14: Black King-side castle
-    logger.debug("Adding black kingside castle rights: %s",
-                 board.has_kingside_castling_rights(chess.BLACK))
+
+    logger.debug(
+        "Adding black kingside castle rights: %s",
+        board.has_kingside_castling_rights(chess.BLACK),
+    )
     out[idx].fill_(float(board.has_kingside_castling_rights(chess.BLACK)))
     idx += 1
+
     # Index 15: White Queen-side castle
-    logger.debug("Adding white queenside castle rights: %s",
-                 board.has_queenside_castling_rights(chess.WHITE))
+
+    logger.debug(
+        "Adding white queenside castle rights: %s",
+        board.has_queenside_castling_rights(chess.WHITE),
+    )
     out[idx].fill_(float(board.has_queenside_castling_rights(chess.WHITE)))
     idx += 1
+
     # Index 16: Black Queen-side castle
-    logger.debug("Adding black queenside castle rights: %s",
-                 board.has_queenside_castling_rights(chess.BLACK))
+
+    logger.debug(
+        "Adding black queenside castle rights: %s",
+        board.has_queenside_castling_rights(chess.BLACK),
+    )
     out[idx].fill_(float(board.has_queenside_castling_rights(chess.BLACK)))
     idx += 1
+
     # Index 17: En passant
     # TODO: implement en passant
+
     logger.debug("Adding en passant plane")
     out[idx] = create_en_passant_plane(board)
     idx += 1
+
     # Index 18-20: Draw planes
+
     p1, p2, p3 = create_repetition_planes(board)  # Debug log in function
     out[idx] = p1
     idx += 1
@@ -189,31 +217,45 @@ def create_tensor(board: chess.Board):
     idx += 1
     out[idx] = p3
     idx += 1
+
     # Index 21: White attack (Pieces attacked by white)
+
     logger.debug("Adding white attack plane")
     out[idx] = create_attacked_squares_plane(board, color=chess.WHITE)
     idx += 1
+
     # Index 22: Black attack (Pieces attacked by black)
+
     logger.debug("Adding black attack plane")
     out[idx] = create_attacked_squares_plane(board, color=chess.BLACK)
     idx += 1
+
     # Index 23: White pinned pieces (White pieces pinned by black)
+
     logger.debug("Adding white pinned pieces plane")
     out[idx] = create_pinned_pieces_plane(board, color=chess.WHITE)
     idx += 1
+
     # Index 24: Black pinned pieces (Black pieces pinned by white)
+
     logger.debug("Adding black pinned pieces plane")
     out[idx] = create_pinned_pieces_plane(board, color=chess.BLACK)
     idx += 1
+
     # Index 25: White passed pawns
+
     logger.debug("Adding white passed pawns plane")
     out[idx] = create_passed_pawns_plane(board, color=chess.WHITE)
     idx += 1
+
     # Index 26: Black passed pawns
+
     logger.debug("Adding black passed pawns plane")
     out[idx] = create_passed_pawns_plane(board, color=chess.BLACK)
     idx += 1
+
     # Index 27: Current color
+
     logger.debug("Adding current color plane")
     out[idx].fill_(float(board.turn))  # 0 = Black, 1 = White
 

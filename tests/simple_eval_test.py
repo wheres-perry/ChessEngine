@@ -19,7 +19,7 @@ def test_white_checkmate():
     evaluator = SimpleEval(board)
     score = evaluator.basic_evaluate()
     assert board.is_checkmate()
-    assert score == float('inf')
+    assert score == float("inf")
 
 
 def test_black_checkmate():
@@ -30,7 +30,7 @@ def test_black_checkmate():
     evaluator = SimpleEval(board)
     score = evaluator.basic_evaluate()
     assert board.is_checkmate()
-    assert score == float('-inf')
+    assert score == float("-inf")
 
 
 def test_stalemate():
