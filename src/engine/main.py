@@ -1,11 +1,17 @@
 import argparse
 import io_utils.load_games as load_games
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import logging
 
 import chess.pgn
 import src.io_utils.to_tensor as to_tensor
 
 import engine.evaluators.simple_eval as simple_eval
+import engine.evaluators.simple_nn_eval as nn_eval
+import engine.minimax as minimax
+import time
 
 
 def handle_args():
@@ -59,18 +65,35 @@ def main():
         return
     print(f"Simple eval score: {score}")
 
-    # if b:
-    #     try:
-    #         mm = minimax.Minimax(b, ev)
-    #         score, move = mm.find_top_move(depth=7)
-    #         print(f"Best Move {move}, score for that move: {score}")
-    #         print(b)
-    #         print("PGN of current position:")
-    #         print(chess.pgn.Game.from_board(b))
+    # NN Eval
+    model_path = 'data/models/simple_nn.pth'
+    nn_evaluator = nn_eval.NN_Eval(b, model_path=model_path)
+    nn_score = nn_evaluator.evaluate()
+    print(f"NN eval score: {nn_score}")
 
-    #     except Exception as e:
-    #         logger.error(f"Error evaluating board: {e}")
-    #         return
+    if b:
+        try:
+            # Using Simple Eval
+            start_time = time.time()
+            mm_simple = minimax.Minimax(b, ev)
+            score_simple, move_simple = mm_simple.find_top_move(depth=5)  # Use smaller depth for speed
+            time_simple = time.time() - start_time
+            print(f"Simple Eval Minimax: Best Move {move_simple}, Score: {score_simple}, Time: {time_simple:.2f}s")
+
+            # Using NN Eval
+            start_time = time.time()
+            mm_nn = minimax.Minimax(b, nn_evaluator)
+            score_nn, move_nn = mm_nn.find_top_move(depth=5)
+            time_nn = time.time() - start_time
+            print(f"NN Eval Minimax: Best Move {move_nn}, Score: {score_nn}, Time: {time_nn:.2f}s")
+
+            print(b)
+            print("PGN of current position:")
+            print(chess.pgn.Game.from_board(b))
+
+        except Exception as e:
+            logger.error(f"Error evaluating board: {e}")
+            return
 
     if b:
         try:
