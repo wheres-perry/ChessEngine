@@ -5,14 +5,7 @@ import time
 import chess
 import pytest
 
-try:
-    from util import add_project_root_to_path
 
-    add_project_root_to_path()
-except ImportError:
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
 from src.engine.evaluators.eval import Eval
 from src.engine.minimax import Minimax
 from src.engine.zobrist import Zobrist
