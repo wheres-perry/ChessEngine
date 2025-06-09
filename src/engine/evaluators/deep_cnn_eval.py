@@ -10,7 +10,7 @@ from src.io_utils.to_tensor import create_tensor, NUM_PLANES
 
 class ResidualBlock(nn.Module):
     """Residual block with batch normalization and skip connections."""
-    
+
     def __init__(self, channels):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
@@ -18,7 +18,7 @@ class ResidualBlock(nn.Module):
         self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(channels)
         self.relu = nn.ReLU(inplace=True)
-        
+
     def forward(self, x):
         residual = x
         out = self.conv1(x)
@@ -33,44 +33,46 @@ class ResidualBlock(nn.Module):
 
 class DeepChessCNN(nn.Module):
     """Deep CNN architecture for chess position evaluation with residual connections."""
-    
+
     def __init__(self, num_residual_blocks=8, base_channels=256):
         super(DeepChessCNN, self).__init__()
-        
+
         # Initial convolution to expand channels
-        self.initial_conv = nn.Conv2d(NUM_PLANES, base_channels, kernel_size=3, padding=1)
+        self.initial_conv = nn.Conv2d(
+            NUM_PLANES, base_channels, kernel_size=3, padding=1
+        )
         self.initial_bn = nn.BatchNorm2d(base_channels)
         self.relu = nn.ReLU(inplace=True)
-        
+
         # Residual tower
-        self.residual_blocks = nn.ModuleList([
-            ResidualBlock(base_channels) for _ in range(num_residual_blocks)
-        ])
-        
+        self.residual_blocks = nn.ModuleList(
+            [ResidualBlock(base_channels) for _ in range(num_residual_blocks)]
+        )
+
         # Value head
         self.value_conv = nn.Conv2d(base_channels, 1, kernel_size=1)
         self.value_bn = nn.BatchNorm2d(1)
         self.value_fc1 = nn.Linear(8 * 8, 256)
         self.value_fc2 = nn.Linear(256, 1)
-        
+
         # Policy head (for future move prediction)
         self.policy_conv = nn.Conv2d(base_channels, 2, kernel_size=1)
         self.policy_bn = nn.BatchNorm2d(2)
         self.policy_fc = nn.Linear(2 * 8 * 8, 4096)  # Max possible moves
-        
+
         self.tanh = nn.Tanh()
         self.dropout = nn.Dropout(0.3)
-        
+
     def forward(self, x):
         # Initial convolution
         x = self.initial_conv(x)
         x = self.initial_bn(x)
         x = self.relu(x)
-        
+
         # Residual tower
         for block in self.residual_blocks:
             x = block(x)
-        
+
         # Value head
         value = self.value_conv(x)
         value = self.value_bn(value)
@@ -81,45 +83,47 @@ class DeepChessCNN(nn.Module):
         value = self.dropout(value)
         value = self.value_fc2(value)
         value = self.tanh(value)
-        
+
         return value
 
 
 class LightweightDeepCNN(nn.Module):
     """Lighter version of deep CNN for faster inference."""
-    
+
     def __init__(self, num_residual_blocks=4, base_channels=128):
         super(LightweightDeepCNN, self).__init__()
-        
+
         # Initial convolution
-        self.initial_conv = nn.Conv2d(NUM_PLANES, base_channels, kernel_size=3, padding=1)
+        self.initial_conv = nn.Conv2d(
+            NUM_PLANES, base_channels, kernel_size=3, padding=1
+        )
         self.initial_bn = nn.BatchNorm2d(base_channels)
         self.relu = nn.ReLU(inplace=True)
-        
+
         # Residual blocks
-        self.residual_blocks = nn.ModuleList([
-            ResidualBlock(base_channels) for _ in range(num_residual_blocks)
-        ])
-        
+        self.residual_blocks = nn.ModuleList(
+            [ResidualBlock(base_channels) for _ in range(num_residual_blocks)]
+        )
+
         # Value head
         self.value_conv = nn.Conv2d(base_channels, 1, kernel_size=1)
         self.value_bn = nn.BatchNorm2d(1)
         self.value_fc1 = nn.Linear(8 * 8, 128)
         self.value_fc2 = nn.Linear(128, 1)
-        
+
         self.tanh = nn.Tanh()
         self.dropout = nn.Dropout(0.2)
-        
+
     def forward(self, x):
         # Initial convolution
         x = self.initial_conv(x)
         x = self.initial_bn(x)
         x = self.relu(x)
-        
+
         # Residual tower
         for block in self.residual_blocks:
             x = block(x)
-        
+
         # Value head
         value = self.value_conv(x)
         value = self.value_bn(value)
@@ -130,7 +134,7 @@ class LightweightDeepCNN(nn.Module):
         value = self.dropout(value)
         value = self.value_fc2(value)
         value = self.tanh(value)
-        
+
         return value
 
 
@@ -152,7 +156,7 @@ class DeepCNN_Eval(Eval):
         self.board = board
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.architecture = architecture
-        
+
         if model_instance:
             self.model = model_instance
             self.model.to(self.device)
@@ -165,14 +169,16 @@ class DeepCNN_Eval(Eval):
                 self.model = LightweightDeepCNN(num_residual_blocks, base_channels)
             else:
                 raise ValueError(f"Unknown architecture: {architecture}")
-            
+
             try:
-                self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+                self.model.load_state_dict(
+                    torch.load(model_path, map_location=self.device)
+                )
             except FileNotFoundError:
                 print(f"Model file not found: {model_path}. Using random weights.")
             except Exception as e:
                 print(f"Error loading model: {e}. Using random weights.")
-            
+
             self.model.to(self.device)
             self.model.eval()
         else:
@@ -183,16 +189,14 @@ class DeepCNN_Eval(Eval):
                 self.model = LightweightDeepCNN(num_residual_blocks, base_channels)
             else:
                 raise ValueError(f"Unknown architecture: {architecture}")
-            
+
             self.model.to(self.device)
             self.model.eval()
 
     def load_model(self, model_path: str):
         """Load a trained model from the specified path."""
         try:
-            self.model.load_state_dict(
-                torch.load(model_path, map_location=self.device)
-            )
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
             self.model.eval()
             print(f"Successfully loaded model from {model_path}")
         except Exception as e:
@@ -229,12 +233,14 @@ class DeepCNN_Eval(Eval):
     def get_model_info(self) -> dict:
         """Return information about the model architecture."""
         total_params = sum(p.numel() for p in self.model.parameters())
-        trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        
+        trainable_params = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
+
         return {
             "architecture": self.architecture,
             "total_parameters": total_params,
             "trainable_parameters": trainable_params,
             "device": str(self.device),
-            "model_class": self.model.__class__.__name__
+            "model_class": self.model.__class__.__name__,
         }

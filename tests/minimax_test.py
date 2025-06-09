@@ -219,13 +219,13 @@ class TestMoveOrdering:
             assert (
                 move_uci in all_legal_move_ucis
             ), f"Priority capture {i+1} ({move_uci}) not in legal moves: {all_legal_move_ucis}"
-        
+
         # The first 4 moves should be the captures in exact order (by piece value)
         for i, expected_uci in enumerate(expected_priority_capture_ucis):
             assert (
                 ordered_move_ucis[i] == expected_uci
             ), f"Move {i+1} should be {expected_uci}, got {ordered_move_ucis[i]}"
-        
+
         # Define the expected quiet moves UCI strings (order doesn't matter for these)
         expected_quiet_move_ucis = {
             "a1b3",  # Knight move
@@ -238,7 +238,7 @@ class TestMoveOrdering:
             assert (
                 move_uci in all_legal_move_ucis
             ), f"Quiet move {move_uci} not in legal moves: {all_legal_move_ucis}"
-        
+
         # The remaining moves should be the quiet moves (order doesn't matter)
         calculated_quiet_move_ucis = set(all_legal_move_ucis) - set(
             expected_priority_capture_ucis
@@ -265,7 +265,9 @@ class TestZobristHashing:
 
         hash1 = zobrist.hash_board(board1)
         hash2 = zobrist.hash_board(board2)
-        assert hash1 == hash2, "Hashes for identical initial positions should be the same."
+        assert (
+            hash1 == hash2
+        ), "Hashes for identical initial positions should be the same."
 
         move = chess.Move.from_uci("e2e4")
         board1.push(move)
@@ -349,7 +351,9 @@ class TestZobristHashing:
             hash_with_ep != hash_without_ep
         ), "Hash should change with different en passant states."
 
-        fen_different_ep = "rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 2"
+        fen_different_ep = (
+            "rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 2"
+        )
         board_different_ep = chess.Board(fen_different_ep)
         assert board_different_ep.ep_square == chess.E6
         hash_different_ep = zobrist.hash_board(board_different_ep)
@@ -381,7 +385,9 @@ class TestMinimaxWithZobrist:
         score_no_zobrist, move_no_zobrist = minimax_no_zobrist.find_top_move(depth=6)
 
         minimax_with_zobrist = Minimax(board.copy(), evaluator, use_zobrist=True)
-        score_with_zobrist, move_with_zobrist = minimax_with_zobrist.find_top_move(depth=6)
+        score_with_zobrist, move_with_zobrist = minimax_with_zobrist.find_top_move(
+            depth=6
+        )
 
         assert (
             score_no_zobrist == score_with_zobrist
@@ -407,7 +413,9 @@ class TestMinimaxWithZobrist:
 
         minimax_with_zobrist = Minimax(board.copy(), evaluator, use_zobrist=True)
         start_time_with_zobrist = time.perf_counter()
-        score_with_zobrist, move_with_zobrist = minimax_with_zobrist.find_top_move(depth=6)
+        score_with_zobrist, move_with_zobrist = minimax_with_zobrist.find_top_move(
+            depth=6
+        )
         end_time_with_zobrist = time.perf_counter()
         duration_with_zobrist = end_time_with_zobrist - start_time_with_zobrist
         nodes_with_zobrist = minimax_with_zobrist.node_count
@@ -424,8 +432,12 @@ class TestMinimaxWithZobrist:
             nodes_with_zobrist <= nodes_no_zobrist
         ), f"Zobrist should lead to fewer or equal nodes. No_Z_nodes: {nodes_no_zobrist}, Z_nodes: {nodes_with_zobrist}"
 
-        assert duration_no_zobrist > 0, "Duration without Zobrist should be greater than 0"
-        assert duration_with_zobrist > 0, "Duration with Zobrist should be greater than 0"
+        assert (
+            duration_no_zobrist > 0
+        ), "Duration without Zobrist should be greater than 0"
+        assert (
+            duration_with_zobrist > 0
+        ), "Duration with Zobrist should be greater than 0"
 
         assert (
             duration_with_zobrist <= duration_no_zobrist * 0.95

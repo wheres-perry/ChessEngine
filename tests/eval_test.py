@@ -4,6 +4,7 @@ import pytest
 from src.engine.constants import *
 from src.engine.evaluators.eval import Eval
 from src.engine.evaluators.simple_eval import SimpleEval
+
 # from src.engine.evaluators.simple_nn_eval import NN_Eval, ChessNN
 
 
