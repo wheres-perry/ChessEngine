@@ -76,11 +76,20 @@ def benchmark_minimax():
     # Test configurations
 
     configs = [
-        {"name": "Default (All Optimizations)", "params": {}},
+        {
+            "name": "Default (Zobrist + IDDFS + AlphaBeta + MoveOrdering + PVS)",
+            "params": {},
+        },  # Defaults to all True
         {"name": "No Zobrist", "params": {"use_zobrist": False}},
         {"name": "No IDDFS", "params": {"use_iddfs": False}},
-        {"name": "No Alpha-Beta", "params": {"use_alpha_beta": False}},
-        {"name": "No Move Ordering", "params": {"use_move_ordering": False}},
+        {
+            "name": "No Alpha-Beta",
+            "params": {"use_alpha_beta": False},
+        },
+        {
+            "name": "No Move Ordering",
+            "params": {"use_move_ordering": False},
+        },
         {"name": "No PVS", "params": {"use_pvs": False}},
         {
             "name": "Minimal (No Optimizations)",
