@@ -30,6 +30,9 @@ class Minimax:
         evaluator: Eval,
         use_zobrist: bool = True,
         use_iddfs: bool = True,
+        use_alpha_beta: bool = True,
+        use_move_ordering: bool = True,
+        use_pvs: bool = True,
         max_time: float | None = None,
     ):
         """
@@ -40,10 +43,16 @@ class Minimax:
             evaluator: Position evaluation function
             use_zobrist: Enable zobrist hashing and transposition tables
             use_iddfs: Enable iterative deepening depth-first search
+            use_alpha_beta: Enable alpha-beta pruning
+            use_move_ordering: Enable move ordering for better pruning
+            use_pvs: Enable Principal Variation Search
             max_time: Maximum search time in seconds (None for unlimited)
         """
         self.use_zobrist = use_zobrist
         self.use_iddfs = use_iddfs
+        self.use_alpha_beta = use_alpha_beta
+        self.use_move_ordering = use_move_ordering
+        self.use_pvs = use_pvs
         self.max_time = max_time
         self.start_time = None
         self.time_up = False
@@ -145,25 +154,56 @@ class Minimax:
             best_score = float(self.POS_INF)
         legal_moves = list(self.board.legal_moves)
 
-        for m in self.order_moves(legal_moves):
+        # Apply move ordering if enabled
+
+        if self.use_move_ordering:
+            ordered_moves = self.order_moves(legal_moves)
+        else:
+            ordered_moves = legal_moves
+        for i, m in enumerate(ordered_moves):
             if self._check_time_limit():
                 break
             self.board.push(m)
-            score = self.minimax_alpha_beta(
-                depth - 1, alpha, beta, not maximizing_player
-            )
+
+            # Use PVS for non-first moves if enabled
+
+            if self.use_pvs and i > 0 and self.use_alpha_beta:
+                # First try with a null window around alpha
+
+                score = self.minimax_alpha_beta(
+                    depth - 1, alpha, alpha + 0.00001, not maximizing_player
+                )
+
+                # If the score might be better than alpha, do a full re-search
+
+                if score > alpha and score < beta:
+                    score = self.minimax_alpha_beta(
+                        depth - 1, alpha, beta, not maximizing_player
+                    )
+            else:
+                # Regular minimax or alpha-beta search
+
+                score = self.minimax_alpha_beta(
+                    depth - 1, alpha, beta, not maximizing_player
+                )
             self.board.pop()
 
             if maximizing_player:
                 if score > best_score:
                     best_score = score
                     best_move = m
-                alpha = max(alpha, score)
+                if self.use_alpha_beta:
+                    alpha = max(alpha, score)
             else:
                 if score < best_score:
                     best_score = score
                     best_move = m
-                beta = min(beta, score)
+                if self.use_alpha_beta:
+                    beta = min(beta, score)
+            # Alpha-beta pruning
+
+            if self.use_alpha_beta and beta <= alpha:
+                break
         return best_score, best_move
 
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
@@ -179,6 +219,10 @@ class Minimax:
         Returns:
             Ordered list of moves with best moves first
         """
+        # If move ordering is disabled, return the original list
+
+        if not self.use_move_ordering:
+            return list(moves)
         pv_moves = []
         checks = []
         captures = []
@@ -273,23 +317,49 @@ class Minimax:
             return score
         legal_moves = list(self.board.legal_moves)
 
-        # Minimax with alpha-beta pruning
+        # Apply move ordering if enabled
+
+        if self.use_move_ordering:
+            ordered_moves = self.order_moves(legal_moves)
+        else:
+            ordered_moves = legal_moves
+        # Minimax with optional alpha-beta pruning
 
         if maximizing_player:
             max_eval = float(self.NEG_INF)
 
-            for m in self.order_moves(legal_moves):
+            for i, m in enumerate(ordered_moves):
                 if self._check_time_limit():
                     break
                 self.board.push(m)
-                eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
+
+                # Use PVS for non-first moves if enabled
+
+                if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
+                    # First try with a null window around alpha
+
+                    eval_score = self.minimax_alpha_beta(
+                        depth - 1, alpha, alpha + 0.00001, False
+                    )
+
+                    # If the score might be better than alpha, do a full re-search
+
+                    if eval_score > alpha and eval_score < beta:
+                        eval_score = self.minimax_alpha_beta(
+                            depth - 1, alpha, beta, False
+                        )
+                else:
+                    # Regular minimax or alpha-beta search
+
+                    eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
                 self.board.pop()
 
                 max_eval = max(max_eval, eval_score)
-                alpha = max(alpha, eval_score)
 
-                if beta <= alpha:
-                    break  # Beta cutoff
+                if self.use_alpha_beta:
+                    alpha = max(alpha, eval_score)
+                    if beta <= alpha:
+                        break  # Beta cutoff (only if alpha-beta is enabled)
             if hash_val is not None:
                 self._store_tt_entry(
                     hash_val, depth, max_eval, alpha, beta, original_alpha
@@ -298,18 +368,38 @@ class Minimax:
         else:
             min_eval = float(self.POS_INF)
 
-            for m in self.order_moves(legal_moves):
+            for i, m in enumerate(ordered_moves):
                 if self._check_time_limit():
                     break
                 self.board.push(m)
-                eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, True)
+
+                # Use PVS for non-first moves if enabled
+
+                if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
+                    # First try with a null window around beta
+
+                    eval_score = self.minimax_alpha_beta(
+                        depth - 1, beta - 0.00001, beta, True
+                    )
+
+                    # If the score might be better than beta, do a full re-search
+
+                    if eval_score < beta and eval_score > alpha:
+                        eval_score = self.minimax_alpha_beta(
+                            depth - 1, alpha, beta, True
+                        )
+                else:
+                    # Regular minimax or alpha-beta search
+
+                    eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, True)
                 self.board.pop()
 
                 min_eval = min(min_eval, eval_score)
-                beta = min(beta, eval_score)
 
-                if beta <= alpha:
-                    break  # Alpha cutoff
+                if self.use_alpha_beta:
+                    beta = min(beta, eval_score)
+                    if beta <= alpha:
+                        break  # Alpha cutoff (only if alpha-beta is enabled)
             if hash_val is not None:
                 self._store_tt_entry(
                     hash_val, depth, min_eval, alpha, beta, original_alpha

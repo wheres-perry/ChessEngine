@@ -23,6 +23,35 @@ def handle_args():
         default=0,  # Default verbosity level
         help="Increase output verbosity. -v for INFO, -vv for DEBUG.",
     )
+
+    # Add new optimization flags
+
+    parser.add_argument(
+        "--no-zobrist",
+        action="store_true",
+        help="Disable Zobrist hashing and transposition tables",
+    )
+    parser.add_argument(
+        "--no-iddfs",
+        action="store_true",
+        help="Disable Iterative Deepening Depth-First Search",
+    )
+    parser.add_argument(
+        "--no-alpha-beta",
+        action="store_true",
+        help="Disable Alpha-Beta pruning",
+    )
+    parser.add_argument(
+        "--no-move-ordering",
+        action="store_true",
+        help="Disable move ordering",
+    )
+    parser.add_argument(
+        "--no-pvs",
+        action="store_true",
+        help="Disable Principal Variation Search",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -47,12 +76,21 @@ def benchmark_minimax():
     # Test configurations
 
     configs = [
-        {"name": "Default (Zobrist + IDDFS)", "params": {}},
+        {"name": "Default (All Optimizations)", "params": {}},
         {"name": "No Zobrist", "params": {"use_zobrist": False}},
         {"name": "No IDDFS", "params": {"use_iddfs": False}},
+        {"name": "No Alpha-Beta", "params": {"use_alpha_beta": False}},
+        {"name": "No Move Ordering", "params": {"use_move_ordering": False}},
+        {"name": "No PVS", "params": {"use_pvs": False}},
         {
             "name": "Minimal (No Optimizations)",
-            "params": {"use_zobrist": False, "use_iddfs": False},
+            "params": {
+                "use_zobrist": False,
+                "use_iddfs": False,
+                "use_alpha_beta": False,
+                "use_move_ordering": False,
+                "use_pvs": False,
+            },
         },
     ]
 
@@ -249,6 +287,18 @@ def main():
     logger.debug(f"Command line arguments parsed: {args}")
 
     # Run the benchmark
+
+    minimax_params = {
+        "use_zobrist": not args.no_zobrist,
+        "use_iddfs": not args.no_iddfs,
+        "use_alpha_beta": not args.no_alpha_beta,
+        "use_move_ordering": not args.no_move_ordering,
+        "use_pvs": not args.no_pvs,
+    }
+
+    logger.info(f"Minimax configuration: {minimax_params}")
+
+    # Run the benchmark with the specified parameters
 
     benchmark_minimax()
 
