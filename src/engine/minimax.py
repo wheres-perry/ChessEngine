@@ -57,7 +57,16 @@ class Minimax:
         self.start_time = None
         self.time_up = False
         self.best_move_first = None
-
+        self.use_pvs = (
+            use_pvs and use_alpha_beta
+        )  # PVS requires alpha-beta; enforce this
+        if use_pvs and not use_alpha_beta:
+            logger.warning(
+                "PVS requires alpha-beta pruning. Disabling PVS since use_alpha_beta is False."
+            )
+        self.start_time = None
+        self.time_up = False
+        self.best_move_first = None
         if use_zobrist:
             self.zobrist = Zobrist()
             self.transposition_table = {}
