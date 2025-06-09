@@ -151,8 +151,11 @@ def benchmark_minimax():
                             results[config_name]["moves"].append(str(move))
                             results[config_name]["scores"].append(score)
                             results[config_name]["total_time"] += search_time
+                            score_display = (
+                                f"{score:.2f}" if score is not None else "N/A"
+                            )
                             print(
-                                f"  Game {i+1}: Move={move}, Score={score:.2f}, Time={search_time:.3f}s"
+                                f"  Game {i+1}: Move={move}, Score={score_display}, Time={search_time:.3f}s"
                             )
                         else:
                             # Error occurred
