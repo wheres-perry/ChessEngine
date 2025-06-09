@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 class Minimax:
     """
     Minimax search engine with alpha-beta pruning, transposition tables, and iterative deepening.
-    
+
     Implements a chess engine that searches for the best move using minimax algorithm
     with various optimizations including move ordering, zobrist hashing, and time management.
     """
-    
+
     NEG_INF = float("-inf")
     POS_INF = float("inf")
     DEFAULT_TT_SIZE = 100000
@@ -34,7 +34,7 @@ class Minimax:
     ):
         """
         Initialize the minimax search engine.
-        
+
         Args:
             board: Chess board position to search from
             evaluator: Position evaluation function
@@ -57,17 +57,16 @@ class Minimax:
             self.zobrist = None
             self.transposition_table = {}
             self.max_tt_entries = 0
-        
         self.board = board
         self.evaluator = evaluator
 
     def find_top_move(self, depth: int = 1) -> tuple[float | None, chess.Move | None]:
         """
         Find the best move for the current position.
-        
+
         Args:
             depth: Maximum search depth
-            
+
         Returns:
             Tuple of (evaluation_score, best_move)
         """
@@ -97,13 +96,13 @@ class Minimax:
     ) -> tuple[float | None, chess.Move | None]:
         """
         Perform iterative deepening search from depth 1 to max_depth.
-        
+
         Each iteration provides a better move estimate and enables early termination
         when time runs out while maintaining the best move found so far.
-        
+
         Args:
             max_depth: Maximum depth to search to
-            
+
         Returns:
             Tuple of (best_score, best_move) from deepest completed iteration
         """
@@ -121,7 +120,6 @@ class Minimax:
                 best_score = score
                 best_move = move
                 self.best_move_first = move
-                
         if best_move is None:
             logger.warning("No valid moves found in iterative deepening")
         return best_score, best_move
@@ -129,10 +127,10 @@ class Minimax:
     def _search_fixed_depth(self, depth: int) -> tuple[float, chess.Move | None]:
         """
         Search all legal moves at the root position to the specified depth.
-        
+
         Args:
             depth: Fixed depth to search to
-            
+
         Returns:
             Tuple of (best_score, best_move)
         """
@@ -145,9 +143,8 @@ class Minimax:
             best_score = float(self.NEG_INF)
         else:
             best_score = float(self.POS_INF)
-        
         legal_moves = list(self.board.legal_moves)
-        
+
         for m in self.order_moves(legal_moves):
             if self._check_time_limit():
                 break
@@ -156,7 +153,7 @@ class Minimax:
                 depth - 1, alpha, beta, not maximizing_player
             )
             self.board.pop()
-            
+
             if maximizing_player:
                 if score > best_score:
                     best_score = score
@@ -167,19 +164,18 @@ class Minimax:
                     best_score = score
                     best_move = m
                 beta = min(beta, score)
-        
         return best_score, best_move
 
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
         """
         Order moves for optimal alpha-beta pruning efficiency.
-        
-        Prioritizes: 1) Principal variation move 2) Captures (by MVV-LVA) 
+
+        Prioritizes: 1) Principal variation move 2) Captures (by MVV-LVA)
         3) Checks 4) Quiet moves
-        
+
         Args:
             moves: List of legal moves to order
-            
+
         Returns:
             Ordered list of moves with best moves first
         """
@@ -192,7 +188,7 @@ class Minimax:
             """Calculate MVV-LVA score for capture ordering."""
             to_square = move.to_square
             from_square = move.from_square
-            
+
             if self.board.is_en_passant(move):
                 victim_value = PIECE_VALUES.get(chess.PAWN, 0)
             else:
@@ -200,7 +196,6 @@ class Minimax:
                 victim_value = (
                     PIECE_VALUES.get(victim_piece.piece_type, 0) if victim_piece else 0
                 )
-
             aggressor_piece = self.board.piece_at(from_square)
             aggressor_value = (
                 PIECE_VALUES.get(aggressor_piece.piece_type, 0)
@@ -219,9 +214,8 @@ class Minimax:
                 checks.append(move)
             else:
                 other_moves.append(move)
-
         captures.sort(key=capture_score, reverse=True)
-        
+
         return pv_moves + captures + checks + other_moves
 
     def minimax_alpha_beta(
@@ -229,23 +223,23 @@ class Minimax:
     ) -> float:
         """
         Recursive minimax search with alpha-beta pruning and transposition tables.
-        
+
         Args:
             depth: Remaining search depth
             alpha: Best score for maximizing player (lower bound)
             beta: Best score for minimizing player (upper bound)
             maximizing_player: True if current player is maximizing
-            
+
         Returns:
             Best evaluation score for the current position
         """
         if self.node_count % self.TIME_CHECK_INTERVAL == 0 and self._check_time_limit():
             return 0.0
-            
         original_alpha = alpha
         hash_val: int | None = None
 
         # Transposition table lookup
+
         if self.use_zobrist and self.zobrist:
             hash_val = self.zobrist.hash_board(self.board)
             tt_entry = self.transposition_table.get(hash_val)
@@ -259,29 +253,28 @@ class Minimax:
                     return beta
                 elif entry_type == "upper" and score <= alpha:
                     return alpha
-                    
         self.node_count += 1
 
         # Terminal node evaluation
+
         if depth == 0 or self.board.is_game_over():
             if self.board.is_checkmate():
                 score = (
-                    float(self.NEG_INF)
-                    if maximizing_player
-                    else float(self.POS_INF)
+                    float(self.NEG_INF) if maximizing_player else float(self.POS_INF)
                 )
             elif self.board.is_stalemate():
                 score = 0.0
             else:
                 score = self.evaluator.evaluate()
-                
             if hash_val is not None:
-                self._store_tt_entry(hash_val, depth, score, alpha, beta, original_alpha)
+                self._store_tt_entry(
+                    hash_val, depth, score, alpha, beta, original_alpha
+                )
             return score
-
         legal_moves = list(self.board.legal_moves)
 
         # Minimax with alpha-beta pruning
+
         if maximizing_player:
             max_eval = float(self.NEG_INF)
 
@@ -291,15 +284,16 @@ class Minimax:
                 self.board.push(m)
                 eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
                 self.board.pop()
-                
+
                 max_eval = max(max_eval, eval_score)
                 alpha = max(alpha, eval_score)
 
                 if beta <= alpha:
                     break  # Beta cutoff
-                    
             if hash_val is not None:
-                self._store_tt_entry(hash_val, depth, max_eval, alpha, beta, original_alpha)
+                self._store_tt_entry(
+                    hash_val, depth, max_eval, alpha, beta, original_alpha
+                )
             return max_eval
         else:
             min_eval = float(self.POS_INF)
@@ -316,42 +310,51 @@ class Minimax:
 
                 if beta <= alpha:
                     break  # Alpha cutoff
-                    
             if hash_val is not None:
-                self._store_tt_entry(hash_val, depth, min_eval, alpha, beta, original_alpha)
+                self._store_tt_entry(
+                    hash_val, depth, min_eval, alpha, beta, original_alpha
+                )
             return min_eval
 
-    def _store_tt_entry(self, hash_val: int, depth: int, score: float, alpha: float, beta: float, original_alpha: float) -> None:
+    def _store_tt_entry(
+        self,
+        hash_val: int,
+        depth: int,
+        score: float,
+        alpha: float,
+        beta: float,
+        original_alpha: float,
+    ) -> None:
         """
         Store position evaluation in transposition table with proper bound classification.
-        
-        Classifies entries as exact values, upper bounds (fail-low), or lower bounds 
+
+        Classifies entries as exact values, upper bounds (fail-low), or lower bounds
         (fail-high) based on alpha-beta search results.
-        
+
         Args:
             hash_val: Zobrist hash of the position
             depth: Search depth for this entry
             score: Evaluation score
             alpha: Current alpha value
-            beta: Current beta value  
+            beta: Current beta value
             original_alpha: Alpha value at start of search
         """
         if not self.use_zobrist or hash_val is None:
             return
-            
         if score <= original_alpha:
             entry_type = "upper"  # Upper bound (fail-low)
         elif score >= beta:
             entry_type = "lower"  # Lower bound (fail-high)
         else:
             entry_type = "exact"  # Exact value
-        
         existing_entry = self.transposition_table.get(hash_val)
-        if (len(self.transposition_table) < self.max_tt_entries or 
-            not existing_entry or 
-            existing_entry["depth"] <= depth):
+        if (
+            len(self.transposition_table) < self.max_tt_entries
+            or not existing_entry
+            or existing_entry["depth"] <= depth
+        ):
             self.transposition_table[hash_val] = {
                 "depth": depth,
                 "score": score,
-                "type": entry_type
+                "type": entry_type,
             }
