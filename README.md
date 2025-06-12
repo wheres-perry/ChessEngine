@@ -1,4 +1,4 @@
-> **Important Note:** This project uses Poetry for dependency management. To run the engine or its tests, you **must** first install dependencies using `poetry install` and then activate the Poetry virtual environment using `poetry shell`. Using the NN
+> **Important Note:** This project uses Poetry for dependency management. To run the engine or its tests, you **must** first install dependencies using `poetry install` and then run `main.py` using `poetry run python src/engine/main.py`
 
 
 # ChessEngine
