@@ -7,8 +7,8 @@ import sys
 import threading
 import time
 
-import engine.evaluators.simple_eval as simple_eval
-import engine.minimax as minimax
+import src.engine.evaluators.simple_eval as simple_eval
+import src.engine.minimax as minimax
 
 import io_utils.load_games as load_games
 

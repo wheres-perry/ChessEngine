@@ -5,6 +5,7 @@ from typing import Any
 import chess
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.eval import Eval
+from src.engine.transposition_table import TranspositionTable
 from src.engine.zobrist import Zobrist
 
 logger = logging.getLogger(__name__)
@@ -67,16 +68,22 @@ class Minimax:
         self.start_time = None
         self.time_up = False
         self.best_move_first = None
+
+        # Initialize Zobrist hashing and transposition table
+
         if use_zobrist:
             self.zobrist = Zobrist()
-            self.transposition_table = {}
-            self.max_tt_entries = self.DEFAULT_TT_SIZE
+            self.transposition_table = TranspositionTable(self.DEFAULT_TT_SIZE)
         else:
             self.zobrist = None
-            self.transposition_table = {}
-            self.max_tt_entries = 0
+            self.transposition_table = None
         self.board = board
         self.evaluator = evaluator
+
+        # Initialize hash for the starting position
+
+        if self.zobrist:
+            self.zobrist.hash_board(self.board)
 
     def find_top_move(self, depth: int = 1) -> tuple[float | None, chess.Move | None]:
         """
@@ -293,19 +300,13 @@ class Minimax:
 
         # Transposition table lookup
 
-        if self.use_zobrist and self.zobrist:
-            hash_val = self.zobrist.hash_board(self.board)
-            tt_entry = self.transposition_table.get(hash_val)
-            if tt_entry and tt_entry["depth"] >= depth:
-                entry_type = tt_entry["type"]
-                score = tt_entry["score"]
-
-                if entry_type == "exact":
-                    return score
-                elif entry_type == "lower" and score >= beta:
-                    return beta
-                elif entry_type == "upper" and score <= alpha:
-                    return alpha
+        if self.use_zobrist and self.zobrist and self.transposition_table:
+            hash_val = self.zobrist.get_current_hash()
+            if hash_val is None:
+                hash_val = self.zobrist.hash_board(self.board)
+            tt_score = self.transposition_table.lookup(hash_val, depth, alpha, beta)
+            if tt_score is not None:
+                return tt_score
         self.node_count += 1
 
         # Terminal node evaluation
@@ -319,8 +320,8 @@ class Minimax:
                 score = 0.0
             else:
                 score = self.evaluator.evaluate()
-            if hash_val is not None:
-                self._store_tt_entry(
+            if hash_val is not None and self.transposition_table:
+                self.transposition_table.store(
                     hash_val, depth, score, alpha, beta, original_alpha
                 )
             return score
@@ -340,8 +341,19 @@ class Minimax:
             for i, m in enumerate(ordered_moves):
                 if self._check_time_limit():
                     break
+                # Store state for incremental hashing
+
+                old_castling_rights = self.board.castling_rights
+                old_ep_square = self.board.ep_square
+
                 self.board.push(m)
 
+                # Update hash incrementally if using Zobrist
+
+                if self.zobrist:
+                    self.zobrist.update_hash_for_move(
+                        self.board, m, old_castling_rights, old_ep_square
+                    )
                 # Use PVS for non-first moves if enabled
 
                 if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
@@ -363,14 +375,20 @@ class Minimax:
                     eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
                 self.board.pop()
 
+                # Restore hash after undoing move
+
+                if self.zobrist:
+                    self.zobrist.hash_board(
+                        self.board
+                    )  # For now, recalculate after pop
                 max_eval = max(max_eval, eval_score)
 
                 if self.use_alpha_beta:
                     alpha = max(alpha, eval_score)
                     if beta <= alpha:
                         break  # Beta cutoff (only if alpha-beta is enabled)
-            if hash_val is not None:
-                self._store_tt_entry(
+            if hash_val is not None and self.transposition_table:
+                self.transposition_table.store(
                     hash_val, depth, max_eval, alpha, beta, original_alpha
                 )
             return max_eval
@@ -380,8 +398,19 @@ class Minimax:
             for i, m in enumerate(ordered_moves):
                 if self._check_time_limit():
                     break
+                # Store state for incremental hashing
+
+                old_castling_rights = self.board.castling_rights
+                old_ep_square = self.board.ep_square
+
                 self.board.push(m)
 
+                # Update hash incrementally if using Zobrist
+
+                if self.zobrist:
+                    self.zobrist.update_hash_for_move(
+                        self.board, m, old_castling_rights, old_ep_square
+                    )
                 # Use PVS for non-first moves if enabled
 
                 if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
@@ -403,14 +432,20 @@ class Minimax:
                     eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, True)
                 self.board.pop()
 
+                # Restore hash after undoing move
+
+                if self.zobrist:
+                    self.zobrist.hash_board(
+                        self.board
+                    )  # For now, recalculate after pop
                 min_eval = min(min_eval, eval_score)
 
                 if self.use_alpha_beta:
                     beta = min(beta, eval_score)
                     if beta <= alpha:
                         break  # Alpha cutoff (only if alpha-beta is enabled)
-            if hash_val is not None:
-                self._store_tt_entry(
+            if hash_val is not None and self.transposition_table:
+                self.transposition_table.store(
                     hash_val, depth, min_eval, alpha, beta, original_alpha
                 )
             return min_eval
