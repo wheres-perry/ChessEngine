@@ -1,6 +1,5 @@
 import logging
 import time
-from typing import Any
 
 import chess
 from src.engine.constants import PIECE_VALUES
@@ -34,7 +33,7 @@ class Minimax:
         use_alpha_beta: bool = True,
         use_move_ordering: bool = True,
         use_pvs: bool = True,
-        max_time: float | None = None,
+        max_time: None | float = None,
     ):
         """
         Initialize the minimax search engine.
@@ -85,7 +84,7 @@ class Minimax:
         if self.zobrist:
             self.zobrist.hash_board(self.board)
 
-    def find_top_move(self, depth: int = 1) -> tuple[float | None, chess.Move | None]:
+    def find_top_move(self, depth: int = 1) -> tuple[None | float, None | chess.Move]:
         """
         Find the best move for the current position.
 
@@ -118,7 +117,7 @@ class Minimax:
 
     def _iterative_deepening(
         self, max_depth: int
-    ) -> tuple[float | None, chess.Move | None]:
+    ) -> tuple[None | float, None | chess.Move]:
         """
         Perform iterative deepening search from depth 1 to max_depth.
 
@@ -149,7 +148,7 @@ class Minimax:
             logger.warning("No valid moves found in iterative deepening")
         return best_score, best_move
 
-    def _search_fixed_depth(self, depth: int) -> tuple[float, chess.Move | None]:
+    def _search_fixed_depth(self, depth: int) -> tuple[float, None | chess.Move]:
         """
         Search all legal moves at the root position to the specified depth.
 
@@ -162,7 +161,7 @@ class Minimax:
         maximizing_player = self.board.turn
         alpha = float(self.NEG_INF)
         beta = float(self.POS_INF)
-        best_move: chess.Move | None = None
+        best_move: None | chess.Move = None
 
         if maximizing_player:
             best_score = float(self.NEG_INF)
@@ -296,7 +295,7 @@ class Minimax:
         if self.node_count % self.TIME_CHECK_INTERVAL == 0 and self._check_time_limit():
             return 0.0
         original_alpha = alpha
-        hash_val: int | None = None
+        hash_val: None | int = None
 
         # Transposition table lookup
 
@@ -473,22 +472,16 @@ class Minimax:
             beta: Current beta value
             original_alpha: Alpha value at start of search
         """
-        if not self.use_zobrist or hash_val is None:
+        if not self.use_zobrist or hash_val is None or not self.transposition_table:
             return
-        if score <= original_alpha:
-            entry_type = "upper"  # Upper bound (fail-low)
-        elif score >= beta:
-            entry_type = "lower"  # Lower bound (fail-high)
-        else:
-            entry_type = "exact"  # Exact value
-        existing_entry = self.transposition_table.get(hash_val)
-        if (
-            len(self.transposition_table) < self.max_tt_entries
-            or not existing_entry
-            or existing_entry["depth"] <= depth
-        ):
-            self.transposition_table[hash_val] = {
-                "depth": depth,
-                "score": score,
-                "type": entry_type,
-            }
+        # Delegate to the TranspositionTable's store method, which correctly
+        # handles entry type determination and storage logic.
+
+        self.transposition_table.store(
+            hash_val=hash_val,
+            depth=depth,
+            score=score,
+            alpha=alpha,
+            beta=beta,
+            original_alpha=original_alpha,
+        )

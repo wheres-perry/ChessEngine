@@ -1,4 +1,10 @@
-from typing import Dict, Literal, Optional
+from typing import Literal, TypedDict
+
+
+class TTEntry(TypedDict):
+    depth: int
+    score: float
+    type: Literal["upper", "lower", "exact"]
 
 
 class TranspositionTable:
@@ -18,12 +24,12 @@ class TranspositionTable:
         Args:
             max_entries: Maximum number of entries to store
         """
-        self.table: Dict[int, Dict] = {}
+        self.table: dict[int, TTEntry] = {}
         self.max_entries = max_entries
 
     def lookup(
         self, hash_val: int, depth: int, alpha: float, beta: float
-    ) -> Optional[float]:
+    ) -> None | float:
         """
         Look up a position in the transposition table.
 
@@ -73,7 +79,9 @@ class TranspositionTable:
         # Determine entry type based on alpha-beta bounds
 
         if score <= original_alpha:
-            entry_type = "upper"  # Upper bound (fail-low)
+            entry_type: Literal["upper", "lower", "exact"] = (
+                "upper"  # Upper bound (fail-low)
+            )
         elif score >= beta:
             entry_type = "lower"  # Lower bound (fail-high)
         else:

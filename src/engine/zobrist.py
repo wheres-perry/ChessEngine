@@ -1,7 +1,4 @@
-# src/engine/zobrist.py
-
 import random
-from typing import Optional
 
 import chess
 
@@ -41,7 +38,7 @@ class Zobrist:
 
         # Current hash value for incremental updates
 
-        self._current_hash: Optional[int] = None
+        self._current_hash: None | int = None
 
     def hash_board(self, board: chess.Board) -> int:
         """
@@ -88,7 +85,7 @@ class Zobrist:
         board: chess.Board,
         move: chess.Move,
         old_castling_rights: int,
-        old_ep_square: Optional[int],
+        old_ep_square: None | int,
     ) -> int:
         """
         Incrementally update the hash after a move is made.
@@ -135,26 +132,25 @@ class Zobrist:
             if board.is_en_passant(move):
                 # En passant capture - remove the captured pawn
 
-                if (
-                    board.turn == chess.WHITE
-                ):  # White just moved, so black pawn was captured
+                if board.turn == chess.WHITE:
                     captured_square = to_square - 8
                     hash_val ^= self.keys[(chess.PAWN, chess.BLACK, captured_square)]
-                else:  # Black just moved, so white pawn was captured
+                else:
                     captured_square = to_square + 8
                     hash_val ^= self.keys[(chess.PAWN, chess.WHITE, captured_square)]
             else:
-                # Regular capture - we need to determine what was captured
-                # Since the move is already made, we need to infer the captured piece
-                # This is a limitation - ideally we'd pass the captured piece info
+                # Regular capture
 
-                pass  # For now, fall back to full rehash for captures
+                hash_val = self.hash_board(board)
+                self._current_hash = hash_val
+                return hash_val
         # Handle promotion
 
         if move.promotion:
             # Remove the pawn that was promoted
 
-            hash_val ^= self.keys[(chess.PAWN, moved_piece.color, to_square)]
+            if moved_piece:
+                hash_val ^= self.keys[(chess.PAWN, moved_piece.color, to_square)]
             # The promoted piece is already added above, so we're good
         # Handle castling
 
@@ -175,7 +171,9 @@ class Zobrist:
                 hash_val ^= self.keys[(chess.ROOK, chess.BLACK, chess.D8)]
         # Update castling rights
 
-        self._update_castling_hash(hash_val, old_castling_rights, board.castling_rights)
+        hash_val = self._update_castling_hash(
+            hash_val, old_castling_rights, board.castling_rights
+        )
 
         # Update en passant
 
@@ -190,10 +188,8 @@ class Zobrist:
 
     def _update_castling_hash(
         self, hash_val: int, old_rights: int, new_rights: int
-    ) -> None:
+    ) -> int:
         """Update hash for castling rights changes."""
-        # XOR out old rights and XOR in new rights
-
         if (old_rights & chess.BB_H1) != (new_rights & chess.BB_H1):
             hash_val ^= self.keys["castling_wk"]
         if (old_rights & chess.BB_A1) != (new_rights & chess.BB_A1):
@@ -202,8 +198,9 @@ class Zobrist:
             hash_val ^= self.keys["castling_bk"]
         if (old_rights & chess.BB_A8) != (new_rights & chess.BB_A8):
             hash_val ^= self.keys["castling_bq"]
+        return hash_val
 
-    def get_current_hash(self) -> Optional[int]:
+    def get_current_hash(self) -> None | int:
         """Get the current hash value without recalculating."""
         return self._current_hash
 
