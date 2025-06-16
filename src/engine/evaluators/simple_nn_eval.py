@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 import chess
 import torch
@@ -45,8 +45,8 @@ class NN_Eval(Eval):
     def __init__(
         self,
         board: chess.Board,
-        model_path: Optional[str] = None,
-        model_instance: Optional[nn.Module] = None,
+        model_path: str | None = None,
+        model_instance: nn.Module | None = None,
     ):
         super().__init__(board)
         self.board = board

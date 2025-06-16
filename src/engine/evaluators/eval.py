@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import chess
 
@@ -8,7 +7,7 @@ class Eval(ABC):
     """Abstract base class for chess position evaluators."""
 
     currentBoard: chess.Board
-    score: Optional[float]
+    score: float | None
 
     def __init__(self, board: chess.Board):
         self.board = board

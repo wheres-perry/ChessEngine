@@ -6,8 +6,8 @@ import pytest
 
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.eval import Eval
-from src.engine.minimax import Minimax
-from src.engine.zobrist import Zobrist
+from engine.search.minimax import Minimax
+from engine.search.zobrist import Zobrist
 
 
 class MockEval(Eval):

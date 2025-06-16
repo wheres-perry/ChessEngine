@@ -1,5 +1,4 @@
 import argparse
-
 import logging
 import os
 import queue
@@ -7,10 +6,10 @@ import sys
 import threading
 import time
 
-import src.engine.evaluators.simple_eval as simple_eval
-import src.engine.minimax as minimax
-
+import engine.search.minimax as minimax
 import io_utils.load_games as load_games
+import src.engine.evaluators.simple_eval as simple_eval
+from src.engine.config import EngineConfig, EvaluationConfig, MinimaxConfig
 
 
 def handle_args():
@@ -18,8 +17,8 @@ def handle_args():
     parser.add_argument(
         "-v",
         "--verbose",
-        action="count",  # Counts occurrences of -v
-        default=0,  # Default verbosity level
+        action="count",
+        default=0,
         help="Increase output verbosity. -v for INFO, -vv for DEBUG.",
     )
 
@@ -50,6 +49,18 @@ def handle_args():
         action="store_true",
         help="Disable Principal Variation Search",
     )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=6,
+        help="Search depth for benchmarks (default: 6)",
+    )
+    parser.add_argument(
+        "--evaluator",
+        choices=["simple", "nn", "deep_cnn"],
+        default="simple",
+        help="Type of position evaluator to use",
+    )
 
     args = parser.parse_args()
     return args
@@ -72,39 +83,106 @@ def benchmark_minimax():
     """Benchmark different Minimax configurations on multiple games."""
     logger = logging.getLogger(__name__)
 
-    # Test configurations
+    # Get command line arguments
+
+    args = handle_args()
+    depth = args.depth
+    timeout_seconds = 25
+
+    # Create base config
+
+    base_config = EngineConfig(
+        search_depth=depth,
+        minimax=MinimaxConfig(),
+        evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+    )
+
+    # Test configurations using the configuration system
 
     configs = [
         {
-            "name": "Default (Zobrist + IDDFS + AlphaBeta + MoveOrdering + PVS)",
-            "params": {},
-        },  # Defaults to all True
-        {"name": "No Zobrist", "params": {"use_zobrist": False}},
-        {"name": "No IDDFS", "params": {"use_iddfs": False}},
+            "name": "Default (All Optimizations)",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
+        },
+        {
+            "name": "No Zobrist",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(use_zobrist=False),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
+        },
+        {
+            "name": "No IDDFS",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(use_iddfs=False),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
+        },
         {
             "name": "No Alpha-Beta",
-            "params": {"use_alpha_beta": False},
+            "config": EngineConfig(
+                minimax=MinimaxConfig(use_alpha_beta=False),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
         },
         {
             "name": "No Move Ordering",
-            "params": {"use_move_ordering": False},
+            "config": EngineConfig(
+                minimax=MinimaxConfig(use_move_ordering=False),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
         },
-        {"name": "No PVS", "params": {"use_pvs": False}},
+        {
+            "name": "No PVS",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(use_pvs=False),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
+        },
         {
             "name": "Minimal (No Optimizations)",
-            "params": {
-                "use_zobrist": False,
-                "use_iddfs": False,
-                "use_alpha_beta": False,
-                "use_move_ordering": False,
-                "use_pvs": False,
-            },
+            "config": EngineConfig(
+                minimax=MinimaxConfig(
+                    use_zobrist=False,
+                    use_iddfs=False,
+                    use_alpha_beta=False,
+                    use_move_ordering=False,
+                    use_pvs=False,
+                ),
+                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                search_depth=depth,
+            ),
         },
     ]
 
-    depth = 6
+    # Apply command-line overrides to all configs if specified
+
+    if args.no_zobrist:
+        for cfg in configs:
+            cfg["config"].minimax.use_zobrist = False
+    if args.no_iddfs:
+        for cfg in configs:
+            cfg["config"].minimax.use_iddfs = False
+    if args.no_alpha_beta:
+        for cfg in configs:
+            cfg["config"].minimax.use_alpha_beta = False
+            cfg["config"].minimax.use_pvs = False  # PVS requires alpha-beta
+    if args.no_move_ordering:
+        for cfg in configs:
+            cfg["config"].minimax.use_move_ordering = False
+    if args.no_pvs:
+        for cfg in configs:
+            cfg["config"].minimax.use_pvs = False
     num_games = 3
-    timeout_seconds = 100
 
     print("=" * 80)
     print(
@@ -162,7 +240,7 @@ def benchmark_minimax():
 
                 # Create minimax with specified configuration
 
-                mm = minimax.Minimax(board.copy(), evaluator, **config_params)
+                mm = minimax.Minimax(board.copy(), evaluator, config=config["config"])
 
                 # Set up threading-based timeout
 
@@ -294,19 +372,23 @@ def main():
     logger.info(f"Starting script with verbosity level: {verbosity}")
     logger.debug(f"Command line arguments parsed: {args}")
 
+    # Create config from command line arguments
+
+    engine_config = EngineConfig(
+        minimax=MinimaxConfig(
+            use_zobrist=not args.no_zobrist,
+            use_iddfs=not args.no_iddfs,
+            use_alpha_beta=not args.no_alpha_beta,
+            use_move_ordering=not args.no_move_ordering,
+            use_pvs=not args.no_pvs,
+        ),
+        evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+        search_depth=args.depth,
+    )
+
+    logger.info(f"Engine configuration: {engine_config}")
+
     # Run the benchmark
-
-    minimax_params = {
-        "use_zobrist": not args.no_zobrist,
-        "use_iddfs": not args.no_iddfs,
-        "use_alpha_beta": not args.no_alpha_beta,
-        "use_move_ordering": not args.no_move_ordering,
-        "use_pvs": not args.no_pvs,
-    }
-
-    logger.info(f"Minimax configuration: {minimax_params}")
-
-    # Run the benchmark with the specified parameters
 
     benchmark_minimax()
 
