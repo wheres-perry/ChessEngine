@@ -1,7 +1,7 @@
 import unittest
 
 import chess
-import torch
+
 from src.engine.evaluators.deep_cnn_eval import (
     DeepChessCNN,
     DeepCNN_Eval,
@@ -49,16 +49,17 @@ class TestDeepCNNEval(unittest.TestCase):
     def test_checkmate_evaluation(self):
         """Test evaluation of checkmate positions."""
         # Scholar's mate
+
         board = chess.Board()
         moves = ["e2e4", "e7e5", "d1h5", "b8c6", "f1c4", "g8f6", "h5f7"]
         for move in moves:
             board.push(chess.Move.from_uci(move))
-
         evaluator = DeepCNN_Eval(
             board, architecture="lightweight", num_residual_blocks=1, base_channels=32
         )
         score = evaluator.evaluate()
         # Should return max eval for white (checkmate)
+
         self.assertEqual(score, evaluator.MAX_EVAL)
 
     def test_model_info(self):
