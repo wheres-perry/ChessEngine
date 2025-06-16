@@ -1,7 +1,7 @@
 [project]
 name = "ChessEngine"
 version = "0.1.0"
-description = ""
+description = "Neural Network Chess Engine"
 authors = [
     { name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com" },
 ]
@@ -12,13 +12,10 @@ requires-python = ">=3.11"
 python = "^3.11"
 torch = { version = "*", source = "pytorch-cpu" }
 numpy = "^2.2.6"
-tqdm = "^4.67.1"
-ipython = "^9.2.0"
-ipykernel = "^6.29.5"
-
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5" # pytest is a development dependency
+pytest = "^8.3.5"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

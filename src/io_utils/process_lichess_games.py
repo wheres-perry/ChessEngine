@@ -10,7 +10,7 @@ import torch.optim as optim
 from src.engine.evaluators.simple_nn_eval import ChessNN
 from src.io_utils.to_tensor import create_tensor
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
+
 
 # Constants
 DATA_FILE = "data/raw/lichess_eval/lichess_db_eval.jsonl"

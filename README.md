@@ -1,36 +1,46 @@
-> **Important Note:** This project uses Poetry for dependency management. To run the engine or its tests, you **must** first install dependencies using `poetry install` and then run `main.py` using `poetry run python main.py`
+# Docker Chess Engine
 
+## Building and Running the Chess Engine
 
-# ChessEngine
+This project is containerized using Docker with a multi-stage build for optimal size. The chess engine includes model weights and is ready to run without additional data.
 
-A Python-based chess engine.
+⚠️ **Note**: Jupyter notebooks and IPython kernels are not included in the production Docker image. If you need to run notebooks for data exploration or model training, you'll need to install the development dependencies locally using `poetry add <package>`.
 
-## Project Overview
+## Running the Chess Engine
 
-This project aims to create a chess engine capable of evaluating board positions and determining optimal moves. It utilizes the `python-chess` library for board representation and move generation, `torch` for potential neural network integration, and `pytest` for testing.
+Build the Docker image and run the chess engine:
 
-## Tech Stack
-
-*   Python (>=3.12)
-*   Poetry for dependency management
-*   Miniconda for environment management
-*   pytest for testing
-
-##
-
-## Getting Started
-
-### Running Tests
-
-This project uses Poetry for dependency management. To run tests:
-
-```bash
-poetry install
-poetry run pytest
+```sh
+./build_docker.sh chess_engine
+docker run -t chess_engine
 ```
 
-**Note:** Some performance tests may fail in their current state due to optimization work in progress. These failures do not indicate functional issues with the chess engine.
+## Running Tests
 
-### Current Status
+Run the test suite within the Docker container:
 
-This project is still in development and not fully complete. The `main.py` file serves as a showcase of the current capabilities and features implemented so far.
+```sh
+./build_docker.sh chess_engine
+docker run -t chess_engine ./run_tests.sh
+```
+
+## Running a Specific Test
+
+Run a specific test class or method:
+
+```sh
+./build_docker.sh chess_engine
+docker run -t chess_engine ./run_tests.sh TestChessEngine.test_move_generation
+```
+
+## Interactive Development
+
+For development work requiring Jupyter notebooks or IPython, install dependencies locally:
+
+```sh
+poetry install  # Installs all dependencies including dev tools
+poetry shell    # Activate the virtual environment
+jupyter notebook  # Start Jupyter for data exploration
+```
+
+The Docker image is optimized for production use and contains only the essential dependencies needed to run the chess engine.
