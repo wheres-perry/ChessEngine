@@ -3,29 +3,18 @@ name = "ChessEngine"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com"}
+    { name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com" },
 ]
 readme = "README.md"
-requires-python = ">=3.12"
-
-[tool.poetry]
-# name, version, description, authors, and readme are inherited from the [project] table above.
-# This 'packages' directive tells Poetry where to find your actual Python package(s).
-# We're pointing it to the 'engine' directory within 'src'.
-packages = [{include = "engine", from = "src"}]
+requires-python = ">=3.11"
 
 [tool.poetry.dependencies]
-python = ">=3.12" # Matches the 'requires-python' from the [project] table
-python-chess = "^1.999"
-torch = "^2.7.0"
+python = "^3.11"
+torch = { version = "*", source = "pytorch-cpu" }
 numpy = "^2.2.6"
-matplotlib = "^3.10.3"
 tqdm = "^4.67.1"
-pandas = "^2.2.3"
 ipython = "^9.2.0"
 ipykernel = "^6.29.5"
-fastparquet = "^2024.11.0"
-pyarrow = "^20.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -34,3 +23,8 @@ pytest = "^8.3.5" # pytest is a development dependency
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
