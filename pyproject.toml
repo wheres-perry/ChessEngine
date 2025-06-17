@@ -5,7 +5,6 @@ description = "Neural Network Chess Engine"
 authors = [
     { name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com" },
 ]
-readme = "README.md"
 requires-python = ">=3.11"
 
 [tool.poetry]

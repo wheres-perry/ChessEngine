@@ -10,6 +10,8 @@ package.sh
 *processing_ledger.json
 fixlineendings.sh
 fixlineendings.ps1
+line.sh
+line.ps1
 
 # Poetry
 poetry.lock

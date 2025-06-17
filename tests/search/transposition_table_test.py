@@ -81,7 +81,7 @@ class TestTranspositionTableAging:
 
     def test_aging_enabled(self):
         """Test that entries age with each increment."""
-        tt = TranspositionTable(use_aging=True)
+        tt = TranspositionTable(use_tt_aging=True)
         hash_val = 12345
 
         # Store entry at age 0
@@ -102,7 +102,7 @@ class TestTranspositionTableAging:
 
     def test_aging_disabled(self):
         """Test that entries don't age when aging is disabled."""
-        tt = TranspositionTable(use_aging=False)
+        tt = TranspositionTable(use_tt_aging=False)
         hash_val = 12345
 
         # Store entry
@@ -119,7 +119,7 @@ class TestTranspositionTableAging:
 
     def test_entry_refresh(self):
         """Test that storing again refreshes an entry's age."""
-        tt = TranspositionTable(use_aging=True)
+        tt = TranspositionTable(use_tt_aging=True)
         hash_val = 12345
 
         # Store entry at age 0
@@ -148,7 +148,7 @@ class TestTranspositionTableAging:
 
     def test_age_reset(self):
         """Test that age can be reset."""
-        tt = TranspositionTable(use_aging=True)
+        tt = TranspositionTable(use_tt_aging=True)
         hash_val = 12345
 
         # Store entry

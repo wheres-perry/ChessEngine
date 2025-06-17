@@ -4,16 +4,6 @@ WORKDIR /app
 
 COPY . .
 
-# Debug: List files to see what was copied
-RUN ls -la
-
-# Create README.md (force creation)
-RUN echo "# ChessEngine" > README.md && \
-    echo "" >> README.md && \
-    echo "Neural Network Chess Engine" >> README.md
-
-# Verify README exists
-RUN ls -la README.md && cat README.md
 
 RUN pip install --no-cache-dir poetry && \
     poetry config virtualenvs.create true && \
