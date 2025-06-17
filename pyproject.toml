@@ -5,6 +5,7 @@ description = "Neural Network Chess Engine"
 authors = [
     { name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com" },
 ]
+exclude = ["notebooks"]
 readme = "README.md"
 requires-python = ">=3.11"
 

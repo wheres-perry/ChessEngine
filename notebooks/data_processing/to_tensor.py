@@ -1,10 +1,22 @@
+import logging
+from typing import Final
+
 import chess
 import torch
-from src.engine.constants import *
-import logging
 
 logger = logging.getLogger(__name__)
 
+PIECE_VALUES: Final[dict[int, float]] = {
+    chess.PAWN: 1,
+    chess.KNIGHT: 3,
+    chess.BISHOP: 3,
+    chess.ROOK: 5,
+    chess.QUEEN: 9,
+}
+
+EVAL_PIECES: Final[set] = set(
+    [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]
+)
 
 WHITE_PAWN_PLANE = 0
 BLACK_PAWN_PLANE = 1

@@ -6,6 +6,8 @@ package.sh
 *.zip
 *.pt
 *lichess_db_eval.jsonl
+*.h5
+*processing_ledger.json
 
 # Poetry
 poetry.lock
