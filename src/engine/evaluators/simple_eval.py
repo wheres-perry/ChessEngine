@@ -1,20 +1,34 @@
-from typing import Final, Optional
-
 import chess
 from src.engine.constants import *
-from src.engine.evaluators.eval import Eval
+from src.engine.evaluators.eval import *
 
 
 class SimpleEval(Eval):
+    """
+    A simple material-based chess position evaluator.
+
+    This evaluator calculates a score based on piece values:
+    - Positive scores favor White
+    - Negative scores favor Black
+    - Infinite scores represent checkmate
+    - Zero represents stalemate or equal material
+
+    The evaluation considers:
+    - Material balance (using piece values from constants)
+    - Special positions (checkmate, stalemate)
+
+    It does not consider:
+    - Piece positioning
+    - Pawn structure
+    - King safety
+    - Control of center
+    - Development
+    """
 
     def __init__(self, board):
         super().__init__(board)
 
     def evaluate(self) -> float:
-        """Implementation of the abstract method from Eval."""
-        return self.basic_evaluate()
-
-    def basic_evaluate(self) -> float:
         self.score = 0
         if self.board.is_checkmate():
             if self.board.turn == chess.WHITE:
