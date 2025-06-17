@@ -4,10 +4,9 @@ WORKDIR /app
 
 COPY . .
 
-
 RUN pip install --no-cache-dir poetry && \
     poetry config virtualenvs.create true && \
     poetry config virtualenvs.in-project true && \
-    poetry install --with=dev --no-cache
+    poetry install --with=dev --no-cache --no-root
 
 CMD ["poetry", "run", "python", "-c", "import chess; print('Chess Engine Ready')"]

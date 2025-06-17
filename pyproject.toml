@@ -8,11 +8,16 @@ authors = [
 requires-python = ">=3.11"
 
 [tool.poetry]
-exclude = ["notebooks"]
-packages = [
-    { include = "engine", from = "src" },
-    { include = "io_utils", from = "src" },
+package-mode = false
+exclude = [
+    "notebooks",
+    "data",
+    "tests",
+    ".pytest_cache",
+    "__pycache__",
+    ".vscode",
 ]
+
 
 [tool.poetry.dependencies]
 python = "^3.11"
