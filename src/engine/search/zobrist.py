@@ -5,6 +5,11 @@ import chess
 rand64 = lambda: random.getrandbits(64)
 
 
+def piece_to_index(piece_type: int, color: bool) -> int:
+    """Convert piece type and color to array index (0-11)."""
+    return (piece_type - 1) + (6 * (1 if color else 0))
+
+
 class Zobrist:
     """
     Zobrist hashing implementation with incremental updates.
@@ -15,8 +20,10 @@ class Zobrist:
 
     __slots__ = ("piece_keys", "castling_keys", "ep_keys", "turn_key", "_current_hash")
 
-    def __init__(self):
+    def __init__(self, seed=None):
         """Initialize Zobrist hash keys for all board elements."""
+        if seed is not None:
+            random.seed(seed)
         # 12×64 piece table (6 piece types × 2 colors × 64 squares)
 
         self.piece_keys = [[rand64() for _ in range(64)] for _ in range(12)]
@@ -52,31 +59,26 @@ class Zobrist:
         # Hash pieces - iterate only over actual pieces
 
         for piece_type in chess.PIECE_TYPES:
-            # White pieces
-
-            for square in board.pieces(piece_type, chess.WHITE):
-                idx = (piece_type - 1) * 2
-                h ^= self.piece_keys[idx][square]
-            # Black pieces
-
-            for square in board.pieces(piece_type, chess.BLACK):
-                idx = (piece_type - 1) * 2 + 1
-                h ^= self.piece_keys[idx][square]
+            for color in [chess.WHITE, chess.BLACK]:
+                for square in board.pieces(piece_type, color):
+                    piece_index = piece_to_index(piece_type, color)
+                    h ^= self.piece_keys[piece_index][square]
         # Hash castling rights
 
         cr = board.castling_rights
-        if cr & chess.BB_H1:
-            h ^= self.castling_keys[0]  # White kingside
-        if cr & chess.BB_A1:
-            h ^= self.castling_keys[1]  # White queenside
-        if cr & chess.BB_H8:
-            h ^= self.castling_keys[2]  # Black kingside
-        if cr & chess.BB_A8:
-            h ^= self.castling_keys[3]  # Black queenside
+        if cr & chess.BB_H1:  # White kingside
+            h ^= self.castling_keys[0]
+        if cr & chess.BB_A1:  # White queenside
+            h ^= self.castling_keys[1]
+        if cr & chess.BB_H8:  # Black kingside
+            h ^= self.castling_keys[2]
+        if cr & chess.BB_A8:  # Black queenside
+            h ^= self.castling_keys[3]
         # Hash en passant
 
         if board.ep_square is not None:
-            h ^= self.ep_keys[chess.square_file(board.ep_square)]
+            ep_file = chess.square_file(board.ep_square)
+            h ^= self.ep_keys[ep_file]
         # Hash turn
 
         if board.turn == chess.BLACK:
@@ -97,26 +99,11 @@ class Zobrist:
     ) -> int:
         """
         Incrementally update the hash after a move is made.
-
-        Args:
-            post_move_board: Board after the move has been made
-            move: The move that was made
-            old_castling_rights: Castling rights before the move
-            old_ep_square: En passant square before the move
-            captured_piece_type: Type of piece captured (if any)
-            was_ep: True if the move was an en passant capture
-            ks_castle: True if the move was kingside castling
-            qs_castle: True if the move was queenside castling
-
-        Returns:
-            Updated hash value
         """
         # Pull into locals for speed
 
         h = self._current_hash
         if h is None:
-            # This shouldn't happen in normal operation
-
             return self.hash_board(post_move_board)
         pk = self.piece_keys
         ck = self.castling_keys
@@ -127,56 +114,66 @@ class Zobrist:
 
         h ^= tkey
 
-        # 2) Move piece (incl. promotion)
+        # Determine mover color and captured piece color
 
         mover = not post_move_board.turn  # Color of piece that moved
+        cap_color = not mover  # Color of captured piece
+
+        # 2) Move piece (incl. promotion)
+
         if move.promotion:
-            # Pawn out, promoted piece in
+            # Remove original pawn
 
-            h ^= pk[0 * 2 + mover][move.from_square]  # Remove pawn from source square
-            promo_idx = (move.promotion - 1) * 2 + mover
-            h ^= pk[promo_idx][move.to_square]  # Add promoted piece at destination
+            pawn_index = piece_to_index(chess.PAWN, mover)
+            h ^= pk[pawn_index][move.from_square]
+
+            # Add promoted piece
+
+            promoted_index = piece_to_index(move.promotion, mover)
+            h ^= pk[promoted_index][move.to_square]
         else:
-            # Find moved piece from post-move board
+            # Normal move - get piece type that moved
 
-            piece = post_move_board.piece_at(move.to_square)
-            if piece:  # This should always be true for a regular move
-                idx = (piece.piece_type - 1) * 2 + mover
-                # XOR out from old square, XOR in to new square
-
-                h ^= pk[idx][move.from_square] ^ pk[idx][move.to_square]
+            moved_piece = post_move_board.piece_at(move.to_square)
+            if moved_piece:
+                piece_index = piece_to_index(moved_piece.piece_type, mover)
+                h ^= pk[piece_index][move.from_square]  # Remove from old square
+                h ^= pk[piece_index][move.to_square]  # Add to new square
         # 3) Handle capture
 
-        if captured_piece_type:
-            cap_color = post_move_board.turn  # Color of captured piece
-            cap_idx = (captured_piece_type - 1) * 2 + cap_color
-            if was_ep:
-                # Pawn captured behind the to-square
+        if captured_piece_type and not was_ep:
+            # Normal capture - remove captured piece
 
-                cap_sq = move.to_square + (8 if mover == chess.WHITE else -8)
-                h ^= pk[0 * 2 + cap_color][
-                    cap_sq
-                ]  # Remove captured pawn (always a pawn for EP)
+            cap_index = piece_to_index(captured_piece_type, cap_color)
+            h ^= pk[cap_index][move.to_square]
+        elif was_ep:
+            # En passant capture - remove pawn from different square
+            # FIX: The captured pawn is on the same rank as the moving pawn
+
+            if mover == chess.WHITE:
+                ep_capture_square = move.to_square - 8  # Black pawn one rank below
             else:
-                # Regular capture - remove captured piece from destination square
-
-                h ^= pk[cap_idx][move.to_square]
+                ep_capture_square = move.to_square + 8  # White pawn one rank above
+            cap_index = piece_to_index(chess.PAWN, cap_color)
+            h ^= pk[cap_index][ep_capture_square]
         # 4) Handle rook movement in castling
 
         if ks_castle:
-            # Get correct rook squares based on color
-
-            rook_src = chess.H1 if mover == chess.WHITE else chess.H8
-            rook_dst = chess.F1 if mover == chess.WHITE else chess.F8
-            r_idx = (chess.ROOK - 1) * 2 + mover
-            h ^= pk[r_idx][rook_src] ^ pk[r_idx][rook_dst]
+            rook_index = piece_to_index(chess.ROOK, mover)
+            if mover == chess.WHITE:
+                h ^= pk[rook_index][chess.H1]  # Remove from h1
+                h ^= pk[rook_index][chess.F1]  # Add to f1
+            else:
+                h ^= pk[rook_index][chess.H8]  # Remove from h8
+                h ^= pk[rook_index][chess.F8]  # Add to f8
         elif qs_castle:
-            # Get correct rook squares based on color
-
-            rook_src = chess.A1 if mover == chess.WHITE else chess.A8
-            rook_dst = chess.D1 if mover == chess.WHITE else chess.D8
-            r_idx = (chess.ROOK - 1) * 2 + mover
-            h ^= pk[r_idx][rook_src] ^ pk[r_idx][rook_dst]
+            rook_index = piece_to_index(chess.ROOK, mover)
+            if mover == chess.WHITE:
+                h ^= pk[rook_index][chess.A1]  # Remove from a1
+                h ^= pk[rook_index][chess.D1]  # Add to d1
+            else:
+                h ^= pk[rook_index][chess.A8]  # Remove from a8
+                h ^= pk[rook_index][chess.D8]  # Add to d8
         # 5) Update castling rights
 
         new_cr = post_move_board.castling_rights
@@ -191,9 +188,11 @@ class Zobrist:
         # 6) Update en passant square
 
         if old_ep_square is not None:
-            h ^= epk[chess.square_file(old_ep_square)]
+            old_ep_file = chess.square_file(old_ep_square)
+            h ^= epk[old_ep_file]
         if post_move_board.ep_square is not None:
-            h ^= epk[chess.square_file(post_move_board.ep_square)]
+            new_ep_file = chess.square_file(post_move_board.ep_square)
+            h ^= epk[new_ep_file]
         self._current_hash = h
         return h
 

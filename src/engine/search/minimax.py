@@ -341,6 +341,13 @@ class Minimax:
                 old_castling_rights = self.board.castling_rights
                 old_ep_square = self.board.ep_square
 
+                # Get move information before making the move
+                captured_piece = self.board.piece_at(m.to_square)
+                captured_piece_type = captured_piece.piece_type if captured_piece else None
+                was_ep = self.board.is_en_passant(m)
+                ks_castle = self.board.is_kingside_castling(m)
+                qs_castle = self.board.is_queenside_castling(m)
+
                 self.board.push(m)
 
                 # Update hash incrementally if using Zobrist
@@ -351,10 +358,10 @@ class Minimax:
                         m,
                         old_castling_rights,
                         old_ep_square,
-                        captured_piece_type=None,  # Add missing parameters
-                        was_ep=False,
-                        ks_castle=False,
-                        qs_castle=False,
+                        captured_piece_type,
+                        was_ep,
+                        ks_castle,
+                        qs_castle,
                     )
                 # Use PVS for non-first moves if enabled
 
@@ -405,6 +412,13 @@ class Minimax:
                 old_castling_rights = self.board.castling_rights
                 old_ep_square = self.board.ep_square
 
+                # Get move information before making the move
+                captured_piece = self.board.piece_at(m.to_square)
+                captured_piece_type = captured_piece.piece_type if captured_piece else None
+                was_ep = self.board.is_en_passant(m)
+                ks_castle = self.board.is_kingside_castling(m)
+                qs_castle = self.board.is_queenside_castling(m)
+
                 self.board.push(m)
 
                 # Update hash incrementally if using Zobrist
@@ -415,10 +429,10 @@ class Minimax:
                         m,
                         old_castling_rights,
                         old_ep_square,
-                        captured_piece_type=None,  # Add missing parameters
-                        was_ep=False,
-                        ks_castle=False,
-                        qs_castle=False,
+                        captured_piece_type,
+                        was_ep,
+                        ks_castle,
+                        qs_castle,
                     )
                 # Use PVS for non-first moves if enabled
 
