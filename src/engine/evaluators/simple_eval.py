@@ -16,6 +16,7 @@ class SimpleEval(Eval):
     The evaluation considers:
     - Material balance (using piece values from constants)
     - Special positions (checkmate, stalemate)
+    - Insufficient material draws
 
     It does not consider:
     - Piece positioning
@@ -35,7 +36,7 @@ class SimpleEval(Eval):
                 self.score = -float("inf")
             else:
                 self.score = float("inf")
-        elif self.board.is_stalemate():
+        elif self.board.is_stalemate() or self.board.is_insufficient_material():
             self.score = 0.0
         else:
             for p in EVAL_PIECES:
