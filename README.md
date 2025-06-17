@@ -8,11 +8,10 @@ This project is containerized using Docker with a multi-stage build for optimal 
 
 ## Running the Chess Engine
 
-Build the Docker image and run the chess engine:
+Build the Docker image:
 
 ```sh
-./build_docker.sh chess_engine
-docker run -t chess_engine
+./build_docker.sh chess-engine
 ```
 
 ## Running Tests
@@ -20,8 +19,8 @@ docker run -t chess_engine
 Run the test suite within the Docker container:
 
 ```sh
-./build_docker.sh chess_engine
-docker run -t chess_engine ./run_tests.sh
+./build_docker.sh chess-engine
+docker run -t chess-engine ./run_tests.sh
 ```
 
 ## Running a Specific Test
@@ -29,8 +28,8 @@ docker run -t chess_engine ./run_tests.sh
 Run a specific test class or method:
 
 ```sh
-./build_docker.sh chess_engine
-docker run -t chess_engine ./run_tests.sh TestChessEngine.test_move_generation
+./build_docker.sh chess-engine
+docker run -t chess-engine ./run_tests.sh SomeTest
 ```
 
 ## Interactive Development
