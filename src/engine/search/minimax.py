@@ -6,8 +6,8 @@ from src.engine.config import EngineConfig
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.eval import Eval
 
-from engine.search.transposition_table import TranspositionTable
-from engine.search.zobrist import Zobrist
+from src.engine.search.transposition_table import TranspositionTable
+from src.engine.search.zobrist import Zobrist
 
 logger = logging.getLogger(__name__)
 
@@ -342,8 +342,11 @@ class Minimax:
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
+
                 captured_piece = self.board.piece_at(m.to_square)
-                captured_piece_type = captured_piece.piece_type if captured_piece else None
+                captured_piece_type = (
+                    captured_piece.piece_type if captured_piece else None
+                )
                 was_ep = self.board.is_en_passant(m)
                 ks_castle = self.board.is_kingside_castling(m)
                 qs_castle = self.board.is_queenside_castling(m)
@@ -413,8 +416,11 @@ class Minimax:
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
+
                 captured_piece = self.board.piece_at(m.to_square)
-                captured_piece_type = captured_piece.piece_type if captured_piece else None
+                captured_piece_type = (
+                    captured_piece.piece_type if captured_piece else None
+                )
                 was_ep = self.board.is_en_passant(m)
                 ks_castle = self.board.is_kingside_castling(m)
                 qs_castle = self.board.is_queenside_castling(m)
