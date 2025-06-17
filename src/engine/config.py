@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+from src.engine.constants import DEFAULT_DEPTH, DEFAULT_TIMEOUT
+
 
 @dataclass
 class MinimaxConfig:
@@ -9,29 +11,19 @@ class MinimaxConfig:
     use_alpha_beta: bool = True
     use_move_ordering: bool = True
     use_pvs: bool = True
-    max_time: float | None = None  # Changed from Optional[float]
-    # Future optimizations (not yet implemented)
-
-    use_null_move_pruning: bool = False
-    use_late_move_reductions: bool = False
-    use_futility_pruning: bool = False
-    use_delta_pruning: bool = False
-    use_aspiration_windows: bool = False
+    max_time: float | None = DEFAULT_TIMEOUT
 
 
 @dataclass
 class EvaluationConfig:
-    evaluator_type: Literal["simple", "nn", "deep_cnn"] = "simple"
-    # Add other evaluation-specific flags here, e.g.:
-    # nn_model_path: str | None = None
+    evaluator_type: Literal["simple", "mock"] = "simple"
 
 
 @dataclass
 class EngineConfig:
     minimax: MinimaxConfig = field(default_factory=MinimaxConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
-    search_depth: int = 4  # Default search depth
-    # Add other engine-wide settings if needed
+    search_depth: int = DEFAULT_DEPTH
 
     def __str__(self) -> str:
         parts = []
@@ -48,16 +40,6 @@ class EngineConfig:
             mm_flags.append("MoveOrder")
         if self.minimax.use_pvs:
             mm_flags.append("PVS")
-        if self.minimax.use_null_move_pruning:
-            mm_flags.append("NMP")
-        if self.minimax.use_late_move_reductions:
-            mm_flags.append("LMR")
-        if self.minimax.use_futility_pruning:
-            mm_flags.append("Futility")
-        if self.minimax.use_delta_pruning:
-            mm_flags.append("Delta")
-        if self.minimax.use_aspiration_windows:
-            mm_flags.append("AspWin")
         if mm_flags:
             parts.append(f"Search: [{', '.join(mm_flags)}]")
         else:

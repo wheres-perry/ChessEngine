@@ -2,11 +2,12 @@ import logging
 import time
 
 import chess
-from engine.search.transposition_table import TranspositionTable
-from engine.search.zobrist import Zobrist
 from src.engine.config import EngineConfig
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.eval import Eval
+
+from engine.search.transposition_table import TranspositionTable
+from engine.search.zobrist import Zobrist
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class Minimax:
         self,
         board: chess.Board,
         evaluator: Eval,
-        config: EngineConfig,  
+        config: EngineConfig,
     ):
         """
         Initialize the minimax search engine.
@@ -40,6 +41,7 @@ class Minimax:
             config: Engine configuration
         """
         # Extract minimax config
+
         minimax_config = config.minimax
 
         self.use_zobrist = minimax_config.use_zobrist
@@ -50,29 +52,31 @@ class Minimax:
         self.max_time = minimax_config.max_time
 
         # Initialize other members
+
         self.start_time = None
         self.time_up = False
         self.best_move_first = None
 
         # PVS requires alpha-beta; enforce this
+
         self.use_pvs = self.use_pvs and self.use_alpha_beta
         if minimax_config.use_pvs and not self.use_alpha_beta:
             logger.warning(
                 "PVS requires alpha-beta pruning. Disabling PVS since use_alpha_beta is False."
             )
-        
         # Initialize Zobrist hashing and transposition table
+
         if self.use_zobrist:
             self.zobrist = Zobrist()
             self.transposition_table = TranspositionTable(self.DEFAULT_TT_SIZE)
         else:
             self.zobrist = None
             self.transposition_table = None
-            
         self.board = board
         self.evaluator = evaluator
 
         # Initialize hash for the starting position
+
         if self.zobrist:
             self.zobrist.hash_board(self.board)
 
@@ -343,7 +347,14 @@ class Minimax:
 
                 if self.zobrist:
                     self.zobrist.update_hash_for_move(
-                        self.board, m, old_castling_rights, old_ep_square
+                        self.board,
+                        m,
+                        old_castling_rights,
+                        old_ep_square,
+                        captured_piece_type=None,  # Add missing parameters
+                        was_ep=False,
+                        ks_castle=False,
+                        qs_castle=False,
                     )
                 # Use PVS for non-first moves if enabled
 
@@ -400,7 +411,14 @@ class Minimax:
 
                 if self.zobrist:
                     self.zobrist.update_hash_for_move(
-                        self.board, m, old_castling_rights, old_ep_square
+                        self.board,
+                        m,
+                        old_castling_rights,
+                        old_ep_square,
+                        captured_piece_type=None,  # Add missing parameters
+                        was_ep=False,
+                        ks_castle=False,
+                        qs_castle=False,
                     )
                 # Use PVS for non-first moves if enabled
 

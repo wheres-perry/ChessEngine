@@ -2,6 +2,8 @@ import random
 
 import chess
 
+rand64 = lambda: random.getrandbits(64)
+
 
 class Zobrist:
     """
@@ -11,34 +13,29 @@ class Zobrist:
     as moves are made and unmade, avoiding full board rehashing.
     """
 
+    __slots__ = ("piece_keys", "castling_keys", "ep_keys", "turn_key", "_current_hash")
+
     def __init__(self):
         """Initialize Zobrist hash keys for all board elements."""
-        self.keys = {}
+        # 12×64 piece table (6 piece types × 2 colors × 64 squares)
 
-        # Piece keys: 12 pieces (6 types x 2 colors) x 64 squares
+        self.piece_keys = [[rand64() for _ in range(64)] for _ in range(12)]
 
-        for piece in range(1, 7):  # PAWN to KING
-            for color in [chess.WHITE, chess.BLACK]:
-                for square in range(64):
-                    self.keys[(piece, color, square)] = random.randint(0, 2**64 - 1)
-        # Castling rights
+        # [W-K, W-Q, B-K, B-Q] castling rights
 
-        self.keys["castling_wk"] = random.randint(0, 2**64 - 1)
-        self.keys["castling_wq"] = random.randint(0, 2**64 - 1)
-        self.keys["castling_bk"] = random.randint(0, 2**64 - 1)
-        self.keys["castling_bq"] = random.randint(0, 2**64 - 1)
+        self.castling_keys = [rand64() for _ in range(4)]
 
-        # En passant file
+        # Files a-h for en passant
 
-        for file in range(8):
-            self.keys[("ep", file)] = random.randint(0, 2**64 - 1)
-        # Turn
+        self.ep_keys = [rand64() for _ in range(8)]
 
-        self.keys["turn"] = random.randint(0, 2**64 - 1)
+        # Side to move
+
+        self.turn_key = rand64()
 
         # Current hash value for incremental updates
 
-        self._current_hash: None | int = None
+        self._current_hash = None
 
     def hash_board(self, board: chess.Board) -> int:
         """
@@ -50,160 +47,164 @@ class Zobrist:
         Returns:
             64-bit Zobrist hash value
         """
-        hash_val = 0
+        h = 0
 
-        # Hash pieces
+        # Hash pieces - iterate only over actual pieces
 
-        for square in range(64):
-            piece = board.piece_at(square)
-            if piece:
-                hash_val ^= self.keys[(piece.piece_type, piece.color, square)]
+        for piece_type in chess.PIECE_TYPES:
+            # White pieces
+
+            for square in board.pieces(piece_type, chess.WHITE):
+                idx = (piece_type - 1) * 2
+                h ^= self.piece_keys[idx][square]
+            # Black pieces
+
+            for square in board.pieces(piece_type, chess.BLACK):
+                idx = (piece_type - 1) * 2 + 1
+                h ^= self.piece_keys[idx][square]
         # Hash castling rights
 
-        if board.has_kingside_castling_rights(chess.WHITE):
-            hash_val ^= self.keys["castling_wk"]
-        if board.has_queenside_castling_rights(chess.WHITE):
-            hash_val ^= self.keys["castling_wq"]
-        if board.has_kingside_castling_rights(chess.BLACK):
-            hash_val ^= self.keys["castling_bk"]
-        if board.has_queenside_castling_rights(chess.BLACK):
-            hash_val ^= self.keys["castling_bq"]
+        cr = board.castling_rights
+        if cr & chess.BB_H1:
+            h ^= self.castling_keys[0]  # White kingside
+        if cr & chess.BB_A1:
+            h ^= self.castling_keys[1]  # White queenside
+        if cr & chess.BB_H8:
+            h ^= self.castling_keys[2]  # Black kingside
+        if cr & chess.BB_A8:
+            h ^= self.castling_keys[3]  # Black queenside
         # Hash en passant
 
         if board.ep_square is not None:
-            file = chess.square_file(board.ep_square)
-            hash_val ^= self.keys[("ep", file)]
+            h ^= self.ep_keys[chess.square_file(board.ep_square)]
         # Hash turn
 
         if board.turn == chess.BLACK:
-            hash_val ^= self.keys["turn"]
-        self._current_hash = hash_val
-        return hash_val
+            h ^= self.turn_key
+        self._current_hash = h
+        return h
 
     def update_hash_for_move(
         self,
-        board: chess.Board,
+        post_move_board: chess.Board,
         move: chess.Move,
         old_castling_rights: int,
-        old_ep_square: None | int,
+        old_ep_square: int | None,
+        captured_piece_type: int | None,
+        was_ep: bool,
+        ks_castle: bool,
+        qs_castle: bool,
     ) -> int:
         """
         Incrementally update the hash after a move is made.
 
         Args:
-            board: Board after the move has been made
+            post_move_board: Board after the move has been made
             move: The move that was made
             old_castling_rights: Castling rights before the move
             old_ep_square: En passant square before the move
+            captured_piece_type: Type of piece captured (if any)
+            was_ep: True if the move was an en passant capture
+            ks_castle: True if the move was kingside castling
+            qs_castle: True if the move was queenside castling
 
         Returns:
             Updated hash value
         """
-        if self._current_hash is None:
-            return self.hash_board(board)
-        hash_val = self._current_hash
+        # Pull into locals for speed
 
-        # Toggle turn
+        h = self._current_hash
+        if h is None:
+            # This shouldn't happen in normal operation
 
-        hash_val ^= self.keys["turn"]
+            return self.hash_board(post_move_board)
+        pk = self.piece_keys
+        ck = self.castling_keys
+        epk = self.ep_keys
+        tkey = self.turn_key
 
-        # Handle piece movement
+        # 1) Flip turn
 
-        from_square = move.from_square
-        to_square = move.to_square
+        h ^= tkey
 
-        # Get the piece that moved (it's now on the to_square)
+        # 2) Move piece (incl. promotion)
 
-        moved_piece = board.piece_at(to_square)
-        if moved_piece:
-            # Remove piece from old square
-
-            hash_val ^= self.keys[
-                (moved_piece.piece_type, moved_piece.color, from_square)
-            ]
-            # Add piece to new square
-
-            hash_val ^= self.keys[
-                (moved_piece.piece_type, moved_piece.color, to_square)
-            ]
-        # Handle captures (remove captured piece)
-
-        if board.is_capture(move):
-            if board.is_en_passant(move):
-                # En passant capture - remove the captured pawn
-
-                if board.turn == chess.WHITE:
-                    captured_square = to_square - 8
-                    hash_val ^= self.keys[(chess.PAWN, chess.BLACK, captured_square)]
-                else:
-                    captured_square = to_square + 8
-                    hash_val ^= self.keys[(chess.PAWN, chess.WHITE, captured_square)]
-            else:
-                # Regular capture
-
-                hash_val = self.hash_board(board)
-                self._current_hash = hash_val
-                return hash_val
-        # Handle promotion
-
+        mover = not post_move_board.turn  # Color of piece that moved
         if move.promotion:
-            # Remove the pawn that was promoted
+            # Pawn out, promoted piece in
 
-            if moved_piece:
-                hash_val ^= self.keys[(chess.PAWN, moved_piece.color, to_square)]
-            # The promoted piece is already added above, so we're good
-        # Handle castling
+            h ^= pk[0 * 2 + mover][move.from_square]  # Remove pawn from source square
+            promo_idx = (move.promotion - 1) * 2 + mover
+            h ^= pk[promo_idx][move.to_square]  # Add promoted piece at destination
+        else:
+            # Find moved piece from post-move board
 
-        if board.is_castling(move):
-            # Handle rook movement in castling
+            piece = post_move_board.piece_at(move.to_square)
+            if piece:  # This should always be true for a regular move
+                idx = (piece.piece_type - 1) * 2 + mover
+                # XOR out from old square, XOR in to new square
 
-            if move.to_square == chess.G1:  # White kingside
-                hash_val ^= self.keys[(chess.ROOK, chess.WHITE, chess.H1)]
-                hash_val ^= self.keys[(chess.ROOK, chess.WHITE, chess.F1)]
-            elif move.to_square == chess.C1:  # White queenside
-                hash_val ^= self.keys[(chess.ROOK, chess.WHITE, chess.A1)]
-                hash_val ^= self.keys[(chess.ROOK, chess.WHITE, chess.D1)]
-            elif move.to_square == chess.G8:  # Black kingside
-                hash_val ^= self.keys[(chess.ROOK, chess.BLACK, chess.H8)]
-                hash_val ^= self.keys[(chess.ROOK, chess.BLACK, chess.F8)]
-            elif move.to_square == chess.C8:  # Black queenside
-                hash_val ^= self.keys[(chess.ROOK, chess.BLACK, chess.A8)]
-                hash_val ^= self.keys[(chess.ROOK, chess.BLACK, chess.D8)]
-        # Update castling rights
+                h ^= pk[idx][move.from_square] ^ pk[idx][move.to_square]
+        # 3) Handle capture
 
-        hash_val = self._update_castling_hash(
-            hash_val, old_castling_rights, board.castling_rights
-        )
+        if captured_piece_type:
+            cap_color = post_move_board.turn  # Color of captured piece
+            cap_idx = (captured_piece_type - 1) * 2 + cap_color
+            if was_ep:
+                # Pawn captured behind the to-square
 
-        # Update en passant
+                cap_sq = move.to_square + (8 if mover == chess.WHITE else -8)
+                h ^= pk[0 * 2 + cap_color][
+                    cap_sq
+                ]  # Remove captured pawn (always a pawn for EP)
+            else:
+                # Regular capture - remove captured piece from destination square
+
+                h ^= pk[cap_idx][move.to_square]
+        # 4) Handle rook movement in castling
+
+        if ks_castle:
+            # Get correct rook squares based on color
+
+            rook_src = chess.H1 if mover == chess.WHITE else chess.H8
+            rook_dst = chess.F1 if mover == chess.WHITE else chess.F8
+            r_idx = (chess.ROOK - 1) * 2 + mover
+            h ^= pk[r_idx][rook_src] ^ pk[r_idx][rook_dst]
+        elif qs_castle:
+            # Get correct rook squares based on color
+
+            rook_src = chess.A1 if mover == chess.WHITE else chess.A8
+            rook_dst = chess.D1 if mover == chess.WHITE else chess.D8
+            r_idx = (chess.ROOK - 1) * 2 + mover
+            h ^= pk[r_idx][rook_src] ^ pk[r_idx][rook_dst]
+        # 5) Update castling rights
+
+        new_cr = post_move_board.castling_rights
+        if (old_castling_rights & chess.BB_H1) != (new_cr & chess.BB_H1):
+            h ^= ck[0]
+        if (old_castling_rights & chess.BB_A1) != (new_cr & chess.BB_A1):
+            h ^= ck[1]
+        if (old_castling_rights & chess.BB_H8) != (new_cr & chess.BB_H8):
+            h ^= ck[2]
+        if (old_castling_rights & chess.BB_A8) != (new_cr & chess.BB_A8):
+            h ^= ck[3]
+        # 6) Update en passant square
 
         if old_ep_square is not None:
-            old_file = chess.square_file(old_ep_square)
-            hash_val ^= self.keys[("ep", old_file)]
-        if board.ep_square is not None:
-            new_file = chess.square_file(board.ep_square)
-            hash_val ^= self.keys[("ep", new_file)]
-        self._current_hash = hash_val
-        return hash_val
-
-    def _update_castling_hash(
-        self, hash_val: int, old_rights: int, new_rights: int
-    ) -> int:
-        """Update hash for castling rights changes."""
-        if (old_rights & chess.BB_H1) != (new_rights & chess.BB_H1):
-            hash_val ^= self.keys["castling_wk"]
-        if (old_rights & chess.BB_A1) != (new_rights & chess.BB_A1):
-            hash_val ^= self.keys["castling_wq"]
-        if (old_rights & chess.BB_H8) != (new_rights & chess.BB_H8):
-            hash_val ^= self.keys["castling_bk"]
-        if (old_rights & chess.BB_A8) != (new_rights & chess.BB_A8):
-            hash_val ^= self.keys["castling_bq"]
-        return hash_val
+            h ^= epk[chess.square_file(old_ep_square)]
+        if post_move_board.ep_square is not None:
+            h ^= epk[chess.square_file(post_move_board.ep_square)]
+        self._current_hash = h
+        return h
 
     def get_current_hash(self) -> None | int:
         """Get the current hash value without recalculating."""
         return self._current_hash
 
+    def set_current_hash(self, hash_val: int | None) -> None:
+        """Set the current hash value. Used for initialization or restoring after pop."""
+        self._current_hash = hash_val
+
     def invalidate_hash(self) -> None:
-        """Invalidate the current hash, forcing recalculation on next access."""
+        """Invalidate the current hash, typically not needed if set_current_hash is used on pop."""
         self._current_hash = None

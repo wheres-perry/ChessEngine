@@ -2,6 +2,9 @@ from typing import Final
 
 import chess
 
+DEFAULT_TIMEOUT: Final[float] = 25.0
+
+DEFAULT_DEPTH: Final[int] = 6
 
 PIECE_VALUES: Final[dict[int, float]] = {
     chess.PAWN: 1,
