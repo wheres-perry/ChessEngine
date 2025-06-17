@@ -8,8 +8,8 @@ package.sh
 *lichess_db_eval.jsonl
 *.h5
 *processing_ledger.json
-*fixlineendings.sh
-*fixlineendings.ps1
+fixlineendings.sh
+fixlineendings.ps1
 
 # Poetry
 poetry.lock
