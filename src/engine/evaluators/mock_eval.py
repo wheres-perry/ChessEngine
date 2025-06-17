@@ -5,17 +5,17 @@ from src.engine.evaluators.eval import *
 class MockEval(Eval):
     """
     A mock evaluator that returns a predefined score for testing.
-    
+
     This evaluator provides a constant evaluation value:
     - Returns the same fixed score for any position
     - Ignores the actual board state
     - Can be updated during test execution with set_score()
-    
+
     The evaluation provides:
     - Controllable, predictable outputs for unit tests
     - Isolation from actual evaluation logic
     - Consistent results regardless of position
-    
+
     It does not consider:
     - Any aspect of the chess position
     - Material balance
@@ -36,4 +36,4 @@ class MockEval(Eval):
         Allows updating the fixed score after instantiation.
         """
         self.fixed_score = score
-        self.score
+        self.score = score
