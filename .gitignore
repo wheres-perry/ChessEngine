@@ -12,6 +12,8 @@ fixlineendings.sh
 fixlineendings.ps1
 line.sh
 line.ps1
+dev_test.sh
+*/__TOOLS
 
 # Poetry
 poetry.lock
@@ -222,3 +224,5 @@ build/
 .pytest_cache/
 .mypy_cache/
 /.venv
+dev_test.sh
+tests/search/zobrist_test.py
