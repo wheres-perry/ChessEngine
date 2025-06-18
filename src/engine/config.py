@@ -60,13 +60,14 @@ class EngineConfig:
             raise ValueError(
                 f"Minimax timeout must be positive, got {self.minimax.max_time}"
             )
-        # Validate TT aging requires Zobrist
 
+        # Validate TT aging requires Zobrist
         if self.minimax.use_tt_aging and not self.minimax.use_zobrist:
             raise ValueError(
                 "Transposition table aging (use_tt_aging) requires Zobrist hashing "
                 "(use_zobrist) to be enabled."
             )
+
         # Validate evaluation configuration
 
         self._validate_evaluation_config()

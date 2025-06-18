@@ -136,6 +136,11 @@ class Minimax:
         for current_depth in range(1, max_depth + 1):
             if self._check_time_limit():
                 break
+
+            # Increment age for new search depth if using aging
+            if self.use_tt_aging and self.transposition_table:
+                self.transposition_table.new_search()
+
             score, move = self._search_fixed_depth(current_depth)
 
             if self.time_up:
@@ -158,6 +163,9 @@ class Minimax:
         Returns:
             Tuple of (best_score, best_move)
         """
+        # Increment age for new search if not using iterative deepening
+        if not self.use_iddfs and self.use_tt_aging and self.transposition_table:
+            self.transposition_table.new_search()
         maximizing_player = self.board.turn
         alpha = float(self.NEG_INF)
         beta = float(self.POS_INF)

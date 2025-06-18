@@ -98,29 +98,24 @@ class TranspositionTable:
         existing_entry = self.table.get(hash_val)
 
         # Determine if we should store this entry
-
         should_store = False
 
         if len(self.table) < self.max_entries:
             # Table not full, always store
-
             should_store = True
         elif not existing_entry:
             # No existing entry for this hash
-
             should_store = True
         elif existing_entry["depth"] <= depth:
             # New entry has equal or greater depth
-
             should_store = True
         elif self.use_aging:
             # Use aging-based replacement
-
             age_diff = self.current_age - existing_entry["age"]
             depth_diff = existing_entry["depth"] - depth
             # Replace if entry is old enough relative to depth advantage
-
             should_store = age_diff >= depth_diff
+
         if should_store:
             self.table[hash_val] = {
                 "depth": depth,
