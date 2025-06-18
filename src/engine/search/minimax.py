@@ -75,6 +75,10 @@ class Minimax:
         else:
             self.zobrist = None
             self.transposition_table = None
+
+        self.board = board
+        self.evaluator = evaluator
+
         # Initialize hash for the starting position
 
         if self.zobrist:
