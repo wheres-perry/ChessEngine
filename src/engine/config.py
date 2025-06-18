@@ -13,6 +13,7 @@ class MinimaxConfig:
     use_alpha_beta: bool = True
     use_move_ordering: bool = True
     use_pvs: bool = True
+    use_tt_aging: bool = True
     max_time: float | None = DEFAULT_TIMEOUT
 
 
@@ -58,6 +59,13 @@ class EngineConfig:
         if self.minimax.max_time is not None and self.minimax.max_time <= 0:
             raise ValueError(
                 f"Minimax timeout must be positive, got {self.minimax.max_time}"
+            )
+        # Validate TT aging requires Zobrist
+
+        if self.minimax.use_tt_aging and not self.minimax.use_zobrist:
+            raise ValueError(
+                "Transposition table aging (use_tt_aging) requires Zobrist hashing "
+                "(use_zobrist) to be enabled."
             )
         # Validate evaluation configuration
 
@@ -128,7 +136,10 @@ class EngineConfig:
 
         mm_flags = []
         if self.minimax.use_zobrist:
-            mm_flags.append("TT/Zobrist")
+            zobrist_parts = ["TT/Zobrist"]
+            if self.minimax.use_tt_aging:
+                zobrist_parts.append("Aging")
+            mm_flags.append("/".join(zobrist_parts))
         if self.minimax.use_iddfs:
             mm_flags.append("IDDFS")
         if self.minimax.use_alpha_beta:

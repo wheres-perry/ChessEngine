@@ -49,6 +49,7 @@ class Minimax:
         self.use_alpha_beta = minimax_config.use_alpha_beta
         self.use_move_ordering = minimax_config.use_move_ordering
         self.use_pvs = minimax_config.use_pvs
+        self.use_tt_aging = minimax_config.use_tt_aging
         self.max_time = minimax_config.max_time
 
         # Initialize other members
@@ -68,13 +69,12 @@ class Minimax:
 
         if self.use_zobrist:
             self.zobrist = Zobrist()
-            self.transposition_table = TranspositionTable(self.DEFAULT_TT_SIZE)
+            self.transposition_table = TranspositionTable(
+                self.DEFAULT_TT_SIZE, self.use_tt_aging
+            )
         else:
             self.zobrist = None
             self.transposition_table = None
-        self.board = board
-        self.evaluator = evaluator
-
         # Initialize hash for the starting position
 
         if self.zobrist:
