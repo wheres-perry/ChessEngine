@@ -5,7 +5,7 @@ class TTEntry(TypedDict):
     depth: int
     score: float
     type: Literal["upper", "lower", "exact"]
-    age: int
+    age: int  # Add age field
 
 
 class TranspositionTable:
@@ -17,23 +17,24 @@ class TranspositionTable:
     """
 
     DEFAULT_SIZE = 100000
+    MAX_AGE_DIFF = 2  # Maximum age difference to consider entry valid
 
-    def __init__(self, max_entries: int = DEFAULT_SIZE, use_aging: bool = True):
+    def __init__(self, max_entries: int = DEFAULT_SIZE, use_tt_aging: bool = True):
         """
         Initialize the transposition table.
 
         Args:
             max_entries: Maximum number of entries to store
-            use_aging: Whether to use aging for entry replacement
+            use_tt_aging: Whether to use transposition table aging
         """
         self.table: dict[int, TTEntry] = {}
         self.max_entries = max_entries
-        self.use_aging = use_aging
         self.current_age = 0
+        self.use_tt_aging = use_tt_aging
 
-    def new_search(self) -> None:
-        """Increment age counter for a new search iteration."""
-        if self.use_aging:
+    def increment_age(self) -> None:
+        """Increment the current age, typically called at the start of a new search."""
+        if self.use_tt_aging:
             self.current_age += 1
 
     def lookup(
@@ -52,8 +53,19 @@ class TranspositionTable:
             Stored score if usable, None otherwise
         """
         entry = self.table.get(hash_val)
+
+        # Return None if entry doesn't exist or is too shallow
         if not entry or entry["depth"] < depth:
             return None
+
+        # Check if entry is too old if aging is enabled
+        if self.use_tt_aging:
+            # Handle both normal aging and the case when age was reset
+            if self.current_age < entry["age"] or (
+                entry["age"] < self.current_age - self.MAX_AGE_DIFF
+            ):
+                return None
+
         entry_type = entry["type"]
         score = entry["score"]
 
@@ -86,7 +98,6 @@ class TranspositionTable:
             original_alpha: Alpha value at start of search
         """
         # Determine entry type based on alpha-beta bounds
-
         if score <= original_alpha:
             entry_type: Literal["upper", "lower", "exact"] = (
                 "upper"  # Upper bound (fail-low)
@@ -95,28 +106,24 @@ class TranspositionTable:
             entry_type = "lower"  # Lower bound (fail-high)
         else:
             entry_type = "exact"  # Exact value
+
+        # Eviction: If the table is full and we're adding a new entry, remove one.
+        if len(self.table) >= self.max_entries and hash_val not in self.table:
+            # Simple FIFO eviction for Python 3.7+
+            key_to_evict = next(iter(self.table))
+            del self.table[key_to_evict]
+
         existing_entry = self.table.get(hash_val)
 
-        # Determine if we should store this entry
-        should_store = False
-
-        if len(self.table) < self.max_entries:
-            # Table not full, always store
-            should_store = True
-        elif not existing_entry:
-            # No existing entry for this hash
-            should_store = True
-        elif existing_entry["depth"] <= depth:
-            # New entry has equal or greater depth
-            should_store = True
-        elif self.use_aging:
-            # Use aging-based replacement
-            age_diff = self.current_age - existing_entry["age"]
-            depth_diff = existing_entry["depth"] - depth
-            # Replace if entry is old enough relative to depth advantage
-            should_store = age_diff >= depth_diff
-
-        if should_store:
+        # Now store the new entry if it's better than existing or no existing entry
+        if (
+            not existing_entry
+            or existing_entry["depth"] <= depth
+            or (
+                self.use_tt_aging
+                and self.current_age - existing_entry["age"] > self.MAX_AGE_DIFF
+            )
+        ):
             self.table[hash_val] = {
                 "depth": depth,
                 "score": score,
@@ -127,7 +134,15 @@ class TranspositionTable:
     def clear(self) -> None:
         """Clear all entries from the transposition table."""
         self.table.clear()
+
+    def reset_age(self) -> None:
+        """
+        Invalidate all existing entries by clearing the table
+        and reset age counter to zero.
+        """
         self.current_age = 0
+        if self.use_tt_aging:
+            self.table.clear()
 
     def size(self) -> int:
         """Get the current number of entries in the table."""

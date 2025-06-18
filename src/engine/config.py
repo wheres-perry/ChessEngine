@@ -60,14 +60,12 @@ class EngineConfig:
             raise ValueError(
                 f"Minimax timeout must be positive, got {self.minimax.max_time}"
             )
+        # Validate TT aging is only used with Zobrist
 
-        # Validate TT aging requires Zobrist
         if self.minimax.use_tt_aging and not self.minimax.use_zobrist:
             raise ValueError(
-                "Transposition table aging (use_tt_aging) requires Zobrist hashing "
-                "(use_zobrist) to be enabled."
+                "Transposition table aging requires Zobrist hashing to be enabled"
             )
-
         # Validate evaluation configuration
 
         self._validate_evaluation_config()
@@ -137,10 +135,10 @@ class EngineConfig:
 
         mm_flags = []
         if self.minimax.use_zobrist:
-            zobrist_parts = ["TT/Zobrist"]
+            tt_flags = "TT/Zobrist"
             if self.minimax.use_tt_aging:
-                zobrist_parts.append("Aging")
-            mm_flags.append("/".join(zobrist_parts))
+                tt_flags += "+Aging"
+            mm_flags.append(tt_flags)
         if self.minimax.use_iddfs:
             mm_flags.append("IDDFS")
         if self.minimax.use_alpha_beta:

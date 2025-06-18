@@ -44,6 +44,10 @@ class Minimax:
 
         minimax_config = config.minimax
 
+        # CONFIG VALIDATION: TT‐aging only allowed if Zobrist hashing is enabled
+
+        if minimax_config.use_tt_aging and not minimax_config.use_zobrist:
+            raise ValueError("Transposition table aging requires Zobrist hashing")
         self.use_zobrist = minimax_config.use_zobrist
         self.use_iddfs = minimax_config.use_iddfs
         self.use_alpha_beta = minimax_config.use_alpha_beta
@@ -51,12 +55,6 @@ class Minimax:
         self.use_pvs = minimax_config.use_pvs
         self.use_tt_aging = minimax_config.use_tt_aging
         self.max_time = minimax_config.max_time
-
-        # Initialize other members
-
-        self.start_time = None
-        self.time_up = False
-        self.best_move_first = None
 
         # PVS requires alpha-beta; enforce this
 
@@ -70,12 +68,11 @@ class Minimax:
         if self.use_zobrist:
             self.zobrist = Zobrist()
             self.transposition_table = TranspositionTable(
-                self.DEFAULT_TT_SIZE, self.use_tt_aging
+                self.DEFAULT_TT_SIZE, use_tt_aging=self.use_tt_aging
             )
         else:
             self.zobrist = None
             self.transposition_table = None
-
         self.board = board
         self.evaluator = evaluator
 
@@ -99,6 +96,10 @@ class Minimax:
         self.start_time = time.time()
         self.best_move_first = None
 
+        # Increment age for new search if using TT aging
+
+        if self.use_zobrist and self.transposition_table and self.use_tt_aging:
+            self.transposition_table.increment_age()
         if self.use_iddfs and depth > 1:
             return self._iterative_deepening(depth)
         else:
@@ -136,11 +137,10 @@ class Minimax:
         for current_depth in range(1, max_depth + 1):
             if self._check_time_limit():
                 break
+            # Increment age for each new depth if using TT aging
 
-            # Increment age for new search depth if using aging
-            if self.use_tt_aging and self.transposition_table:
-                self.transposition_table.new_search()
-
+            if self.use_zobrist and self.transposition_table and self.use_tt_aging:
+                self.transposition_table.increment_age()
             score, move = self._search_fixed_depth(current_depth)
 
             if self.time_up:
@@ -163,9 +163,6 @@ class Minimax:
         Returns:
             Tuple of (best_score, best_move)
         """
-        # Increment age for new search if not using iterative deepening
-        if not self.use_iddfs and self.use_tt_aging and self.transposition_table:
-            self.transposition_table.new_search()
         maximizing_player = self.board.turn
         alpha = float(self.NEG_INF)
         beta = float(self.POS_INF)
@@ -354,7 +351,6 @@ class Minimax:
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
-
                 captured_piece = self.board.piece_at(m.to_square)
                 captured_piece_type = (
                     captured_piece.piece_type if captured_piece else None
@@ -428,7 +424,6 @@ class Minimax:
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
-
                 captured_piece = self.board.piece_at(m.to_square)
                 captured_piece_type = (
                     captured_piece.piece_type if captured_piece else None
