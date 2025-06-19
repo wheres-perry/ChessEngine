@@ -26,6 +26,12 @@ class Minimax:
     TIME_CHECK_INTERVAL = 1000
     MVV_LVA_MULTIPLIER = 10
 
+    # LMR parameters
+
+    LMR_MIN_DEPTH = 3  # Minimum depth to apply LMR
+    LMR_MIN_MOVES = 4  # Start LMR after this many moves
+    LMR_REDUCTION = 1  # Depth reduction amount
+
     def __init__(
         self,
         board: chess.Board,
@@ -54,6 +60,7 @@ class Minimax:
         self.use_move_ordering = minimax_config.use_move_ordering
         self.use_pvs = minimax_config.use_pvs
         self.use_tt_aging = minimax_config.use_tt_aging
+        self.use_lmr = minimax_config.use_lmr
         self.max_time = minimax_config.max_time
 
         # PVS requires alpha-beta; enforce this
@@ -62,6 +69,15 @@ class Minimax:
         if minimax_config.use_pvs and not self.use_alpha_beta:
             logger.warning(
                 "PVS requires alpha-beta pruning. Disabling PVS since use_alpha_beta is False."
+            )
+        # LMR requires alpha-beta and move ordering; enforce this
+
+        self.use_lmr = self.use_lmr and self.use_alpha_beta and self.use_move_ordering
+        if minimax_config.use_lmr and not (
+            self.use_alpha_beta and self.use_move_ordering
+        ):
+            logger.warning(
+                "LMR requires alpha-beta pruning and move ordering. Disabling LMR."
             )
         # Initialize Zobrist hashing and transposition table
 
@@ -351,6 +367,7 @@ class Minimax:
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
+
                 captured_piece = self.board.piece_at(m.to_square)
                 captured_piece_type = (
                     captured_piece.piece_type if captured_piece else None
@@ -374,25 +391,55 @@ class Minimax:
                         ks_castle,
                         qs_castle,
                     )
-                # Use PVS for non-first moves if enabled
+                # Determine search depth (with LMR if applicable)
 
-                if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
-                    # First try with a null window around alpha
+                search_depth = depth - 1
+                do_full_search = True
 
+                # Apply LMR for late moves
+
+                if (
+                    self.use_lmr
+                    and depth >= self.LMR_MIN_DEPTH
+                    and i >= self.LMR_MIN_MOVES
+                    and not self.board.is_capture(m)
+                    and not self.board.gives_check(m)
+                    and not self.board.is_check()
+                ):
+
+                    # Reduced depth search
+
+                    reduced_depth = max(0, search_depth - self.LMR_REDUCTION)
                     eval_score = self.minimax_alpha_beta(
-                        depth - 1, alpha, alpha + 0.00001, False
+                        reduced_depth, alpha, alpha + 0.00001, False
                     )
 
-                    # If the score might be better than alpha, do a full re-search
+                    # If reduced search fails high, do full search
 
-                    if eval_score > alpha and eval_score < beta:
+                    if eval_score <= alpha:
+                        do_full_search = False
+                if do_full_search:
+                    # Use PVS for non-first moves if enabled
+
+                    if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
+                        # First try with a null window around alpha
+
                         eval_score = self.minimax_alpha_beta(
-                            depth - 1, alpha, beta, False
+                            search_depth, alpha, alpha + 0.00001, False
                         )
-                else:
-                    # Regular minimax or alpha-beta search
 
-                    eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, False)
+                        # If the score might be better than alpha, do a full re-search
+
+                        if eval_score > alpha and eval_score < beta:
+                            eval_score = self.minimax_alpha_beta(
+                                search_depth, alpha, beta, False
+                            )
+                    else:
+                        # Regular minimax or alpha-beta search
+
+                        eval_score = self.minimax_alpha_beta(
+                            search_depth, alpha, beta, False
+                        )
                 self.board.pop()
 
                 # Restore hash after undoing move
@@ -424,6 +471,7 @@ class Minimax:
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
+
                 captured_piece = self.board.piece_at(m.to_square)
                 captured_piece_type = (
                     captured_piece.piece_type if captured_piece else None
@@ -447,25 +495,55 @@ class Minimax:
                         ks_castle,
                         qs_castle,
                     )
-                # Use PVS for non-first moves if enabled
+                # Determine search depth (with LMR if applicable)
 
-                if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
-                    # First try with a null window around beta
+                search_depth = depth - 1
+                do_full_search = True
 
+                # Apply LMR for late moves
+
+                if (
+                    self.use_lmr
+                    and depth >= self.LMR_MIN_DEPTH
+                    and i >= self.LMR_MIN_MOVES
+                    and not self.board.is_capture(m)
+                    and not self.board.gives_check(m)
+                    and not self.board.is_check()
+                ):
+
+                    # Reduced depth search
+
+                    reduced_depth = max(0, search_depth - self.LMR_REDUCTION)
                     eval_score = self.minimax_alpha_beta(
-                        depth - 1, beta - 0.00001, beta, True
+                        reduced_depth, beta - 0.00001, beta, True
                     )
 
-                    # If the score might be better than beta, do a full re-search
+                    # If reduced search fails low, do full search
 
-                    if eval_score < beta and eval_score > alpha:
+                    if eval_score >= beta:
+                        do_full_search = False
+                if do_full_search:
+                    # Use PVS for non-first moves if enabled
+
+                    if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
+                        # First try with a null window around beta
+
                         eval_score = self.minimax_alpha_beta(
-                            depth - 1, alpha, beta, True
+                            search_depth, beta - 0.00001, beta, True
                         )
-                else:
-                    # Regular minimax or alpha-beta search
 
-                    eval_score = self.minimax_alpha_beta(depth - 1, alpha, beta, True)
+                        # If the score might be better than beta, do a full re-search
+
+                        if eval_score < beta and eval_score > alpha:
+                            eval_score = self.minimax_alpha_beta(
+                                search_depth, alpha, beta, True
+                            )
+                    else:
+                        # Regular minimax or alpha-beta search
+
+                        eval_score = self.minimax_alpha_beta(
+                            search_depth, alpha, beta, True
+                        )
                 self.board.pop()
 
                 # Restore hash after undoing move

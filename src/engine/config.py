@@ -14,6 +14,7 @@ class MinimaxConfig:
     use_move_ordering: bool = True
     use_pvs: bool = True
     use_tt_aging: bool = True
+    use_lmr: bool = True  # Late Move Reduction
     max_time: float | None = DEFAULT_TIMEOUT
 
 
@@ -56,6 +57,12 @@ class EngineConfig:
             raise ValueError(f"Search depth too high (max 20), got {self.search_depth}")
         # Validate minimax timeout
 
+        if self.minimax.use_lmr and not (
+            self.minimax.use_alpha_beta and self.minimax.use_move_ordering
+        ):
+            raise ValueError(
+                "Late Move Reduction (LMR) requires both alpha-beta pruning and move ordering to be enabled"
+            )
         if self.minimax.max_time is not None and self.minimax.max_time <= 0:
             raise ValueError(
                 f"Minimax timeout must be positive, got {self.minimax.max_time}"
@@ -147,6 +154,8 @@ class EngineConfig:
             mm_flags.append("MoveOrder")
         if self.minimax.use_pvs:
             mm_flags.append("PVS")
+        if self.minimax.use_lmr:
+            mm_flags.append("LMR")
         if mm_flags:
             parts.append(f"Search: [{', '.join(mm_flags)}]")
         else:
