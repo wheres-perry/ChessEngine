@@ -362,12 +362,10 @@ class Minimax:
                 if self._check_time_limit():
                     break
                 # Store state for incremental hashing
-
                 old_castling_rights = self.board.castling_rights
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
-
                 captured_piece = self.board.piece_at(m.to_square)
                 captured_piece_type = (
                     captured_piece.piece_type if captured_piece else None
@@ -379,7 +377,6 @@ class Minimax:
                 self.board.push(m)
 
                 # Update hash incrementally if using Zobrist
-
                 if self.zobrist:
                     self.zobrist.update_hash_for_move(
                         self.board,
@@ -391,13 +388,11 @@ class Minimax:
                         ks_castle,
                         qs_castle,
                     )
-                # Determine search depth (with LMR if applicable)
 
                 search_depth = depth - 1
-                do_full_search = True
+                eval_score = 0.0
 
-                # Apply LMR for late moves
-
+                # Apply LMR for late, quiet moves
                 if (
                     self.use_lmr
                     and depth >= self.LMR_MIN_DEPTH
@@ -406,44 +401,41 @@ class Minimax:
                     and not self.board.gives_check(m)
                     and not self.board.is_check()
                 ):
-
-                    # Reduced depth search
-
+                    # Reduced depth search with null window
                     reduced_depth = max(0, search_depth - self.LMR_REDUCTION)
-                    eval_score = self.minimax_alpha_beta(
+                    score = self.minimax_alpha_beta(
                         reduced_depth, alpha, alpha + 0.00001, False
                     )
-
-                    # If reduced search fails high, do full search
-
-                    if eval_score <= alpha:
-                        do_full_search = False
-                if do_full_search:
-                    # Use PVS for non-first moves if enabled
-
-                    if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
-                        # First try with a null window around alpha
-
-                        eval_score = self.minimax_alpha_beta(
-                            search_depth, alpha, alpha + 0.00001, False
-                        )
-
-                        # If the score might be better than alpha, do a full re-search
-
-                        if eval_score > alpha and eval_score < beta:
-                            eval_score = self.minimax_alpha_beta(
-                                search_depth, alpha, beta, False
-                            )
-                    else:
-                        # Regular minimax or alpha-beta search
-
+                    # If move looks promising, re-search at full depth
+                    if score > alpha:
                         eval_score = self.minimax_alpha_beta(
                             search_depth, alpha, beta, False
                         )
+                    else:
+                        eval_score = score
+                else:
+                    # Regular search (first move or non-LMR moves)
+                    if self.use_pvs and i > 0 and self.use_alpha_beta:
+                        # PVS: null window search first
+                        score = self.minimax_alpha_beta(
+                            search_depth, alpha, alpha + 0.00001, False
+                        )
+                        # If promising, re-search with full window
+                        if score > alpha and score < beta:
+                            eval_score = self.minimax_alpha_beta(
+                                search_depth, alpha, beta, False
+                            )
+                        else:
+                            eval_score = score
+                    else:
+                        # First move or no PVS: full window search
+                        eval_score = self.minimax_alpha_beta(
+                            search_depth, alpha, beta, False
+                        )
+
                 self.board.pop()
 
                 # Restore hash after undoing move
-
                 if self.zobrist:
                     self.zobrist.hash_board(
                         self.board
@@ -466,12 +458,10 @@ class Minimax:
                 if self._check_time_limit():
                     break
                 # Store state for incremental hashing
-
                 old_castling_rights = self.board.castling_rights
                 old_ep_square = self.board.ep_square
 
                 # Get move information before making the move
-
                 captured_piece = self.board.piece_at(m.to_square)
                 captured_piece_type = (
                     captured_piece.piece_type if captured_piece else None
@@ -483,7 +473,6 @@ class Minimax:
                 self.board.push(m)
 
                 # Update hash incrementally if using Zobrist
-
                 if self.zobrist:
                     self.zobrist.update_hash_for_move(
                         self.board,
@@ -495,13 +484,11 @@ class Minimax:
                         ks_castle,
                         qs_castle,
                     )
-                # Determine search depth (with LMR if applicable)
 
                 search_depth = depth - 1
-                do_full_search = True
+                eval_score = 0.0
 
-                # Apply LMR for late moves
-
+                # Apply LMR for late, quiet moves
                 if (
                     self.use_lmr
                     and depth >= self.LMR_MIN_DEPTH
@@ -510,44 +497,41 @@ class Minimax:
                     and not self.board.gives_check(m)
                     and not self.board.is_check()
                 ):
-
-                    # Reduced depth search
-
+                    # Reduced depth search with null window
                     reduced_depth = max(0, search_depth - self.LMR_REDUCTION)
-                    eval_score = self.minimax_alpha_beta(
+                    score = self.minimax_alpha_beta(
                         reduced_depth, beta - 0.00001, beta, True
                     )
-
-                    # If reduced search fails low, do full search
-
-                    if eval_score >= beta:
-                        do_full_search = False
-                if do_full_search:
-                    # Use PVS for non-first moves if enabled
-
-                    if self.use_pvs and i > 0 and self.use_alpha_beta and depth > 1:
-                        # First try with a null window around beta
-
-                        eval_score = self.minimax_alpha_beta(
-                            search_depth, beta - 0.00001, beta, True
-                        )
-
-                        # If the score might be better than beta, do a full re-search
-
-                        if eval_score < beta and eval_score > alpha:
-                            eval_score = self.minimax_alpha_beta(
-                                search_depth, alpha, beta, True
-                            )
-                    else:
-                        # Regular minimax or alpha-beta search
-
+                    # If move looks promising, re-search at full depth
+                    if score < beta:
                         eval_score = self.minimax_alpha_beta(
                             search_depth, alpha, beta, True
                         )
+                    else:
+                        eval_score = score
+                else:
+                    # Regular search (first move or non-LMR moves)
+                    if self.use_pvs and i > 0 and self.use_alpha_beta:
+                        # PVS: null window search first
+                        score = self.minimax_alpha_beta(
+                            search_depth, beta - 0.00001, beta, True
+                        )
+                        # If promising, re-search with full window
+                        if score < beta and score > alpha:
+                            eval_score = self.minimax_alpha_beta(
+                                search_depth, alpha, beta, True
+                            )
+                        else:
+                            eval_score = score
+                    else:
+                        # First move or no PVS: full window search
+                        eval_score = self.minimax_alpha_beta(
+                            search_depth, alpha, beta, True
+                        )
+
                 self.board.pop()
 
                 # Restore hash after undoing move
-
                 if self.zobrist:
                     self.zobrist.hash_board(
                         self.board
