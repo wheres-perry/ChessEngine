@@ -24,8 +24,7 @@ class EvaluationConfig:
 
     evaluator_type: Literal["simple", "mock", "complex"] = "complex"
 
-    # --- Flags for the Complex Evaluator ---
-
+    # Complex evaluation flags
     use_material: bool = True
     use_pst: bool = True  # Piece-Square Tables
     use_mobility: bool = True
@@ -48,41 +47,54 @@ class EngineConfig:
     def _validate_config(self):
         """Validate the configuration for consistency and correctness."""
         # Validate search depth
-
         if self.search_depth < 1:
             raise ValueError(
                 f"Search depth must be at least 1, got {self.search_depth}"
             )
         if self.search_depth > 20:
             raise ValueError(f"Search depth too high (max 20), got {self.search_depth}")
-        # Validate minimax timeout
+        
+        # Validate minimax configuration
+        self._validate_minimax_config()
+        
+        # Validate evaluation configuration
+        self._validate_evaluation_config()
 
-        if self.minimax.use_lmr and not (
-            self.minimax.use_alpha_beta and self.minimax.use_move_ordering
+    def _validate_minimax_config(self):
+        """Validate minimax-specific configuration."""
+        minimax_config = self.minimax
+        
+        # Validate timeout
+        if minimax_config.max_time is not None and minimax_config.max_time <= 0:
+            raise ValueError(
+                f"Minimax timeout must be positive, got {minimax_config.max_time}"
+            )
+        
+        # Validate TT aging requires Zobrist hashing
+        if minimax_config.use_tt_aging and not minimax_config.use_zobrist:
+            raise ValueError(
+                "Transposition table aging requires Zobrist hashing to be enabled"
+            )
+        
+        # Validate PVS requires alpha-beta pruning
+        if minimax_config.use_pvs and not minimax_config.use_alpha_beta:
+            raise ValueError(
+                "Principal Variation Search (PVS) requires alpha-beta pruning to be enabled"
+            )
+        
+        # Validate LMR requires both alpha-beta and move ordering
+        if minimax_config.use_lmr and not (
+            minimax_config.use_alpha_beta and minimax_config.use_move_ordering
         ):
             raise ValueError(
                 "Late Move Reduction (LMR) requires both alpha-beta pruning and move ordering to be enabled"
             )
-        if self.minimax.max_time is not None and self.minimax.max_time <= 0:
-            raise ValueError(
-                f"Minimax timeout must be positive, got {self.minimax.max_time}"
-            )
-        # Validate TT aging is only used with Zobrist
-
-        if self.minimax.use_tt_aging and not self.minimax.use_zobrist:
-            raise ValueError(
-                "Transposition table aging requires Zobrist hashing to be enabled"
-            )
-        # Validate evaluation configuration
-
-        self._validate_evaluation_config()
 
     def _validate_evaluation_config(self):
         """Validate evaluation-specific configuration."""
         eval_config = self.evaluation
 
         # Check if complex evaluation flags are used with simple evaluator
-
         if eval_config.evaluator_type == "simple":
             complex_flags = [
                 ("use_pst", eval_config.use_pst),
@@ -99,8 +111,8 @@ class EngineConfig:
                     f"Complex evaluation flags [{flag_list}] cannot be used with "
                     f"simple evaluator. Use 'complex' evaluator type or disable these flags."
                 )
+        
         # Check if mock evaluator has any evaluation flags enabled
-
         if eval_config.evaluator_type == "mock":
             all_flags = [
                 ("use_material", eval_config.use_material),
@@ -118,8 +130,8 @@ class EngineConfig:
                     f"Evaluation flags [{flag_list}] cannot be used with "
                     f"mock evaluator. Mock evaluator ignores all evaluation settings."
                 )
+        
         # Validate that complex evaluator has at least one feature enabled
-
         if eval_config.evaluator_type == "complex":
             if not any(
                 [
@@ -139,7 +151,6 @@ class EngineConfig:
         parts.append(f"Depth: {self.search_depth}")
 
         # Minimax flags
-
         mm_flags = []
         if self.minimax.use_zobrist:
             tt_flags = "TT/Zobrist"
@@ -160,8 +171,8 @@ class EngineConfig:
             parts.append(f"Search: [{', '.join(mm_flags)}]")
         else:
             parts.append("Search: [Base Minimax]")
+        
         # Evaluation flags
-
         eval_parts = [self.evaluation.evaluator_type.capitalize()]
         if self.evaluation.evaluator_type == "complex":
             complex_flags = []

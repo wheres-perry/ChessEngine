@@ -27,7 +27,6 @@ class Minimax:
     MVV_LVA_MULTIPLIER = 10
 
     # LMR parameters
-
     LMR_MIN_DEPTH = 3  # Minimum depth to apply LMR
     LMR_MIN_MOVES = 4  # Start LMR after this many moves
     LMR_REDUCTION = 1  # Depth reduction amount
@@ -47,13 +46,8 @@ class Minimax:
             config: Engine configuration
         """
         # Extract minimax config
-
         minimax_config = config.minimax
 
-        # CONFIG VALIDATION: TT‐aging only allowed if Zobrist hashing is enabled
-
-        if minimax_config.use_tt_aging and not minimax_config.use_zobrist:
-            raise ValueError("Transposition table aging requires Zobrist hashing")
         self.use_zobrist = minimax_config.use_zobrist
         self.use_iddfs = minimax_config.use_iddfs
         self.use_alpha_beta = minimax_config.use_alpha_beta
@@ -63,24 +57,7 @@ class Minimax:
         self.use_lmr = minimax_config.use_lmr
         self.max_time = minimax_config.max_time
 
-        # PVS requires alpha-beta; enforce this
-
-        self.use_pvs = self.use_pvs and self.use_alpha_beta
-        if minimax_config.use_pvs and not self.use_alpha_beta:
-            logger.warning(
-                "PVS requires alpha-beta pruning. Disabling PVS since use_alpha_beta is False."
-            )
-        # LMR requires alpha-beta and move ordering; enforce this
-
-        self.use_lmr = self.use_lmr and self.use_alpha_beta and self.use_move_ordering
-        if minimax_config.use_lmr and not (
-            self.use_alpha_beta and self.use_move_ordering
-        ):
-            logger.warning(
-                "LMR requires alpha-beta pruning and move ordering. Disabling LMR."
-            )
         # Initialize Zobrist hashing and transposition table
-
         if self.use_zobrist:
             self.zobrist = Zobrist()
             self.transposition_table = TranspositionTable(
@@ -89,11 +66,11 @@ class Minimax:
         else:
             self.zobrist = None
             self.transposition_table = None
+        
         self.board = board
         self.evaluator = evaluator
 
         # Initialize hash for the starting position
-
         if self.zobrist:
             self.zobrist.hash_board(self.board)
 
