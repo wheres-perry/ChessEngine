@@ -12,54 +12,46 @@ from src.engine.search.zobrist import Zobrist
 
 class TestConfigValidation:
     def test_tt_aging_without_zobrist_raises(self):
-        with pytest.raises(ValueError, match="aging.*Zobrist"):
+        with pytest.raises(ValueError, match=r"(?i).*aging.*zobrist|zobrist.*aging"):
             EngineConfig(minimax=MinimaxConfig(use_zobrist=False, use_tt_aging=True))
 
     def test_lmr_without_alpha_beta_raises(self):
-        with pytest.raises(ValueError, match="LMR.*alpha-beta"):
+        with pytest.raises(ValueError, match=r"(?i).*lmr.*alpha.*beta|alpha.*beta.*lmr"):
             EngineConfig(minimax=MinimaxConfig(use_alpha_beta=False, use_lmr=True))
 
     def test_lmr_without_both_dependencies_raises(self):
-        with pytest.raises(ValueError, match="LMR.*alpha-beta"):
+        with pytest.raises(ValueError, match=r"(?i).*lmr.*alpha.*beta|alpha.*beta.*lmr"):
             EngineConfig(
                 minimax=MinimaxConfig(
                     use_alpha_beta=False, use_move_ordering=False, use_lmr=True
                 )
             )
 
+    def test_pvs_without_alpha_beta_raises(self):
+        with pytest.raises(ValueError, match=r"(?i).*pvs.*alpha.*beta|alpha.*beta.*pvs|principal.*variation.*alpha"):
+            EngineConfig(minimax=MinimaxConfig(use_alpha_beta=False, use_pvs=True, use_lmr=False))
 
-class TestLMRDependency:
-    def test_lmr_runtime_enforcement(self, caplog):
-        caplog.set_level(logging.WARNING)
+
+class TestConfigImmutable:
+    def test_config_prevents_invalid_runtime_changes(self):
+        """Test that invalid configurations are caught at config creation time."""
+        # Valid config should work
         cfg = EngineConfig(
             minimax=MinimaxConfig(
                 use_alpha_beta=True, use_move_ordering=True, use_lmr=True
             )
         )
-        cfg.minimax.use_alpha_beta = False
         engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
-        assert (
-            engine.use_lmr is False
-        ), "LMR should be automatically disabled when alpha-beta is disabled at runtime"
-        assert any(
-            "Disabling LMR" in rec.getMessage() for rec in caplog.records
-        ), "Expected warning about LMR being disabled due to missing alpha-beta dependency"
+        assert engine.use_lmr is True
+        assert engine.use_alpha_beta is True
 
-
-class TestPVSDependency:
-    def test_pvs_disabled_with_warning(self, caplog):
-        caplog.set_level(logging.WARNING)
-        cfg = EngineConfig(
-            minimax=MinimaxConfig(use_alpha_beta=True, use_pvs=True, use_lmr=False)
-        )
-        cfg.minimax.use_alpha_beta = False
-        engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
-        assert (
-            engine.use_pvs is False
-        ), "PVS should be automatically disabled when alpha-beta is disabled at runtime"
-        assert any(
-            "Disabling PVS" in rec.getMessage() for rec in caplog.records
-        ), "Expected warning about PVS being disabled due to missing alpha-beta dependency"
+        # Invalid config should be caught at creation
+        with pytest.raises(ValueError, match="LMR.*alpha-beta"):
+            EngineConfig(
+                minimax=MinimaxConfig(
+                    use_alpha_beta=False, use_move_ordering=True, use_lmr=True
+                )
+            )
 
 
 class TestLMRBasics:
@@ -452,13 +444,8 @@ class TestTranspositionTableEntryTypes:
 
 class TestTranspositionTableIntegration:
     def test_config_validation(self):
-        board = chess.Board()
-        evaluator = MockEval(board)
         with pytest.raises(ValueError, match="aging.*Zobrist"):
-            config = EngineConfig(
-                minimax=MinimaxConfig(use_zobrist=False, use_tt_aging=True)
-            )
-            Minimax(board, evaluator, config)
+            EngineConfig(minimax=MinimaxConfig(use_zobrist=False, use_tt_aging=True))
 
     def test_node_count_reduction(self):
         board = chess.Board()

@@ -76,18 +76,18 @@ class EngineConfig:
                 "Transposition table aging requires Zobrist hashing to be enabled"
             )
         
-        # Validate PVS requires alpha-beta pruning
-        if minimax_config.use_pvs and not minimax_config.use_alpha_beta:
-            raise ValueError(
-                "Principal Variation Search (PVS) requires alpha-beta pruning to be enabled"
-            )
-        
-        # Validate LMR requires both alpha-beta and move ordering
+        # Validate LMR requires both alpha-beta and move ordering (check this first)
         if minimax_config.use_lmr and not (
             minimax_config.use_alpha_beta and minimax_config.use_move_ordering
         ):
             raise ValueError(
                 "Late Move Reduction (LMR) requires both alpha-beta pruning and move ordering to be enabled"
+            )
+        
+        # Validate PVS requires alpha-beta pruning
+        if minimax_config.use_pvs and not minimax_config.use_alpha_beta:
+            raise ValueError(
+                "Principal Variation Search (PVS) requires alpha-beta pruning to be enabled"
             )
 
     def _validate_evaluation_config(self):

@@ -43,9 +43,9 @@ class Minimax:
         Args:
             board: Chess board position to search from
             evaluator: Position evaluation function
-            config: Engine configuration
+            config: Engine configuration (assumed to be pre-validated)
         """
-        # Extract minimax config
+        # Extract minimax config - no validation needed as config is pre-validated
         minimax_config = config.minimax
 
         self.use_zobrist = minimax_config.use_zobrist
