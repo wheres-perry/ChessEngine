@@ -6,8 +6,8 @@ import sys
 import threading
 import time
 
-import engine.search.minimax as minimax
-import io_utils.load_games as load_games
+import chess
+import src.engine.search.minimax as minimax
 import src.engine.evaluators.simple_eval as simple_eval
 from src.engine.config import EngineConfig, EvaluationConfig, MinimaxConfig
 
@@ -50,14 +50,19 @@ def handle_args():
         help="Disable Principal Variation Search",
     )
     parser.add_argument(
+        "--no-lmr",
+        action="store_true",
+        help="Disable Late Move Reduction",
+    )
+    parser.add_argument(
         "--depth",
         type=int,
-        default=6,
-        help="Search depth for benchmarks (default: 6)",
+        default=8,
+        help="Search depth for benchmarks (default: 8)",
     )
     parser.add_argument(
         "--evaluator",
-        choices=["simple", "nn", "deep_cnn"],
+        choices=["simple", "complex", "mock"],
         default="simple",
         help="Type of position evaluator to use",
     )
@@ -84,70 +89,26 @@ def benchmark_minimax():
     logger = logging.getLogger(__name__)
 
     # Get command line arguments
-
     args = handle_args()
     depth = args.depth
-    timeout_seconds = 25
+    timeout_seconds = None  # No timeout for benchmark runs
 
-    # Create base config
+    # Create a valid evaluation config based on args
+    eval_config_kwargs = {"evaluator_type": args.evaluator}
+    if args.evaluator != "complex":
+        # For 'simple' and 'mock', disable all complex flags
+        eval_config_kwargs["use_pst"] = False
+        eval_config_kwargs["use_mobility"] = False
+        eval_config_kwargs["use_pawn_structure"] = False
+        eval_config_kwargs["use_king_safety"] = False
+        # 'simple' uses material, 'mock' does not.
+        eval_config_kwargs["use_material"] = args.evaluator == "simple"
+    
+    base_eval_config = EvaluationConfig(**eval_config_kwargs)
 
-    base_config = EngineConfig(
-        search_depth=depth,
-        minimax=MinimaxConfig(),
-        evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-    )
 
-    # Test configurations using the configuration system
-
+    # Define benchmark configurations, building from minimal to full-featured
     configs = [
-        {
-            "name": "Default (All Optimizations)",
-            "config": EngineConfig(
-                minimax=MinimaxConfig(),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-                search_depth=depth,
-            ),
-        },
-        {
-            "name": "No Zobrist",
-            "config": EngineConfig(
-                minimax=MinimaxConfig(use_zobrist=False),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-                search_depth=depth,
-            ),
-        },
-        {
-            "name": "No IDDFS",
-            "config": EngineConfig(
-                minimax=MinimaxConfig(use_iddfs=False),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-                search_depth=depth,
-            ),
-        },
-        {
-            "name": "No Alpha-Beta",
-            "config": EngineConfig(
-                minimax=MinimaxConfig(use_alpha_beta=False),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-                search_depth=depth,
-            ),
-        },
-        {
-            "name": "No Move Ordering",
-            "config": EngineConfig(
-                minimax=MinimaxConfig(use_move_ordering=False),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-                search_depth=depth,
-            ),
-        },
-        {
-            "name": "No PVS",
-            "config": EngineConfig(
-                minimax=MinimaxConfig(use_pvs=False),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-                search_depth=depth,
-            ),
-        },
         {
             "name": "Minimal (No Optimizations)",
             "config": EngineConfig(
@@ -157,69 +118,115 @@ def benchmark_minimax():
                     use_alpha_beta=False,
                     use_move_ordering=False,
                     use_pvs=False,
+                    use_lmr=False,
+                    use_tt_aging=False,
                 ),
-                evaluation=EvaluationConfig(evaluator_type=args.evaluator),
+                evaluation=base_eval_config,
+                search_depth=depth,
+            ),
+        },
+        {
+            "name": "Base + Alpha-Beta",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(
+                    use_alpha_beta=True,
+                    use_zobrist=False,
+                    use_iddfs=False,
+                    use_move_ordering=False,
+                    use_pvs=False,
+                    use_lmr=False,
+                    use_tt_aging=False,
+                ),
+                evaluation=base_eval_config,
+                search_depth=depth,
+            ),
+        },
+        {
+            "name": "Base + AB + MO + PVS + LMR",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(
+                    use_alpha_beta=True,
+                    use_move_ordering=True,
+                    use_pvs=True,
+                    use_lmr=True,
+                    use_zobrist=False,
+                    use_iddfs=False,
+                    use_tt_aging=False,
+                ),
+                evaluation=base_eval_config,
+                search_depth=depth,
+            ),
+        },
+        {
+            "name": "Search + Zobrist/TT",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(
+                    use_alpha_beta=True,
+                    use_move_ordering=True,
+                    use_pvs=True,
+                    use_lmr=True,
+                    use_zobrist=True,
+                    use_tt_aging=False,  # Test without aging first
+                    use_iddfs=False,
+                ),
+                evaluation=base_eval_config,
+                search_depth=depth,
+            ),
+        }
+        {
+            "name": "Default (All Optimizations)",
+            "config": EngineConfig(
+                minimax=MinimaxConfig(
+                    use_zobrist=True,
+                    use_iddfs=False,
+                    use_alpha_beta=True,
+                    use_move_ordering=True,
+                    use_pvs=True,
+                    use_lmr=True,
+                    use_tt_aging=True,
+                ),
+                evaluation=base_eval_config,
                 search_depth=depth,
             ),
         },
     ]
 
-    # Apply command-line overrides to all configs if specified
 
-    if args.no_zobrist:
-        for cfg in configs:
-            cfg["config"].minimax.use_zobrist = False
-    if args.no_iddfs:
-        for cfg in configs:
-            cfg["config"].minimax.use_iddfs = False
-    if args.no_alpha_beta:
-        for cfg in configs:
-            cfg["config"].minimax.use_alpha_beta = False
-            cfg["config"].minimax.use_pvs = False  # PVS requires alpha-beta
-    if args.no_move_ordering:
-        for cfg in configs:
-            cfg["config"].minimax.use_move_ordering = False
-    if args.no_pvs:
-        for cfg in configs:
-            cfg["config"].minimax.use_pvs = False
-    num_games = 3
+    # Define static board positions (FENs)
+    static_fens = [
+        "8/P3n3/pp6/p3P3/k1P1p2n/Pp2p3/1P2PpBp/3b1K2 w - - 0 1",  # Starting position
+        "2k5/p1p2p2/1pbp4/4pR2/8/PNPP1B1q/1P5P/R2QK1r1 w - - 9 26",
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",  # Complex middlegame
+    ]
+    test_boards = [chess.Board(fen) for fen in static_fens]
+    num_games = len(test_boards)
 
     print("=" * 80)
-    print(
-        f"MINIMAX BENCHMARK - Depth {depth}, {num_games} Games, {timeout_seconds}s Timeout"
-    )
+    print(f"MINIMAX BENCHMARK - Depth {depth}, {num_games} Static Games, No Timeout")
     print("=" * 80)
 
-    # Generate test boards
-
-    test_boards = []
-    for i in range(num_games):
-        try:
-            board = load_games.random_board()
-            if board:
-                test_boards.append(board)
-                logger.debug(f"Loaded test board {i+1}: {board.fen()}")
-        except Exception as e:
-            logger.error(f"Error loading test board {i+1}: {e}")
-    if not test_boards:
-        logger.error("No test boards could be loaded")
-        return
     print(f"Testing {len(test_boards)} game positions:")
     for i, board in enumerate(test_boards):
         print(f"  Game {i+1}: {board.fen()[:50]}...")
     print()
 
     # Results storage
-
     results = {}
 
     # Run benchmark for each configuration
+    for config_item in configs:
+        config_name = config_item["name"]
+        engine_config = config_item["config"]
 
-    for config in configs:
-        config_name = config["name"]
-        config_params = config["params"]
+        # Validate config before running
+        try:
+            engine_config._validate_config()
+        except ValueError as e:
+            print(f"Skipping invalid configuration '{config_name}': {e}")
+            print("-" * 60)
+            continue
 
-        print(f"Testing: {config_name}")
+        print(f"Testing: {config_name} ({engine_config})")
         print("-" * 60)
 
         results[config_name] = {
@@ -234,23 +241,13 @@ def benchmark_minimax():
 
         for i, board in enumerate(test_boards):
             try:
-                # Create evaluator for this board
-
                 evaluator = simple_eval.SimpleEval(board.copy())
-
-                # Create minimax with specified configuration
-
-                mm = minimax.Minimax(board.copy(), evaluator, config=config["config"])
-
-                # Set up threading-based timeout
-
+                mm = minimax.Minimax(board.copy(), evaluator, config=engine_config)
                 result_queue = queue.Queue()
                 search_thread = threading.Thread(
                     target=run_minimax_with_timeout,
                     args=(mm, depth, result_queue, timeout_seconds),
                 )
-
-                # Time the search
 
                 start_time = time.time()
                 search_thread.start()
@@ -259,14 +256,9 @@ def benchmark_minimax():
                 search_time = end_time - start_time
 
                 if search_thread.is_alive():
-                    # Timeout occurred
-
                     results[config_name]["timeouts"] += 1
                     print(f"  Game {i+1}: TIMEOUT after {search_time:.1f}s")
-                    # Note: Thread will continue running in background, but we move on
                 else:
-                    # Thread completed, get result
-
                     try:
                         result_type, result_data, move = result_queue.get_nowait()
                         if result_type == "success":
@@ -282,8 +274,6 @@ def benchmark_minimax():
                                 f"  Game {i+1}: Move={move}, Score={score_display}, Time={search_time:.3f}s"
                             )
                         else:
-                            # Error occurred
-
                             results[config_name]["failed"] += 1
                             print(f"  Game {i+1}: FAILED - {result_data}")
                     except queue.Empty:
@@ -293,21 +283,19 @@ def benchmark_minimax():
                 logger.error(f"Error in {config_name} for game {i+1}: {e}")
                 results[config_name]["failed"] += 1
                 print(f"  Game {i+1}: FAILED - {e}")
-        # Calculate averages
 
         if results[config_name]["times"]:
             results[config_name]["avg_time"] = results[config_name]["total_time"] / len(
                 results[config_name]["times"]
             )
         else:
-            results[config_name]["avg_time"] = float("inf")  # All timeouts or failures
+            results[config_name]["avg_time"] = float("inf")
         print(f"  Total Time: {results[config_name]['total_time']:.3f}s")
         print(f"  Average Time: {results[config_name]['avg_time']:.3f}s")
-        print(f"  Timeouts: {results[config_name]['timeouts']}")
         print(f"  Failed: {results[config_name]['failed']}")
         print()
-    # Summary table
 
+    # Summary table
     print("=" * 80)
     print("BENCHMARK SUMMARY")
     print("=" * 80)
@@ -372,24 +360,7 @@ def main():
     logger.info(f"Starting script with verbosity level: {verbosity}")
     logger.debug(f"Command line arguments parsed: {args}")
 
-    # Create config from command line arguments
-
-    engine_config = EngineConfig(
-        minimax=MinimaxConfig(
-            use_zobrist=not args.no_zobrist,
-            use_iddfs=not args.no_iddfs,
-            use_alpha_beta=not args.no_alpha_beta,
-            use_move_ordering=not args.no_move_ordering,
-            use_pvs=not args.no_pvs,
-        ),
-        evaluation=EvaluationConfig(evaluator_type=args.evaluator),
-        search_depth=args.depth,
-    )
-
-    logger.info(f"Engine configuration: {engine_config}")
-
     # Run the benchmark
-
     benchmark_minimax()
 
 

@@ -1,17 +1,16 @@
 from typing import Literal, TypedDict
-
+import chess
 
 class TTEntry(TypedDict):
     depth: int
     score: float
     type: Literal["upper", "lower", "exact"]
-    age: int  # Add age field
-
+    age: int
+    best_move: chess.Move | None  # FIXED: Added best move field
 
 class TranspositionTable:
     """
     Transposition table for storing previously evaluated positions.
-
     Uses Zobrist hashing to store position evaluations with depth and bound information
     to avoid re-evaluating identical positions during search.
     """
@@ -75,7 +74,31 @@ class TranspositionTable:
             return beta
         elif entry_type == "upper" and score <= alpha:
             return alpha
+
         return None
+
+    def get_best_move(self, hash_val: int) -> chess.Move | None:
+        """
+        Get the best move for a position if available.
+        
+        Args:
+            hash_val: Zobrist hash of the position
+            
+        Returns:
+            Best move if available and not too old, None otherwise
+        """
+        entry = self.table.get(hash_val)
+        if not entry:
+            return None
+            
+        # Check if entry is too old if aging is enabled
+        if self.use_tt_aging:
+            if self.current_age < entry["age"] or (
+                entry["age"] < self.current_age - self.MAX_AGE_DIFF
+            ):
+                return None
+                
+        return entry["best_move"]
 
     def store(
         self,
@@ -85,6 +108,7 @@ class TranspositionTable:
         alpha: float,
         beta: float,
         original_alpha: float,
+        best_move: chess.Move | None = None,  # FIXED: Added best move parameter
     ) -> None:
         """
         Store a position evaluation in the transposition table.
@@ -96,6 +120,7 @@ class TranspositionTable:
             alpha: Current alpha value
             beta: Current beta value
             original_alpha: Alpha value at start of search
+            best_move: Best move found for this position
         """
         # Determine entry type based on alpha-beta bounds
         if score <= original_alpha:
@@ -129,6 +154,7 @@ class TranspositionTable:
                 "score": score,
                 "type": entry_type,
                 "age": self.current_age,
+                "best_move": best_move,  # FIXED: Store the best move
             }
 
     def clear(self) -> None:
