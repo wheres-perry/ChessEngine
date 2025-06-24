@@ -7,3 +7,4 @@
 !poetry.lock
 !*__init__.py
 !src/
+!data/
