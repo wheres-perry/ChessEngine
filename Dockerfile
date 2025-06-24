@@ -1,4 +1,5 @@
-FROM python:3.13.2-alpine3.21@sha256:323a717dc4a010fee21e3f1aac738ee10bb485de4e7593ce242b36ee48d6b352
+# syntax=docker/dockerfile:1
+FROM python:3.13.2-alpine3.21
 
 WORKDIR /app
 
@@ -6,9 +7,12 @@ ENV PYTHONPATH=/app
 
 COPY . .
 
-RUN pip install --no-cache-dir poetry && \
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache stockfish && \
+    pip install --no-cache-dir poetry && \
     poetry config virtualenvs.create true && \
     poetry config virtualenvs.in-project true && \
     poetry install --with=dev --no-cache --no-root
 
-CMD ["poetry", "run", "python", "-c", "import chess; print('Chess Engine Ready')"]
+CMD ["poetry", "run", "python", "-c", "import chess; import chess.engine; print('Chess Engine Ready with Stockfish')"]

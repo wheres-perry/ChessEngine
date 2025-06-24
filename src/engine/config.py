@@ -14,7 +14,7 @@ class MinimaxConfig:
     use_move_ordering: bool = True
     use_pvs: bool = True
     use_tt_aging: bool = True
-    use_lmr: bool = True  # Late Move Reduction
+    use_lmr: bool = True  
     max_time: float | None = DEFAULT_TIMEOUT
 
 
