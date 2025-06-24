@@ -10,54 +10,21 @@ from src.engine.config import EngineConfig, MinimaxConfig
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def load_fen_boards(fen_dir="data/raw/example_fens"):
-    """Load chess boards from .fen files in the specified directory."""
-    boards = []
-    fen_path = Path(fen_dir)
-    
-    if not fen_path.exists():
-        logger.warning(f"FEN directory {fen_path} does not exist")
-        return boards
-    
-    # Only process M01.fen through M06.fen
-    for i in range(7, 12):
-        fen_file = fen_path / f"M{i:02d}.fen"
-        if fen_file.exists():
-            try:
-                with open(fen_file, 'r') as f:
-                    fen_string = f.read().strip()
-                    board = chess.Board(fen_string)
-                    boards.append(board)
-                    logger.info(f"Loaded board from {fen_file.name}")
-            except Exception as e:
-                logger.error(f"Error loading {fen_file.name}: {e}")
-        else:
-            logger.warning(f"File {fen_file.name} not found")
-    
-    return boards
 
 class EngineProfiler:
     """Simplified chess engine profiler with node count tracking only."""
     
     def __init__(self):
         self.depth = 7
-        self.test_board = chess.Board("8/P3n3/pp6/p3P3/k1P1p2n/Pp2p3/1P2PpBp/3b1K2 w - - 0 1")
+        self.test_board = chess.Board()
         self.config_totals = {}
         
-        # 4 key configurations to isolate performance issues
+        # 2 configurations to test against; all optimizations or none
         self.configs = {
             "Base (No Optimizations)": MinimaxConfig(
                 use_zobrist=False, use_alpha_beta=False, use_move_ordering=False,
                 use_iddfs=False, use_pvs=False, use_lmr=False, use_tt_aging=False
-            ),
-            "Alpha-Beta Only": MinimaxConfig(
-                use_zobrist=False, use_alpha_beta=True, use_move_ordering=False,
-                use_iddfs=False, use_pvs=False, use_lmr=False, use_tt_aging=False
-            ),
-            "All Optimizations (No TT Aging)": MinimaxConfig(
-                use_zobrist=True, use_alpha_beta=True, use_move_ordering=True,
-                use_iddfs=True, use_pvs=True, use_lmr=True, use_tt_aging=False
-            ),
+            )
             "All Optimizations": MinimaxConfig(
                 use_zobrist=True, use_alpha_beta=True, use_move_ordering=True,
                 use_iddfs=True, use_pvs=True, use_lmr=True, use_tt_aging=True
@@ -68,12 +35,17 @@ class EngineProfiler:
         for config_name in self.configs:
             self.config_totals[config_name] = 0
 
-    def run_benchmark(self, name: str, config: MinimaxConfig, game_length: int) -> dict:
+    def add_config(name: str, conf: MinimaxConfig):
+        self.configs[name] = conf
+        self.config_totals[name] = 0
+
+
+    def run_board(self, name: str, config: MinimaxConfig, game_length: int) -> dict:
         """Run a single benchmark test."""
         logger.info(f"Testing {name}")
         
         board = self.test_board.copy()
-        evaluator = simple_eval.SimpleEval(board)
+        evaluator = simple_eval.MockEval(board)
         engine = minimax.Minimax(board, evaluator, EngineConfig(minimax=config))
         
         try:
@@ -94,21 +66,24 @@ class EngineProfiler:
             logger.error(f"Error in {name}: {e}")
             return {'name': name, 'success': False, 'nodes': 0, 'error': str(e)}
 
-    def run_all(self, game_length: int):
+    def run_board_all_configs(self, game_length: int):
         """Run all benchmarks and print results."""
         logger.info(f"Starting benchmark suite (depth={self.depth}) for position: {self.test_board.fen()}")
-        
-        results = [self.run_benchmark(name, config, game_length) for name, config in self.configs.items()]
+        i = 0
+        for name, config in self.configs.items():
+            print("Starting eval with \"{name}\" config")
+            self.run_board(name, config, game_length) 
         
 
-    def run_multiple_games(self, board_list, game_length: int):
+    def profile(self, board_list, game_length: int):
         """Run benchmarks on multiple chess boards."""
-        # Reset totals
+        # Game length signifies how back and forth moves, important for displaying benefits of zobrists
         for config_name in self.configs:
             self.config_totals[config_name] = 0
         
-        for i, board in enumerate(board_list, 1):            
+        for i, board in enumerate(board_list):            
             self.test_board = board
+            print(f"Starting evaluation for board {i}")
             self.run_all(game_length=game_length)
         
         print(f"\n{'='*80}")
@@ -121,17 +96,24 @@ def main():
     """Main function to run the benchmarks."""
     print("Chess Engine Performance Profiler")
     print("=" * 50)
-    print("Testing 4 key configurations at depth 7")
+    print("Testing config against all optimizations and no optizimations")
     print("This will take a few minutes...\n")
     
+    fen_path = Path("data/raw/example_fens")
+    fens = ["M01.fen", "HardM2.fen", "M10.fen"]
+    fens = [fen_path / fen for fen in fens]
+    boards = [chess.Board(fen) for fen in fens]
+
     profiler = EngineProfiler()
+    profiler.add_config(
+        "Test Config",
+        "All Optimizations": MinimaxConfig(
+            use_zobrist=True, use_alpha_beta=True, use_move_ordering=True,
+            use_iddfs=True, use_pvs=True, use_lmr=True, use_tt_aging=True
+        )
+    )
     
-    board_list = load_fen_boards()
-    
-    if board_list:
-        profiler.run_multiple_games(board_list, game_length=3)
-    else:
-        raise ValueError("No FEN files found. Unable to run benchmarks.")
+    profiler.profile(boards, game_length=3)
 
 if __name__ == "__main__":
     main()
