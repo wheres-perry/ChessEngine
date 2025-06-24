@@ -1,12 +1,13 @@
+import chess
 import logging
 import time
-import chess
 
 from src.engine.config import EngineConfig
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.eval import Eval
 from src.engine.search.transposition_table import TranspositionTable
 from src.engine.search.zobrist import Zobrist
+from src.engine.search.move_ordering import MoveOrderer
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +20,9 @@ class Minimax:
 
     NEG_INF = float("-inf")
     POS_INF = float("inf")
-    DEFAULT_TT_SIZE = 100000
-    TIME_CHECK_INTERVAL = 1000
-    MVV_LVA_MULTIPLIER = 10
-
+    DEFAULT_TT_SIZE = 10000
+    TIME_CHECK_INTERVAL = 10000
+    
     # LMR parameters
     LMR_MIN_DEPTH = 2
     LMR_MIN_MOVES = 2
@@ -66,6 +66,13 @@ class Minimax:
 
         self.board = board
         self.evaluator = evaluator
+        
+        # Initialize the move orderer
+        self.move_orderer = MoveOrderer(
+            self.board, 
+            self.zobrist, 
+            self.transposition_table
+        )
 
         # Initialize hash for the starting position
         if self.zobrist:
@@ -92,7 +99,7 @@ class Minimax:
         self.start_time = time.time()
         self.best_move_first = None
 
-        # Increment age for new search if using TT aging
+        # FIXED: Only increment age ONCE per search, not per depth
         if self.use_zobrist and self.transposition_table and self.use_tt_aging:
             self.transposition_table.increment_age()
 
@@ -137,10 +144,6 @@ class Minimax:
             if self._check_time_limit():
                 break
 
-            # Increment age for each new depth if using TT aging
-            if self.use_zobrist and self.transposition_table and self.use_tt_aging:
-                self.transposition_table.increment_age()
-
             score, move = self._search_fixed_depth(current_depth)
 
             if self.time_up:
@@ -150,9 +153,6 @@ class Minimax:
                 best_score = score
                 best_move = move
                 self.best_move_first = move
-
-        if best_move is None:
-            logger.warning("No valid moves found in iterative deepening")
 
         return best_score, best_move
 
@@ -166,13 +166,15 @@ class Minimax:
         Returns:
             (score, best_move) tuple
         """
-        # Reset node count and start time
-        self.nodes_searched = 0
+        # Only reset nodes if not using IDDFS (to allow accumulation)
+        if not self.use_iddfs:
+            self.nodes_searched = 0
+        
         self.start_time = time.time()
 
-        # FIXED: Clear TT age if using aging - use correct reference
-        if self.use_zobrist and self.transposition_table and self.transposition_table.use_tt_aging:
-            self.transposition_table.reset_age()
+        # REMOVED: This was clearing TT every search, destroying performance  
+        # if self.use_zobrist and self.transposition_table and self.transposition_table.use_tt_aging:
+        #     self.transposition_table.reset_age()
 
         # Initial hash for the root position
         if self.zobrist:
@@ -228,7 +230,7 @@ class Minimax:
                 restored_hash = self.hash_stack.pop()
                 self.zobrist.set_current_hash(restored_hash)
 
-        # FIXED: Store the best move in the transposition table - use correct reference
+        # Store the best move in the transposition table
         if self.zobrist and self.transposition_table:
             position_hash = self.zobrist.get_current_hash()
             if position_hash is not None:
@@ -238,12 +240,8 @@ class Minimax:
 
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
         """
-        Order moves to improve alpha-beta pruning efficiency.
-        Prioritizes:
-        1. PV move from transposition table
-        2. Captures ordered by MVV-LVA
-        3. Other moves
-
+        Order moves to improve alpha-beta pruning efficiency by delegating to the move orderer.
+        
         Args:
             moves: List of legal moves to order
 
@@ -252,55 +250,8 @@ class Minimax:
         """
         if not self.use_move_ordering:
             return moves
-
-        # Get the current position hash
-        position_hash = None
-        if self.zobrist:
-            position_hash = self.zobrist.get_current_hash()
-
-        # Initialize the PV move from the transposition table
-        pv_move = None
-        # FIXED: Use correct reference
-        if self.transposition_table and position_hash is not None:
-            pv_move = self.transposition_table.get_best_move(position_hash)
-
-        # Assign scores to moves for ordering
-        move_scores = []
-
-        for m in moves:
-            score = 0
-
-            # PV move gets highest score
-            if pv_move and m == pv_move:
-                score = 10000
-
-            # Captures get scored by MVV-LVA
-            elif self.board.is_capture(m):
-                victim_value = self._get_piece_value(m.to_square)
-                aggressor_value = self._get_piece_value(m.from_square)
-                if victim_value and aggressor_value:
-                    score = victim_value - (aggressor_value // self.MVV_LVA_MULTIPLIER)
-
-            # Promotions
-            elif m.promotion:
-                score = PIECE_VALUES[m.promotion] - PIECE_VALUES[chess.PAWN]
-
-            # Checks can be good moves
-            elif self.board.gives_check(m):
-                score = 30
-
-            move_scores.append((m, score))
-
-        # Sort by score in descending order
-        move_scores.sort(key=lambda x: x[1], reverse=True)
-        return [m for m, _ in move_scores]
-
-    def _get_piece_value(self, square: int) -> int:
-        """Get the value of a piece at a given square."""
-        piece = self.board.piece_at(square)
-        if piece:
-            return PIECE_VALUES.get(piece.piece_type, 0)
-        return 0
+        
+        return self.move_orderer.order_moves(moves)
 
     def minimax_alpha_beta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> float:
         """
@@ -331,12 +282,11 @@ class Minimax:
         tt_move = None
         position_hash = None
 
-        # FIXED: Use correct reference
         if self.zobrist and self.transposition_table:
             position_hash = self.zobrist.get_current_hash()
             if position_hash is not None:
                 tt_score = self.transposition_table.lookup(position_hash, depth, alpha, beta)
-                tt_move = self.transposition_table.get_best_move(position_hash)  # Get best move from TT
+                tt_move = self.transposition_table.get_best_move(position_hash)
                 if tt_score is not None:
                     return tt_score
 
@@ -377,7 +327,7 @@ class Minimax:
                 if (self.use_lmr and depth >= self.LMR_MIN_DEPTH and
                     i >= self.LMR_MIN_MOVES and
                     not self.board.is_capture(m) and not self.board.is_en_passant(m) and
-                    not self.board.is_check() and not self.board.gives_check(m)):
+                    not self.board.is_check() and not self._gives_check_fast(m)):
                     
                     reduced_depth = max(1, search_depth - self.LMR_REDUCTION)
                     eval_score = self.minimax_alpha_beta(reduced_depth, alpha, beta, False)
@@ -409,7 +359,7 @@ class Minimax:
                 # Update max evaluation and best move
                 if eval_score > max_eval:
                     max_eval = eval_score
-                    best_move = m  # Track best move for TT
+                    best_move = m
 
                 # Update alpha
                 alpha = max(alpha, max_eval)
@@ -450,7 +400,7 @@ class Minimax:
                 if (self.use_lmr and depth >= self.LMR_MIN_DEPTH and
                     i >= self.LMR_MIN_MOVES and
                     not self.board.is_capture(m) and not self.board.is_en_passant(m) and
-                    not self.board.is_check() and not self.board.gives_check(m)):
+                    not self.board.is_check() and not self._gives_check_fast(m)):
                     
                     reduced_depth = max(1, search_depth - self.LMR_REDUCTION)
                     eval_score = self.minimax_alpha_beta(reduced_depth, beta - 1e-10, beta, True)
@@ -482,7 +432,7 @@ class Minimax:
                 # Update min evaluation and best move
                 if eval_score < min_eval:
                     min_eval = eval_score
-                    best_move = m  # Track best move for TT
+                    best_move = m
 
                 # Update beta
                 beta = min(beta, min_eval)
@@ -508,6 +458,5 @@ class Minimax:
         best_move: chess.Move | None = None,
     ) -> None:
         """Store an entry in the transposition table with the best move."""
-        # FIXED: Use correct reference
         if self.transposition_table:
             self.transposition_table.store(hash_val, depth, score, alpha, beta, original_alpha, best_move)
