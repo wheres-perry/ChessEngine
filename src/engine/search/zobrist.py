@@ -21,7 +21,7 @@ class Zobrist:
         if seed is not None:
             random.seed(seed)
 
-        # 12×64 piece table (6 piece types × 2 colors × 64 squares)
+        # 12Ã—64 piece table (6 piece types Ã— 2 colors Ã— 64 squares)
         self.piece_keys = [[rand64() for _ in range(64)] for _ in range(12)]
 
         # [W-K, W-Q, B-K, B-Q] castling rights
@@ -79,19 +79,8 @@ class Zobrist:
         return h
 
     def make_move_hash(self, board: chess.Board, move: chess.Move) -> int:
-        """
-        Ultra-fast incremental hash update for making a move.
-        Call this BEFORE making the move on the board.
-        
-        Args:
-            board: Current board position (before move)
-            move: Move to be made
-            
-        Returns:
-            New hash value after the move
-        """
+        """FIXED: Fast incremental hash without expensive push/pop operations."""
         if self._current_hash is None:
-            # Fallback to full hash if needed
             return self.hash_board(board)
 
         h = self._current_hash
@@ -102,7 +91,7 @@ class Zobrist:
         # 2. Get piece information
         moving_piece = board.piece_at(move.from_square)
         if not moving_piece:
-            # Fallback if piece data is corrupted
+            # Fallback only if really needed
             board.push(move)
             result = self.hash_board(board)
             board.pop()
@@ -112,25 +101,20 @@ class Zobrist:
 
         # 3. Handle the moving piece
         if move.promotion:
-            # Remove pawn from source
             pawn_index = piece_to_index(chess.PAWN, moving_piece.color)
             h ^= self.piece_keys[pawn_index][move.from_square]
-            # Add promoted piece to destination
             promoted_index = piece_to_index(move.promotion, moving_piece.color)
             h ^= self.piece_keys[promoted_index][move.to_square]
         else:
-            # Normal move - remove from source, add to destination
             piece_index = piece_to_index(moving_piece.piece_type, moving_piece.color)
             h ^= self.piece_keys[piece_index][move.from_square]
             h ^= self.piece_keys[piece_index][move.to_square]
 
         # 4. Handle captures
         if captured_piece and not board.is_en_passant(move):
-            # Normal capture - remove captured piece
             cap_index = piece_to_index(captured_piece.piece_type, captured_piece.color)
             h ^= self.piece_keys[cap_index][move.to_square]
         elif board.is_en_passant(move):
-            # En passant capture - remove pawn from different square
             ep_capture_square = move.to_square + (-8 if moving_piece.color else 8)
             cap_index = piece_to_index(chess.PAWN, not moving_piece.color)
             h ^= self.piece_keys[cap_index][ep_capture_square]
@@ -140,26 +124,50 @@ class Zobrist:
             rook_index = piece_to_index(chess.ROOK, moving_piece.color)
             if board.is_kingside_castling(move):
                 if moving_piece.color:  # White
-                    h ^= self.piece_keys[rook_index][chess.H1]  # Remove from h1
-                    h ^= self.piece_keys[rook_index][chess.F1]  # Add to f1
+                    h ^= self.piece_keys[rook_index][chess.H1]
+                    h ^= self.piece_keys[rook_index][chess.F1]
                 else:  # Black
-                    h ^= self.piece_keys[rook_index][chess.H8]  # Remove from h8
-                    h ^= self.piece_keys[rook_index][chess.F8]  # Add to f8
+                    h ^= self.piece_keys[rook_index][chess.H8]
+                    h ^= self.piece_keys[rook_index][chess.F8]
             else:  # Queenside
                 if moving_piece.color:  # White
-                    h ^= self.piece_keys[rook_index][chess.A1]  # Remove from a1
-                    h ^= self.piece_keys[rook_index][chess.D1]  # Add to d1
+                    h ^= self.piece_keys[rook_index][chess.A1]
+                    h ^= self.piece_keys[rook_index][chess.D1]
                 else:  # Black
-                    h ^= self.piece_keys[rook_index][chess.A8]  # Remove from a8
-                    h ^= self.piece_keys[rook_index][chess.D8]  # Add to d8
+                    h ^= self.piece_keys[rook_index][chess.A8]
+                    h ^= self.piece_keys[rook_index][chess.D8]
 
-        # 6. Handle castling rights changes
+        # FIXED: 6. Handle castling rights efficiently WITHOUT push/pop
         old_cr = board.castling_rights
-        # Simulate the move to get new castling rights
-        board.push(move)
-        new_cr = board.castling_rights
-        board.pop()
+        new_cr = old_cr
+        
+        # Calculate new castling rights based on move
+        if moving_piece.piece_type == chess.KING:
+            if moving_piece.color:  # White king
+                new_cr &= ~(chess.BB_A1 | chess.BB_H1)
+            else:  # Black king
+                new_cr &= ~(chess.BB_A8 | chess.BB_H8)
+        elif moving_piece.piece_type == chess.ROOK:
+            if move.from_square == chess.A1:
+                new_cr &= ~chess.BB_A1
+            elif move.from_square == chess.H1:
+                new_cr &= ~chess.BB_H1
+            elif move.from_square == chess.A8:
+                new_cr &= ~chess.BB_A8
+            elif move.from_square == chess.H8:
+                new_cr &= ~chess.BB_H8
+    
+        # Rook captures
+        if move.to_square == chess.A1:
+            new_cr &= ~chess.BB_A1
+        elif move.to_square == chess.H1:
+            new_cr &= ~chess.BB_H1
+        elif move.to_square == chess.A8:
+            new_cr &= ~chess.BB_A8
+        elif move.to_square == chess.H8:
+            new_cr &= ~chess.BB_H8
 
+        # Update hash for castling changes
         if (old_cr & chess.BB_H1) != (new_cr & chess.BB_H1):
             h ^= self.castling_keys[0]
         if (old_cr & chess.BB_A1) != (new_cr & chess.BB_A1):
@@ -169,12 +177,16 @@ class Zobrist:
         if (old_cr & chess.BB_A8) != (new_cr & chess.BB_A8):
             h ^= self.castling_keys[3]
 
-        # 7. Handle en passant square changes
+        # FIXED: 7. Handle en passant efficiently WITHOUT push/pop
         old_ep = board.ep_square
-        board.push(move)
-        new_ep = board.ep_square
-        board.pop()
+        new_ep = None
+        
+        # Calculate new en passant square
+        if (moving_piece.piece_type == chess.PAWN and 
+            abs(move.to_square - move.from_square) == 16):
+            new_ep = move.from_square + (8 if moving_piece.color else -8)
 
+        # Update hash for en passant changes
         if old_ep is not None:
             h ^= self.ep_keys[chess.square_file(old_ep)]
         if new_ep is not None:
