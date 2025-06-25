@@ -15,8 +15,8 @@ class TranspositionTable:
     to avoid re-evaluating identical positions during search.
     """
 
-    DEFAULT_SIZE = 100000
-    MAX_AGE_DIFF = 2  # Maximum age difference to consider entry valid
+    DEFAULT_SIZE = 1000000
+    MAX_AGE_DIFF = 4  # Maximum age difference to consider entry valid
 
     def __init__(self, max_entries: int = DEFAULT_SIZE, use_tt_aging: bool = True):
         """

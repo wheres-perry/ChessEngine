@@ -21,7 +21,6 @@ class Zobrist:
         if seed is not None:
             random.seed(seed)
 
-        # 12Ã—64 piece table (6 piece types Ã— 2 colors Ã— 64 squares)
         self.piece_keys = [[rand64() for _ in range(64)] for _ in range(12)]
 
         # [W-K, W-Q, B-K, B-Q] castling rights
@@ -193,24 +192,6 @@ class Zobrist:
             h ^= self.ep_keys[chess.square_file(new_ep)]
 
         return h
-
-    def update_hash_for_move(
-        self,
-        post_move_board: chess.Board,
-        move: chess.Move,
-        old_castling_rights: int,
-        old_ep_square: int | None,
-        captured_piece_type: int | None,
-        was_ep: bool,
-        ks_castle: bool,
-        qs_castle: bool,
-    ) -> int:
-        """
-        Update hash after a move has been made on the board.
-        This method is kept for compatibility but simplified.
-        """
-        self._current_hash = self.hash_board(post_move_board)
-        return self._current_hash
 
     def get_current_hash(self) -> None | int:
         """Get the current hash value without recalculating."""

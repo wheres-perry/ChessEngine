@@ -4,7 +4,7 @@ import chess.engine
 import os
 from pathlib import Path
 import src.engine.search.minimax as minimax
-import src.engine.evaluators.simple_eval as simple_eval
+import src.engine.evaluators.mock_eval as mock_eval
 from src.engine.config import EngineConfig, MinimaxConfig
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -24,28 +24,27 @@ class EngineProfiler:
             "Base (No Optimizations)": MinimaxConfig(
                 use_zobrist=False, use_alpha_beta=False, use_move_ordering=False,
                 use_iddfs=False, use_pvs=False, use_lmr=False, use_tt_aging=False
-            )
+            ),
             "All Optimizations": MinimaxConfig(
                 use_zobrist=True, use_alpha_beta=True, use_move_ordering=True,
                 use_iddfs=True, use_pvs=True, use_lmr=True, use_tt_aging=True
-            ),
+            )
         }
         
         # Initialize running totals for each config
         for config_name in self.configs:
             self.config_totals[config_name] = 0
 
-    def add_config(name: str, conf: MinimaxConfig):
+    def add_config(self, name: str, conf: MinimaxConfig):
         self.configs[name] = conf
         self.config_totals[name] = 0
-
 
     def run_board(self, name: str, config: MinimaxConfig, game_length: int) -> dict:
         """Run a single benchmark test."""
         logger.info(f"Testing {name}")
         
         board = self.test_board.copy()
-        evaluator = simple_eval.MockEval(board)
+        evaluator = mock_eval.MockEval(board)
         engine = minimax.Minimax(board, evaluator, EngineConfig(minimax=config))
         
         try:
@@ -54,7 +53,7 @@ class EngineProfiler:
                     score, move = engine.find_top_move(depth=self.depth)
                     board.push(move)
                     response = sf_engine.play(board, chess.engine.Limit(time=5.0))
-                    board.push(move)
+                    board.push(response.move)
                     node_count = getattr(engine, 'node_count', 0)
                     self.config_totals[name] += node_count
             return {
@@ -69,9 +68,8 @@ class EngineProfiler:
     def run_board_all_configs(self, game_length: int):
         """Run all benchmarks and print results."""
         logger.info(f"Starting benchmark suite (depth={self.depth}) for position: {self.test_board.fen()}")
-        i = 0
         for name, config in self.configs.items():
-            print("Starting eval with \"{name}\" config")
+            print(f"Starting eval with \"{name}\" config")
             self.run_board(name, config, game_length) 
         
 
@@ -84,7 +82,7 @@ class EngineProfiler:
         for i, board in enumerate(board_list):            
             self.test_board = board
             print(f"Starting evaluation for board {i}")
-            self.run_all(game_length=game_length)
+            self.run_board_all_configs(game_length=game_length)
         
         print(f"\n{'='*80}")
         print(f"FINAL SUMMARY - Total nodes across all boards:")
@@ -96,18 +94,22 @@ def main():
     """Main function to run the benchmarks."""
     print("Chess Engine Performance Profiler")
     print("=" * 50)
-    print("Testing config against all optimizations and no optizimations")
+    print("Testing config against all optimizations and no optimizations")
     print("This will take a few minutes...\n")
     
     fen_path = Path("data/raw/example_fens")
     fens = ["M01.fen", "HardM2.fen", "M10.fen"]
-    fens = [fen_path / fen for fen in fens]
-    boards = [chess.Board(fen) for fen in fens]
+    fen_files = [fen_path / fen for fen in fens]
+    boards = []
+    for fen_file in fen_files:
+        with open(fen_file, 'r') as f:
+            fen = f.read().strip()
+            boards.append(chess.Board(fen))
 
     profiler = EngineProfiler()
     profiler.add_config(
         "Test Config",
-        "All Optimizations": MinimaxConfig(
+        MinimaxConfig(
             use_zobrist=True, use_alpha_beta=True, use_move_ordering=True,
             use_iddfs=True, use_pvs=True, use_lmr=True, use_tt_aging=True
         )

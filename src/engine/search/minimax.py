@@ -42,9 +42,8 @@ class Minimax:
             evaluator: Position evaluation function
             config: Engine configuration (assumed to be pre-validated)
         """
-        # Extract minimax config - no validation needed as config is pre-validated
+        # Extract 
         minimax_config = config.minimax
-
         self.use_zobrist = minimax_config.use_zobrist
         self.use_iddfs = minimax_config.use_iddfs
         self.use_alpha_beta = minimax_config.use_alpha_beta
