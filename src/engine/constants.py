@@ -2,7 +2,7 @@ from typing import Final
 
 import chess
 
-DEFAULT_TIMEOUT: Final[float] = 2500.0
+DEFAULT_TIMEOUT: Final[float] = 250.0
 
 DEFAULT_DEPTH: Final[int] = 6
 
