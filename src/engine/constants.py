@@ -4,7 +4,7 @@ import chess
 
 DEFAULT_TIMEOUT: Final[float] = 2500.0
 
-DEFAULT_DEPTH: Final[int] = 7
+DEFAULT_DEPTH: Final[int] = 6
 
 PIECE_VALUES: Final[dict[int, float]] = {
     chess.PAWN: 1,

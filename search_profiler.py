@@ -7,7 +7,7 @@ import src.engine.search.minimax as minimax
 import src.engine.evaluators.mock_eval as mock_eval
 from src.engine.config import EngineConfig, MinimaxConfig
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -15,7 +15,7 @@ class EngineProfiler:
     """Simplified chess engine profiler with node count tracking only."""
     
     def __init__(self):
-        self.depth = 7
+        self.depth = 6
         self.test_board = chess.Board()
         self.config_totals = {}
         
@@ -48,14 +48,36 @@ class EngineProfiler:
         engine = minimax.Minimax(board, evaluator, EngineConfig(minimax=config))
         
         try:
-            with chess.engine.SimpleEngine.popen_uci("/usr/bin/stockfish") as sf_engine:
+            with chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish") as sf_engine:
                 for _ in range(game_length):
+                    # Check if game is over
+                    if board.is_game_over():
+                        logger.info(f"Game ended: {board.result()}")
+                        break
+                        
                     score, move = engine.find_top_move(depth=self.depth)
-                    board.push(move)
+                    if move is not None:
+                        board.push(move)
+                    else:
+                        logger.warning(f"Engine returned None move for {name}")
+                        break
+                    
+                    # Check again after engine move
+                    if board.is_game_over():
+                        logger.info(f"Game ended after engine move: {board.result()}")
+                        break
+                    
                     response = sf_engine.play(board, chess.engine.Limit(time=5.0))
-                    board.push(response.move)
-                    node_count = getattr(engine, 'node_count', 0)
-                    self.config_totals[name] += node_count
+                    if response.move is not None:
+                        board.push(response.move)
+                    else:
+                        logger.warning(f"Stockfish returned None move for {name}")
+                        break
+                    
+                # Get node count after the loop, with default fallback
+                node_count = getattr(engine, 'node_count', 0)
+                self.config_totals[name] += node_count
+                
             return {
                 'name': name,
                 'success': True,
@@ -115,7 +137,7 @@ def main():
         )
     )
     
-    profiler.profile(boards, game_length=3)
+    profiler.profile(boards, game_length=2)
 
 if __name__ == "__main__":
     main()
