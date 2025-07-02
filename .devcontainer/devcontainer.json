@@ -1,0 +1,78 @@
+{
+    "name": "Chess Engine Dev Env",
+    "build": {
+        "dockerfile": "Dockerfile.dev",
+        "context": "."
+    },
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    // Mount Docker socket for Docker-outside-of-Docker
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    // Forward common ports
+    "forwardPorts": [
+        8000,
+        8888,
+        6006
+    ],
+    // VS Code customizations
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                // Python Development
+                "ms-python.python",
+                "ms-python.pylance",
+                "ms-python.debugpy",
+                // Jupyter Notebook Support
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-keymap",
+                "ms-toolsai.jupyter-renderers",
+                // AI Assistant (corrected IDs)
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
+                // Development Tools
+                "christian-kohler.path-intellisense",
+                "aaron-bond.better-comments",
+                // Docker & Containers
+                "ms-azuretools.vscode-docker",
+                // Code Quality
+                "charliermarsh.ruff"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                // Use Ruff for linting
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": false,
+                "python.linting.mypyEnabled": true,
+                "python.linting.ruffEnabled": true,
+                // Use Ruff for formatting
+                "[python]": {
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports.ruff": "explicit",
+                        "source.fixAll.ruff": "explicit"
+                    }
+                },
+                // Pylance configuration
+                "pylance.autoImportCompletions": true,
+                "python.analysis.typeCheckingMode": "strict",
+                "python.analysis.autoImportCompletions": true,
+                // Ruff configuration
+                "ruff.organizeImports": true,
+                "ruff.fixAll": true,
+                // Jupyter Configuration
+                "jupyter.askForKernelRestart": false,
+                "jupyter.interactiveWindow.creationMode": "perFile"
+            }
+        }
+    },
+    // Set up Poetry and install dependencies after container creation
+    "postCreateCommand": "poetry install && pre-commit install",
+    // Run as non-root user
+    "remoteUser": "vscode",
+    // Environment variables
+    "containerEnv": {
+        "PYTHONPATH": "/workspace/src"
+    }
+}
