@@ -1,0 +1,50 @@
+FROM mcr.microsoft.com/devcontainers/python:3.11
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    pipx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry and pre-commit system-wide
+RUN pipx install poetry
+RUN pipx install pre-commit
+RUN pipx ensurepath
+ENV PATH="/root/.local/bin:$PATH"
+
+# Install PyTorch
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install development tools
+RUN pip install \
+    ruff \
+    pytest \
+    mypy
+
+# Install Docker CLI
+RUN curl -fsSL https://get.docker.com | sh
+
+# User creation (same as before)
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN if ! getent group $USER_GID >/dev/null 2>&1; then \
+    groupadd --gid $USER_GID $USERNAME; \
+    fi \
+    && if ! id -u $USERNAME >/dev/null 2>&1; then \
+    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME; \
+    fi \
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
+RUN usermod -aG docker $USERNAME
+
+USER $USERNAME
+
+# DO NOT disable virtualenv creation - let Poetry manage it
+# RUN poetry config virtualenvs.create false  # <-- REMOVE THIS LINE

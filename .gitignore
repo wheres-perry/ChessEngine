@@ -13,7 +13,7 @@ fixlineendings.ps1
 line.sh
 line.ps1
 dev_test.sh
-*/__TOOLS
+__TOOLS/
 
 # Poetry
 poetry.lock
