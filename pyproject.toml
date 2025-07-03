@@ -18,7 +18,6 @@ exclude = [
     ".vscode",
 ]
 
-
 [tool.poetry.dependencies]
 python = "^3.11"
 numpy = "^2.2.6"
@@ -27,7 +26,102 @@ chess = "^1.9.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 pre-commit = "^3.0.0"
+mypy = "^1.8.0"
+pylint = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+# MyPy Configuration - Strict Type Checking Only
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+strict_concatenate = true
+
+# Per-module configuration
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = "chess.*"
+ignore_missing_imports = true
+
+# Pylint Configuration - Code Quality & Complexity Only
+[tool.pylint.main]
+py-version = "3.11"
+source-roots = ["src"]
+
+[tool.pylint.messages_control]
+# Disable rules that overlap with Ruff
+disable = [
+    # Style/formatting (handled by Ruff)
+    "line-too-long",
+    "trailing-whitespace", 
+    "missing-final-newline",
+    "bad-indentation",
+    "wrong-spelling-in-comment",
+    "wrong-spelling-in-docstring",
+    
+    # Import organization (handled by Ruff)
+    "wrong-import-order",
+    "ungrouped-imports",
+    "wrong-import-position",
+    
+    # Type checking (handled by MyPy)
+    "no-member",
+    "unsubscriptable-object",
+    "unsupported-membership-test",
+    
+    # Too opinionated for development
+    "missing-module-docstring",
+    "missing-class-docstring", 
+    "missing-function-docstring",
+]
+
+# Enable important code quality checks
+enable = [
+    "useless-suppression",
+    "deprecated-pragma",
+    "use-symbolic-message-instead",
+]
+
+[tool.pylint.design]
+max-args = 7
+max-attributes = 10
+max-bool-expr = 5
+max-branches = 15
+max-locals = 20
+max-parents = 7
+max-public-methods = 25
+max-returns = 8
+max-statements = 60
+min-public-methods = 1
+
+[tool.pylint.similarities]
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
+min-similarity-lines = 6
+
+[tool.pylint.variables]
+allowed-redefined-builtins = ["id", "type", "input"]
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
