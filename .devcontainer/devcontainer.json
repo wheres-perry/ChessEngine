@@ -9,6 +9,9 @@
     "mounts": [
         "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
     ],
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
     "forwardPorts": [
         8000,
         8888,
@@ -79,6 +82,13 @@
                 "ruff.organizeImports": true,
                 "ruff.fixAll": true,
                 "ruff.nativeServer": "on",
+                // File Explorer - Hide cache and config files
+                "files.exclude": {
+                    "**/__pycache__": true,
+                    "**/.pytest_cache": true,
+                    "**/.ruff_cache": true,
+                    "**/ruff.toml": true
+                },
                 // Jupyter Configuration
                 "jupyter.askForKernelRestart": false,
                 "jupyter.interactiveWindow.creationMode": "perFile",

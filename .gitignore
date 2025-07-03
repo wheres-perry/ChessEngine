@@ -1,7 +1,4 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Project-specific files
 package.sh
 *.zip
 *.pt
@@ -14,28 +11,6 @@ line.sh
 line.ps1
 dev_test.sh
 __TOOLS/
-
-# Poetry
-poetry.lock
-.venv/
-dist/
-
-# Unit test reports
-*.xml
-*.cov
-
-# Distribution / packaging
-.eggs/
-*.egg
-sdist/
-build/
-wheels/
-*.egg-info/
-.tox/
-
-# OS or Editor Folders
-.idea/
-.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -207,22 +182,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Ruff stuff:
+# Ruff cache
 .ruff_cache/
 
 # PyPI configuration file
 .pypirc
 
+# Dev container specific
 .devcontainer/.devcontainer.json.history
 .devcontainer/.last_build_state
-.cache/
-logs/
-*.log
-dist/
-build/
-*.egg-info/
-.pytest_cache/
-.mypy_cache/
-/.venv
-dev_test.sh
-tests/search/zobrist_test.py
