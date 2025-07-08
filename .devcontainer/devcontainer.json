@@ -1,4 +1,5 @@
 {
+    "$schema": "https://json.schemastore.org/devcontainer.json",
     "name": "Chess Engine Dev Env",
     "build": {
         "dockerfile": "Dockerfile.dev",
@@ -87,6 +88,7 @@
                     "**/__pycache__": true,
                     "**/.pytest_cache": true,
                     "**/.ruff_cache": true,
+                    "**/.mypy_cache": true,
                     "**/ruff.toml": true
                 },
                 // Jupyter Configuration
