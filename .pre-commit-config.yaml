@@ -1,31 +1,9 @@
 repos:
-  # Ruff for formatting and basic linting
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
-  # MyPy for type checking
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        name: mypy
-        entry: poetry run mypy
-        language: system
-        pass_filenames: false
-        args: [src/]
-        require_serial: true
-
-  # Pylint for code quality
   - repo: local
     hooks:
-      - id: pylint
-        name: pylint
-        entry: poetry run pylint
+      - id: python-linters
+        name: python linters
+        entry: .scripts/run_linters.sh
         language: system
-        types: [python]
-        args: [src/]
         pass_filenames: false
+        types: [python]
