@@ -12,10 +12,20 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
+        name: mypy
+        entry: poetry run mypy
+        language: system
+        pass_filenames: false
+        args: [src/]
+        require_serial: true
 
   # Pylint for code quality
-  - repo: https://github.com/pycqa/pylint
-    rev: v3.0.0
+  - repo: local
     hooks:
       - id: pylint
-        args: [--rcfile=pyproject.toml]
+        name: pylint
+        entry: poetry run pylint
+        language: system
+        types: [python]
+        args: [src/]
+        pass_filenames: false
