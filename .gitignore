@@ -4,6 +4,7 @@
 *lichess_db_eval.jsonl
 *.h5
 *processing_ledger.json
+.docker-cache
 
 
 
