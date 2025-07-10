@@ -8,7 +8,9 @@ authors = [
 requires-python = ">=3.11"
 
 [tool.poetry]
-package-mode = false
+# Change package declaration to include src directly
+packages = [{include = "src"}]  
+package-mode = true
 exclude = [
     "notebooks",
     "data",
@@ -23,6 +25,7 @@ python = "^3.11"
 numpy = "^2.2.6"
 chess = "^1.9.0"
 torch = "^2.0.0"
+setuptools = "^80.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
@@ -37,6 +40,9 @@ build-backend = "poetry.core.masonry.api"
 # MyPy Configuration - Strict Type Checking Only
 [tool.mypy]
 python_version = "3.11"
+# Add explicit mypy path to find the package
+mypy_path = "src"
+namespace_packages = true
 strict = true
 warn_return_any = true
 warn_unused_configs = true
@@ -53,6 +59,7 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
+
 
 # Per-module configuration
 [[tool.mypy.overrides]]

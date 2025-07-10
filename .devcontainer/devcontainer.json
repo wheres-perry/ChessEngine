@@ -136,9 +136,9 @@
             }
         }
     },
-    "postCreateCommand": "poetry install && pre-commit install",
+    "postCreateCommand": "poetry install --no-interaction && poetry run pip install -e . && pre-commit install",
     "remoteUser": "vscode",
     "containerEnv": {
-        "PYTHONPATH": "/workspace/src"
+        "PYTHONPATH": "/workspace"
     }
 }

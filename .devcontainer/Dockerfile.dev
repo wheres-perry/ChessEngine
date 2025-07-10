@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     pipx \
+    stockfish \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry and pre-commit system-wide
