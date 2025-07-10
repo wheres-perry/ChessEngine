@@ -7,11 +7,15 @@ RUN apt-get update && apt-get install -y \
     git \
     pipx \
     stockfish \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry and pre-commit system-wide
+# Install global Python tools
 RUN pipx install poetry
 RUN pipx install pre-commit
+RUN pipx install ruff
+RUN pipx install pylint
+RUN pipx install mypy
 RUN pipx ensurepath
 ENV PATH="/root/.local/bin:$PATH"
 

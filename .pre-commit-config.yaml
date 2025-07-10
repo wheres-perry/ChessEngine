@@ -1,6 +1,13 @@
 repos:
   - repo: local
     hooks:
+      - id: fix-line-endings
+        name: Fix line endings
+        entry: .scripts/fix_line_endings.sh
+        language: system
+        types: [text]
+
+
       - id: python-linters
         name: python linters
         entry: .scripts/run_linters.sh
