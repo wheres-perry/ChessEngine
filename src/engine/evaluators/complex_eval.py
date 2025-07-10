@@ -2,7 +2,7 @@ import chess
 
 from src.engine.config import EvaluationConfig
 from src.engine.constants import EVAL_PIECES, PIECE_VALUES
-from src.engine.evaluators.eval import *
+from src.engine.evaluators.eval import Eval
 
 
 def make_pst(table: list[int]) -> list[float]:
@@ -485,7 +485,6 @@ class ComplexEval(Eval):
         """
         if self.board.is_checkmate():
             # If white is to move and is checkmated, black wins.
-
             return -9999 if self.board.turn == chess.WHITE else 9999
         if self.board.is_stalemate() or self.board.is_insufficient_material():
             return 0.0
@@ -513,9 +512,8 @@ class ComplexEval(Eval):
         for piece_type in [chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]:
             phase += len(self.board.pieces(piece_type, chess.WHITE))
             phase += len(self.board.pieces(piece_type, chess.BLACK))
-        # Total number of pieces to start is 2*2 Knights, 2*2 Bishops, 2*2 Rooks, 2*1 Queens = 12
+        # Total pieces to start: 2*2 Knights, 2*2 Bishops, 2*2 Rooks, 2*1 Queens = 12
         # We can scale it from 0 to 24 (max possible pieces)
-
         return min(phase / 24.0, 1.0)
 
     def _evaluate_material(self) -> float:
@@ -537,14 +535,12 @@ class ComplexEval(Eval):
             mg_pst, eg_pst = PST[piece.piece_type]
 
             # Interpolate between midgame and endgame tables
-
             pst_val = mg_pst[sq] * game_phase + eg_pst[sq] * (1 - game_phase)
 
             if piece.color == chess.WHITE:
                 score += pst_val
             else:
                 # For black, the square index must be flipped for the table lookup
-
                 score -= pst_val
         return score
 
@@ -553,36 +549,33 @@ class ComplexEval(Eval):
         Evaluates mobility (number of legal moves).
         A small weight is applied to this score.
         """
-        MOBILITY_WEIGHT = 0.05
+        mobility_weight = 0.05
 
         # White's mobility
-
         self.board.turn = chess.WHITE
         white_mobility = self.board.legal_moves.count()
 
         # Black's mobility
-
         self.board.turn = chess.BLACK
         black_mobility = self.board.legal_moves.count()
 
         # Restore the original turn
-
         self.board.turn = not self.board.turn
 
-        return (white_mobility - black_mobility) * MOBILITY_WEIGHT
+        return (white_mobility - black_mobility) * mobility_weight
 
     def _evaluate_pawn_structure(self) -> float:
         """Evaluates pawn structure for doubled and isolated pawns."""
         score = 0.0
-        DOUBLED_PAWN_PENALTY = -0.25
-        ISOLATED_PAWN_PENALTY = -0.15
+        doubled_pawn_penalty = -0.25
+        isolated_pawn_penalty = -0.15
 
         for color in [chess.WHITE, chess.BLACK]:
             color_penalty = 0.0
             for file_idx in range(8):
                 pawn_count = self.pawn_files[color][file_idx]
                 if pawn_count > 1:
-                    color_penalty += pawn_count * DOUBLED_PAWN_PENALTY
+                    color_penalty += pawn_count * doubled_pawn_penalty
                 if pawn_count > 0:
                     left_file = max(0, file_idx - 1)
                     right_file = min(7, file_idx + 1)
@@ -591,7 +584,7 @@ class ComplexEval(Eval):
                         and self.pawn_files[color][right_file] == 0
                     )
                     if is_isolated:
-                        color_penalty += ISOLATED_PAWN_PENALTY
+                        color_penalty += isolated_pawn_penalty
             if color == chess.WHITE:
                 score += color_penalty
             else:
@@ -601,10 +594,9 @@ class ComplexEval(Eval):
     def _evaluate_king_safety(self, game_phase: float) -> float:
         """Evaluates king safety based on pawn shield."""
         score = 0.0
-        PAWN_SHIELD_BONUS = 0.4
+        pawn_shield_bonus = 0.4
 
         # King safety is less important in the endgame
-
         if game_phase < 0.3:
             return 0.0
         for color in [chess.WHITE, chess.BLACK]:
@@ -617,19 +609,16 @@ class ComplexEval(Eval):
             shield_bonus = 0.0
 
             # Find pawns in front of the king
-
             for file_offset in [-1, 0, 1]:
                 check_file = king_file + file_offset
                 if 0 <= check_file <= 7:
                     # Look for friendly pawns one rank ahead
-
                     pawn_sq = chess.square(
                         check_file, king_rank + (1 if color == chess.WHITE else -1)
                     )
                     if self.board.piece_at(pawn_sq) == chess.Piece(chess.PAWN, color):
-                        shield_bonus += PAWN_SHIELD_BONUS
+                        shield_bonus += pawn_shield_bonus
             # Apply the bonus, scaled by game phase
-
             shield_bonus *= game_phase
             if color == chess.WHITE:
                 score += shield_bonus

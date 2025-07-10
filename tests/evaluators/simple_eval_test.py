@@ -11,6 +11,7 @@ material-based evaluation of chess positions. Tests cover:
 
 import chess
 import pytest
+
 from src.engine.config import EngineConfig, EvaluationConfig
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.simple_eval import SimpleEval
@@ -122,7 +123,7 @@ class TestSimpleEvalPieceTypes:
     """Test evaluation with different piece types."""
 
     @pytest.mark.parametrize(
-        "piece_type,expected_value",
+        ("piece_type", "expected_value"),
         [
             (chess.PAWN, PIECE_VALUES[chess.PAWN]),
             (chess.KNIGHT, PIECE_VALUES[chess.KNIGHT]),
@@ -171,7 +172,8 @@ class TestSimpleEvalConfiguration:
     """Test configuration and integration aspects of SimpleEval."""
 
     def test_simple_eval_ignores_complex_flags(self):
-        """Test that SimpleEval doesn't break when complex flags are present in config."""
+        """Test that SimpleEval doesn't break when complex flags are
+        present in config."""
         board = chess.Board()
 
         # Create config with complex evaluator flags (should be ignored by SimpleEval)
@@ -192,7 +194,8 @@ class TestSimpleEvalConfiguration:
         assert score == 0.0
 
     def test_engine_config_validation_complex_flags_with_simple_eval(self):
-        """Test that engine validates when complex flags are used with simple evaluator."""
+        """Test that engine validates when complex flags are used
+        with simple evaluator."""
         # This test assumes there should be validation logic in the engine
         # If not implemented yet, this documents the expected behavior
 
@@ -204,11 +207,7 @@ class TestSimpleEvalConfiguration:
         # In the future, this should raise a validation error
 
         assert config.evaluation.evaluator_type == "simple"
-        assert config.evaluation.use_pst == True
-
-        # TODO: Add validation logic to EngineConfig to prevent this invalid combination
-        # with pytest.raises(ValueError, match="Complex evaluation flags cannot be used with simple evaluator"):
-        #     validate_engine_config(config)
+        assert config.evaluation.use_pst
 
 
 class TestSimpleEvalEdgeCases:

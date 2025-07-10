@@ -1,12 +1,20 @@
 import random
+
 import chess
 
-rand64 = lambda: random.getrandbits(64)
+
+def rand64() -> int:
+    """Generate a random 64-bit integer."""
+    return random.getrandbits(64)
+
 
 def piece_to_index(piece_type: int, color: bool) -> int:
     """Convert piece type and color to array index (0-11)."""
     return (piece_type - 1) + (6 * (1 if color else 0))
 
+
+# Performance critical component, linting disabled
+# pylint: disable=too-many-branches,too-many-statements
 class Zobrist:
     """
     High-performance Zobrist hashing with reliable incremental updates.
@@ -14,9 +22,11 @@ class Zobrist:
     as moves are made and unmade.
     """
 
-    __slots__ = ("piece_keys", "castling_keys", "ep_keys", "turn_key", "_current_hash")
+    __slots__ = ("_current_hash", "castling_keys", "ep_keys", "piece_keys", "turn_key")
 
-    def __init__(self, seed=None):
+    _current_hash: int | None
+
+    def __init__(self, seed: int | None = None):
         """Initialize Zobrist hash keys for all board elements."""
         if seed is not None:
             random.seed(seed)
@@ -77,8 +87,8 @@ class Zobrist:
         self._current_hash = h
         return h
 
-    def make_move_hash(self, board: chess.Board, move: chess.Move) -> int:
-        """FIXED: Fast incremental hash without expensive push/pop operations."""
+    def make_move_hash(self, board: chess.Board, move: chess.Move) -> int:  # noqa: C901, PLR0912
+        """Fast incremental hash without expensive push/pop operations."""
         if self._current_hash is None:
             return self.hash_board(board)
 
@@ -128,18 +138,17 @@ class Zobrist:
                 else:  # Black
                     h ^= self.piece_keys[rook_index][chess.H8]
                     h ^= self.piece_keys[rook_index][chess.F8]
-            else:  # Queenside
-                if moving_piece.color:  # White
-                    h ^= self.piece_keys[rook_index][chess.A1]
-                    h ^= self.piece_keys[rook_index][chess.D1]
-                else:  # Black
-                    h ^= self.piece_keys[rook_index][chess.A8]
-                    h ^= self.piece_keys[rook_index][chess.D8]
+            elif moving_piece.color:  # White
+                h ^= self.piece_keys[rook_index][chess.A1]
+                h ^= self.piece_keys[rook_index][chess.D1]
+            else:  # Black
+                h ^= self.piece_keys[rook_index][chess.A8]
+                h ^= self.piece_keys[rook_index][chess.D8]
 
-        # FIXED: 6. Handle castling rights efficiently WITHOUT push/pop
+        # 6. Handle castling rights efficiently WITHOUT push/pop
         old_cr = board.castling_rights
         new_cr = old_cr
-        
+
         # Calculate new castling rights based on move
         if moving_piece.piece_type == chess.KING:
             if moving_piece.color:  # White king
@@ -155,7 +164,7 @@ class Zobrist:
                 new_cr &= ~chess.BB_A8
             elif move.from_square == chess.H8:
                 new_cr &= ~chess.BB_H8
-    
+
         # Rook captures
         if move.to_square == chess.A1:
             new_cr &= ~chess.BB_A1
@@ -176,13 +185,15 @@ class Zobrist:
         if (old_cr & chess.BB_A8) != (new_cr & chess.BB_A8):
             h ^= self.castling_keys[3]
 
-        # FIXED: 7. Handle en passant efficiently WITHOUT push/pop
+        # 7. Handle en passant efficiently WITHOUT push/pop
         old_ep = board.ep_square
         new_ep = None
-        
+
         # Calculate new en passant square
-        if (moving_piece.piece_type == chess.PAWN and 
-            abs(move.to_square - move.from_square) == 16):
+        if (
+            moving_piece.piece_type == chess.PAWN
+            and abs(move.to_square - move.from_square) == 16
+        ):
             new_ep = move.from_square + (8 if moving_piece.color else -8)
 
         # Update hash for en passant changes
@@ -191,6 +202,7 @@ class Zobrist:
         if new_ep is not None:
             h ^= self.ep_keys[chess.square_file(new_ep)]
 
+        self._current_hash = h
         return h
 
     def get_current_hash(self) -> None | int:
@@ -198,9 +210,15 @@ class Zobrist:
         return self._current_hash
 
     def set_current_hash(self, hash_val: int | None) -> None:
-        """Set the current hash value. Used for initialization or restoring after pop."""
+        """
+        Set the current hash value.
+        Used for initialization or restoring after pop.
+        """
         self._current_hash = hash_val
 
     def invalidate_hash(self) -> None:
-        """Invalidate the current hash, typically not needed if set_current_hash is used on pop."""
+        """
+        Invalidate the current hash, typically not needed if
+        set_current_hash is used on pop.
+        """
         self._current_hash = None

@@ -14,6 +14,10 @@ PIECE_VALUES: Final[dict[int, float]] = {
     chess.QUEEN: 9,
 }
 
-EVAL_PIECES: Final[set] = set(
-    [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]
-)
+EVAL_PIECES: Final[set[int]] = {
+    chess.PAWN,
+    chess.KNIGHT,
+    chess.BISHOP,
+    chess.ROOK,
+    chess.QUEEN,
+}

@@ -85,46 +85,19 @@ class TestZobristIncrementalUpdates:
         board = chess.Board()
 
         # CRUCIAL: Initialize hash first
-
         zobrist.hash_board(board)
 
         # Store move info
-
         move = chess.Move.from_uci("e2e4")
-        old_castling = board.castling_rights
-        old_ep = board.ep_square
 
-        # Get move details
-
-        piece_at_dest = board.piece_at(move.to_square)
-        captured_piece_type = piece_at_dest.piece_type if piece_at_dest else None
-        was_ep = board.is_en_passant(move)
-        ks_castle = board.is_kingside_castling(move)
-        qs_castle = board.is_queenside_castling(move)
-
-        # Make move
-
+        # Make move and update incrementally
         board.push(move)
-
-        # Update incrementally
-
-        incremental_hash = zobrist.update_hash_for_move(
-            board,
-            move,
-            old_castling,
-            old_ep,
-            captured_piece_type,
-            was_ep,
-            ks_castle,
-            qs_castle,
-        )
+        incremental_hash = zobrist.make_move_hash(board, move)
 
         # Compute hash from scratch for comparison (same zobrist instance)
-
         fresh_hash = zobrist.hash_board(board)
 
         # Both methods should give the same hash
-
         assert incremental_hash == fresh_hash
 
     def test_multiple_moves_consistency(self):
@@ -133,41 +106,19 @@ class TestZobristIncrementalUpdates:
         board = chess.Board()
 
         # Initial hash
-
         zobrist.hash_board(board)
 
         # Make several moves and update hash incrementally
-
         moves = ["e4", "e5", "Nf3", "Nc6", "Bc4"]
 
         for san in moves:
             move = board.parse_san(san)
-            old_castling = board.castling_rights
-            old_ep = board.ep_square
-
-            piece_at_dest = board.piece_at(move.to_square)
-            captured_piece_type = piece_at_dest.piece_type if piece_at_dest else None
-            was_ep = board.is_en_passant(move)
-            ks_castle = board.is_kingside_castling(move)
-            qs_castle = board.is_queenside_castling(move)
-
             board.push(move)
 
             # Update hash incrementally
-
-            incremental_hash = zobrist.update_hash_for_move(
-                board,
-                move,
-                old_castling,
-                old_ep,
-                captured_piece_type,
-                was_ep,
-                ks_castle,
-                qs_castle,
-            )
+            incremental_hash = zobrist.make_move_hash(board, move)
 
             # Verify against full hash calculation
-
             fresh_hash = zobrist.hash_board(board)
             assert incremental_hash == fresh_hash
 
@@ -180,44 +131,22 @@ class TestZobristSpecialMoves:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Setup a position where castling is possible
-
         board = chess.Board(
             "r3k2r/ppp1pppp/2n2n2/8/8/2N2N2/PPP1PPPP/R3K2R w KQkq - 0 1"
         )
         original_hash = zobrist.hash_board(board)
 
         # Try kingside castling
-
         move = board.parse_san("O-O")
-        old_castling = board.castling_rights
-        old_ep = board.ep_square
-
-        # No capture in castling
-
-        captured_piece_type = None
-        was_ep = False
-        ks_castle = True  # Kingside castling
-        qs_castle = False
-
         board.push(move)
-        castle_hash = zobrist.update_hash_for_move(
-            board,
-            move,
-            old_castling,
-            old_ep,
-            captured_piece_type,
-            was_ep,
-            ks_castle,
-            qs_castle,
-        )
+
+        castle_hash = zobrist.make_move_hash(board, move)
 
         # Compute fresh hash to verify
-
         fresh_hash = zobrist.hash_board(board)
         assert castle_hash == fresh_hash
 
         # Should not match original position
-
         assert castle_hash != original_hash
 
     def test_en_passant_hash(self):
@@ -225,42 +154,22 @@ class TestZobristSpecialMoves:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Setup a position where en passant is possible
-
         board = chess.Board(
             "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3"
         )
         original_hash = zobrist.hash_board(board)
 
         # Make en passant capture
-
         move = board.parse_san("exf6")
-        old_castling = board.castling_rights
-        old_ep = board.ep_square
-
-        captured_piece_type = chess.PAWN  # En passant always captures a pawn
-        was_ep = True
-        ks_castle = False
-        qs_castle = False
-
         board.push(move)
-        ep_hash = zobrist.update_hash_for_move(
-            board,
-            move,
-            old_castling,
-            old_ep,
-            captured_piece_type,
-            was_ep,
-            ks_castle,
-            qs_castle,
-        )
+
+        ep_hash = zobrist.make_move_hash(board, move)
 
         # Compute fresh hash to verify
-
         fresh_hash = zobrist.hash_board(board)
         assert ep_hash == fresh_hash
 
         # Should not match original position
-
         assert ep_hash != original_hash
 
     def test_promotion_hash(self):
@@ -268,43 +177,20 @@ class TestZobristSpecialMoves:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Setup a position where promotion is possible
-
         board = chess.Board("8/P6k/8/8/8/8/8/K7 w - - 0 1")
         original_hash = zobrist.hash_board(board)
 
         # Promote to queen
-
         move = chess.Move.from_uci("a7a8q")  # a7-a8=Q
-        old_castling = board.castling_rights
-        old_ep = board.ep_square
-
-        # Check if the destination square has a piece
-
-        piece_at_dest = board.piece_at(move.to_square)
-        captured_piece_type = piece_at_dest.piece_type if piece_at_dest else None
-        was_ep = False
-        ks_castle = False
-        qs_castle = False
-
         board.push(move)
-        promotion_hash = zobrist.update_hash_for_move(
-            board,
-            move,
-            old_castling,
-            old_ep,
-            captured_piece_type,
-            was_ep,
-            ks_castle,
-            qs_castle,
-        )
+
+        promotion_hash = zobrist.make_move_hash(board, move)
 
         # Compute fresh hash to verify
-
         fresh_hash = zobrist.hash_board(board)
         assert promotion_hash == fresh_hash
 
         # Should not match original position
-
         assert promotion_hash != original_hash
 
 

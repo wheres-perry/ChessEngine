@@ -6,7 +6,7 @@ import chess
 class Eval(ABC):
     """Abstract base class for chess position evaluators."""
 
-    currentBoard: chess.Board
+    current_board: chess.Board
     score: float | None
 
     def __init__(self, board: chess.Board):
@@ -17,4 +17,3 @@ class Eval(ABC):
     def evaluate(self) -> float:
         """Evaluate the current position and return a score.
         Positive values favor white, negative values favor black."""
-        pass

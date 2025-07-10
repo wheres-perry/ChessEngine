@@ -11,6 +11,7 @@ a controllable mock evaluator for testing purposes. Tests cover:
 
 import chess
 import pytest
+
 from src.engine.config import EngineConfig, EvaluationConfig
 from src.engine.evaluators.mock_eval import MockEval
 
@@ -53,7 +54,7 @@ class TestMockEvalCoreFunctionality:
             assert evaluator.evaluate() == expected_score
 
     def test_infinity_scores(self):
-        """Test MockEval with infinite score values (important for checkmate testing)."""
+        """Test MockEval with infinite scores (for checkmate testing)."""
         board = chess.Board()
         evaluator = MockEval(board)
 
@@ -110,7 +111,7 @@ class TestMockEvalConfiguration:
     """Test configuration validation for MockEval."""
 
     def test_mock_eval_with_any_flags_raises_error(self):
-        """Test that using any evaluation flags with mock evaluator raises validation error."""
+        """Test that using any eval flags with mock eval raises validation error."""
         with pytest.raises(
             ValueError, match="Evaluation flags.*cannot be used with mock evaluator"
         ):
@@ -133,7 +134,7 @@ class TestMockEvalConfiguration:
         assert config.evaluation.evaluator_type == "mock"
 
     def test_mock_eval_default_config_is_invalid(self):
-        """Test that default config with mock evaluator type raises error due to enabled flags."""
+        """Test that default config w/ mock eval type raises error from enabled flags"""
         with pytest.raises(
             ValueError, match="Evaluation flags.*cannot be used with mock evaluator"
         ):

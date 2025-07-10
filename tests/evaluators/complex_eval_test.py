@@ -11,6 +11,7 @@ advanced evaluation considering multiple chess factors. Tests cover:
 
 import chess
 import pytest
+
 from src.engine.config import EngineConfig, EvaluationConfig
 from src.engine.constants import PIECE_VALUES
 from src.engine.evaluators.complex_eval import ComplexEval

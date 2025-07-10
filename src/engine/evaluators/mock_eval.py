@@ -1,5 +1,6 @@
 import chess
-from src.engine.evaluators.eval import *
+
+from src.engine.evaluators.eval import Eval
 
 
 class MockEval(Eval):

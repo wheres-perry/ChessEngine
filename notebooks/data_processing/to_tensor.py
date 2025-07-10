@@ -6,17 +6,14 @@ import torch
 
 logger = logging.getLogger(__name__)
 
-PIECE_VALUES: Final[dict[int, float]] = {
-    chess.PAWN: 1,
-    chess.KNIGHT: 3,
-    chess.BISHOP: 3,
-    chess.ROOK: 5,
-    chess.QUEEN: 9,
+# Chess piece evaluation constants
+EVAL_PIECES: Final[set[int]] = {
+    chess.PAWN,
+    chess.KNIGHT,
+    chess.BISHOP,
+    chess.ROOK,
+    chess.QUEEN,
 }
-
-EVAL_PIECES: Final[set] = set(
-    [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]
-)
 
 WHITE_PAWN_PLANE = 0
 BLACK_PAWN_PLANE = 1
@@ -102,11 +99,10 @@ def create_pinned_pieces_plane(board: chess.Board, color: chess.Color) -> torch.
     out = torch.zeros((8, 8), dtype=torch.float32)
     for i in chess.SQUARES:
         piece = board.piece_at(i)
-        if piece is not None and piece.color == color:
-            if board.is_pinned(color, i):
-                r = 7 - (i // 8)
-                c = i % 8
-                out[r, c] = 1.0
+        if piece is not None and piece.color == color and board.is_pinned(color, i):
+            r = 7 - (i // 8)
+            c = i % 8
+            out[r, c] = 1.0
     return out
 
 
@@ -129,11 +125,11 @@ def _is_passed_pawn(board: chess.Board, i: chess.Square, color: chess.Color) -> 
     for opp_pawn_i in board.pieces(chess.PAWN, opponent_color):
         opp_pawn_file = chess.square_file(opp_pawn_i)
         opp_pawn_rank = chess.square_rank(opp_pawn_i)
-        if abs(pawn_file - opp_pawn_file) <= 1:
-            if color == chess.WHITE and opp_pawn_rank > pawn_rank:
-                return False
-            elif color == chess.BLACK and opp_pawn_rank < pawn_rank:
-                return False
+        if abs(pawn_file - opp_pawn_file) <= 1 and (
+            (color == chess.WHITE and opp_pawn_rank > pawn_rank)
+            or (color == chess.BLACK and opp_pawn_rank < pawn_rank)
+        ):
+            return False
     return True
 
 
@@ -147,7 +143,7 @@ def create_passed_pawns_plane(board: chess.Board, color: chess.Color) -> torch.T
     return out
 
 
-def create_tensor(board: chess.Board):
+def create_tensor(board: chess.Board) -> torch.Tensor:
     logger.debug("Creating tensor for board: %s", board)
     if not board.is_valid():
         raise ValueError("Invalid board state")
@@ -214,7 +210,6 @@ def create_tensor(board: chess.Board):
     idx += 1
 
     # Index 17: En passant
-    # TODO: implement en passant
 
     logger.debug("Adding en passant plane")
     out[idx] = create_en_passant_plane(board)

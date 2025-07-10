@@ -20,6 +20,7 @@ from src.engine.config import EngineConfig, MinimaxConfig
 from src.engine.evaluators.mock_eval import MockEval
 from src.engine.search.minimax import Minimax
 from src.engine.search.transposition_table import TranspositionTable
+from tests.test_helpers import make_test_move
 
 
 class TestTranspositionTableBasics:
@@ -229,13 +230,13 @@ class TestTranspositionTableIntegration:
         evaluator = MockEval(board)
 
         # Attempt to enable aging without Zobrist (should raise ValueError)
+        config = EngineConfig(
+            minimax=MinimaxConfig(use_zobrist=False, use_tt_aging=True)
+        )
 
         with pytest.raises(
             ValueError, match="Transposition table aging requires Zobrist hashing"
         ):
-            config = EngineConfig(
-                minimax=MinimaxConfig(use_zobrist=False, use_tt_aging=True)
-            )
             Minimax(board, evaluator, config)
 
     def test_node_count_reduction(self):
@@ -293,6 +294,9 @@ class TestTranspositionTableIntegration:
             )
         )
         minimax = Minimax(board, evaluator, config)
+        assert (
+            minimax.transposition_table is not None
+        ), "Transposition table should be initialized"
 
         # Do an initial search
 
@@ -319,36 +323,7 @@ class TestTranspositionTableIntegration:
         # Now make many more searches with different positions to force aging
 
         for _ in range(5):
-            if board.turn == chess.WHITE:
-                # Try some common legal white moves
-
-                for candidate_move in ["Bc4", "d4", "Nc3", "Nf3", "Qe2", "0-0", "h3"]:
-                    try:
-                        board.push_san(candidate_move)
-                        break  # Found a legal move
-                    except chess.IllegalMoveError:
-                        continue
-                else:
-                    # If we get here, none of our candidates worked - just make any legal move
-
-                    legal_moves = list(board.legal_moves)
-                    if legal_moves:
-                        board.push(legal_moves[0])
-            else:
-                # Try some common legal black moves
-
-                for candidate_move in ["Nf6", "d5", "e6", "Bc5", "0-0", "h6"]:
-                    try:
-                        board.push_san(candidate_move)
-                        break  # Found a legal move
-                    except chess.IllegalMoveError:
-                        continue
-                else:
-                    # If we get here, just make any legal move
-
-                    legal_moves = list(board.legal_moves)
-                    if legal_moves:
-                        board.push(legal_moves[0])
+            make_test_move(board)
             minimax.find_top_move(depth=depth)
         # TT shouldn't grow unbounded due to aging and replacement
 

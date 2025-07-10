@@ -1,6 +1,7 @@
 import chess
-from src.engine.constants import *
-from src.engine.evaluators.eval import *
+
+from src.engine.constants import EVAL_PIECES, PIECE_VALUES
+from src.engine.evaluators.eval import Eval
 
 
 class SimpleEval(Eval):
@@ -10,7 +11,7 @@ class SimpleEval(Eval):
     This evaluator calculates a score based on piece values:
     - Positive scores favor White
     - Negative scores favor Black
-    - Infinite scores represent checkmate
+    - Infinite scores represent checkmates
     - Zero represents stalemate or equal material
 
     The evaluation considers:
@@ -26,9 +27,6 @@ class SimpleEval(Eval):
     - Development
     """
 
-    def __init__(self, board):
-        super().__init__(board)
-
     def evaluate(self) -> float:
         self.score = 0
         if self.board.is_checkmate():
@@ -40,11 +38,12 @@ class SimpleEval(Eval):
             self.score = 0.0
         else:
             for p in EVAL_PIECES:
+                piece_type: int = p
                 try:
-                    val: float = PIECE_VALUES[p]
+                    val: float = PIECE_VALUES[piece_type]
                 except KeyError:
                     print("Key not found")
                     return 0
-                self.score += val * len(self.board.pieces(p, chess.WHITE))
-                self.score -= val * len(self.board.pieces(p, chess.BLACK))
+                self.score += val * len(self.board.pieces(piece_type, chess.WHITE))
+                self.score -= val * len(self.board.pieces(piece_type, chess.BLACK))
         return self.score

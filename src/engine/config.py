@@ -14,7 +14,7 @@ class MinimaxConfig:
     use_move_ordering: bool = True
     use_pvs: bool = True
     use_tt_aging: bool = True
-    use_lmr: bool = True  
+    use_lmr: bool = True
     max_time: float | None = DEFAULT_TIMEOUT
 
 
@@ -40,11 +40,11 @@ class EngineConfig:
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     search_depth: int = DEFAULT_DEPTH
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         self._validate_config()
 
-    def _validate_config(self):
+    def _validate_config(self) -> None:
         """Validate the configuration for consistency and correctness."""
         # Validate search depth
         if self.search_depth < 1:
@@ -53,66 +53,74 @@ class EngineConfig:
             )
         if self.search_depth > 20:
             raise ValueError(f"Search depth too high (max 20), got {self.search_depth}")
-        
+
         # Validate minimax configuration
         self._validate_minimax_config()
-        
+
         # Validate evaluation configuration
         self._validate_evaluation_config()
 
-    def _validate_minimax_config(self):
+    def _validate_minimax_config(self) -> None:
         """Validate minimax-specific configuration."""
         minimax_config = self.minimax
-        
+
         # Validate timeout
         if minimax_config.max_time is not None and minimax_config.max_time <= 0:
             raise ValueError(
                 f"Minimax timeout must be positive, got {minimax_config.max_time}"
             )
-        
+
         # Validate TT aging requires Zobrist hashing
         if minimax_config.use_tt_aging and not minimax_config.use_zobrist:
             raise ValueError(
                 "Transposition table aging requires Zobrist hashing to be enabled"
             )
-        
+
         # Validate LMR requires both alpha-beta and move ordering (check this first)
         if minimax_config.use_lmr and not (
             minimax_config.use_alpha_beta and minimax_config.use_move_ordering
         ):
             raise ValueError(
-                "Late Move Reduction (LMR) requires both alpha-beta pruning and move ordering to be enabled"
+                "Late Move Reduction (LMR) requires both alpha-beta pruning and move "
+                "ordering to be enabled"
             )
-        
+
         # Validate PVS requires alpha-beta pruning
         if minimax_config.use_pvs and not minimax_config.use_alpha_beta:
             raise ValueError(
-                "Principal Variation Search (PVS) requires alpha-beta pruning to be enabled"
+                "Principal Variation Search (PVS) requires alpha-beta "
+                "pruning to be enabled"
             )
 
-    def _validate_evaluation_config(self):
+    def _validate_evaluation_config(self) -> None:
         """Validate evaluation-specific configuration."""
         eval_config = self.evaluation
 
-        # Check if complex evaluation flags are used with simple evaluator
-        if eval_config.evaluator_type == "simple":
-            complex_flags = [
+        # Simplify the conditional for the simple evaluator case.
+        if eval_config.evaluator_type == "simple" and any(
+            [
+                eval_config.use_pst,
+                eval_config.use_mobility,
+                eval_config.use_pawn_structure,
+                eval_config.use_king_safety,
+            ]
+        ):
+            flag_list: list[str] = []
+            for name, enabled in [
                 ("use_pst", eval_config.use_pst),
                 ("use_mobility", eval_config.use_mobility),
                 ("use_pawn_structure", eval_config.use_pawn_structure),
                 ("use_king_safety", eval_config.use_king_safety),
-            ]
+            ]:
+                if enabled:
+                    flag_list.append(name)
 
-            enabled_complex_flags = [name for name, enabled in complex_flags if enabled]
+            formatted_flags = ", ".join(flag_list)
+            raise ValueError(
+                f"Complex evaluation flags [{formatted_flags}] cannot be used with "
+                "simple evaluator. Use 'complex' evaluator type or disable these flags."
+            )
 
-            if enabled_complex_flags:
-                flag_list = ", ".join(enabled_complex_flags)
-                raise ValueError(
-                    f"Complex evaluation flags [{flag_list}] cannot be used with "
-                    f"simple evaluator. Use 'complex' evaluator type or disable these flags."
-                )
-        
-        # Check if mock evaluator has any evaluation flags enabled
         if eval_config.evaluator_type == "mock":
             all_flags = [
                 ("use_material", eval_config.use_material),
@@ -121,37 +129,42 @@ class EngineConfig:
                 ("use_pawn_structure", eval_config.use_pawn_structure),
                 ("use_king_safety", eval_config.use_king_safety),
             ]
-
-            enabled_flags = [name for name, enabled in all_flags if enabled]
+            enabled_flags: list[str] = []
+            for name, enabled in all_flags:
+                if enabled:
+                    enabled_flags.append(name)
 
             if enabled_flags:
-                flag_list = ", ".join(enabled_flags)
+                formatted_flags = ", ".join(enabled_flags)
                 raise ValueError(
-                    f"Evaluation flags [{flag_list}] cannot be used with "
-                    f"mock evaluator. Mock evaluator ignores all evaluation settings."
+                    f"Eval flags [{formatted_flags}] can't be used with mock eval "
+                    "Mock evaluator ignores all evaluation settings."
                 )
-        
-        # Validate that complex evaluator has at least one feature enabled
-        if eval_config.evaluator_type == "complex":
-            if not any(
-                [
-                    eval_config.use_material,
-                    eval_config.use_pst,
-                    eval_config.use_mobility,
-                    eval_config.use_pawn_structure,
-                    eval_config.use_king_safety,
-                ]
-            ):
-                raise ValueError(
-                    "Complex evaluator must have at least one evaluation feature enabled."
-                )
+
+        if eval_config.evaluator_type == "complex" and not any(
+            [
+                eval_config.use_material,
+                eval_config.use_pst,
+                eval_config.use_mobility,
+                eval_config.use_pawn_structure,
+                eval_config.use_king_safety,
+            ]
+        ):
+            raise ValueError(
+                "Complex evaluator must have at least one evaluation feature enabled."
+            )
 
     def __str__(self) -> str:
-        parts = []
+        parts: list[str] = []
         parts.append(f"Depth: {self.search_depth}")
 
-        # Minimax flags
-        mm_flags = []
+        parts.append(self._format_minimax_flags())
+        parts.append(self._format_evaluation_flags())
+
+        return " | ".join(parts)
+
+    def _format_minimax_flags(self) -> str:
+        mm_flags: list[str] = []
         if self.minimax.use_zobrist:
             tt_flags = "TT/Zobrist"
             if self.minimax.use_tt_aging:
@@ -160,22 +173,23 @@ class EngineConfig:
         if self.minimax.use_iddfs:
             mm_flags.append("IDDFS")
         if self.minimax.use_alpha_beta:
-            mm_flags.append("α-β")
+            mm_flags.append("α-β")  # noqa: RUF001
         if self.minimax.use_move_ordering:
             mm_flags.append("MoveOrder")
         if self.minimax.use_pvs:
             mm_flags.append("PVS")
         if self.minimax.use_lmr:
             mm_flags.append("LMR")
+
         if mm_flags:
-            parts.append(f"Search: [{', '.join(mm_flags)}]")
-        else:
-            parts.append("Search: [Base Minimax]")
-        
-        # Evaluation flags
-        eval_parts = [self.evaluation.evaluator_type.capitalize()]
+            formatted = ", ".join(mm_flags)
+            return f"Search: [{formatted}]"
+        return "Search: [Base Minimax]"
+
+    def _format_evaluation_flags(self) -> str:
+        eval_parts: list[str] = [self.evaluation.evaluator_type.capitalize()]
         if self.evaluation.evaluator_type == "complex":
-            complex_flags = []
+            complex_flags: list[str] = []
             if self.evaluation.use_material:
                 complex_flags.append("Material")
             if self.evaluation.use_pst:
@@ -188,6 +202,4 @@ class EngineConfig:
                 complex_flags.append("KingSafety")
             if complex_flags:
                 eval_parts.append(f"[{', '.join(complex_flags)}]")
-        parts.append(f"Eval: {' '.join(eval_parts)}")
-
-        return " | ".join(parts)
+        return f"Eval: {' '.join(eval_parts)}"
