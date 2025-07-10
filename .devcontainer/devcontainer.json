@@ -1,5 +1,5 @@
 {
-    "$schema": "https://json.schemastore.org/devcontainer.json",
+    "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
     "name": "Chess Engine Dev Env",
     "build": {
         "dockerfile": "Dockerfile.dev",
@@ -7,11 +7,9 @@
     },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-    "mounts": [
-        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-    ],
+    // Use docker-outside-of-docker feature (recommended approach)
     "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
     },
     "forwardPorts": [
         8000,
@@ -59,8 +57,10 @@
                 // Pylint configuration - focus on code quality issues
                 "python.linting.pylintArgs": [
                     "--disable=C0111,C0103,C0303,C0330,C0326,W0611,E1101,C0111,C0103,R0903,R0913,R0914",
-                    "--disable=import-error,unused-import,line-too-long,trailing-whitespace"
+                    "--disable=import-error,unused-import,line-too-long,trailing-whitespace",
+                    "--ignore=tests,notebooks,search_profiler.py,unit_tests.py"
                 ],
+                "python.linting.pylintPath": "pylint",
                 // MyPy - Strict Type Checking
                 "mypy-type-checker.args": [
                     "--config-file=pyproject.toml"
@@ -89,12 +89,13 @@
                     "**/.pytest_cache": true,
                     "**/.ruff_cache": true,
                     "**/.mypy_cache": true,
-                    "**/ruff.toml": true
+                    "**/ruff.toml": true,
+                    ".docker-cache/": true
                 },
                 // Jupyter Configuration
                 "jupyter.askForKernelRestart": false,
                 "jupyter.interactiveWindow.creationMode": "perFile",
-                // Better Comments Configuration remains unchanged
+                // Better Comments Configuration
                 "better-comments.tags": [
                     {
                         "tag": "!",
@@ -132,10 +133,18 @@
                         "bold": false,
                         "italic": false
                     }
+                ],
+                // Pylance exclusions
+                "python.analysis.exclude": [
+                    "**/tests/**",
+                    "**/notebooks/**",
+                    "**/search_profiler.py",
+                    "**/unit_tests.py"
                 ]
             }
         }
     },
+    // Simplified postCreateCommand without docker group manipulation
     "postCreateCommand": "poetry install --no-interaction && poetry run pip install -e . && pre-commit install",
     "remoteUser": "vscode",
     "containerEnv": {

@@ -60,6 +60,13 @@ warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
 
+# Exclude specific directories and files
+exclude = [
+    "tests/",
+    "notebooks/",
+    "search_profiler.py", 
+    "unit_tests.py"
+]
 
 # Per-module configuration
 [[tool.mypy.overrides]]
@@ -75,6 +82,14 @@ ignore_missing_imports = true
 [tool.pylint.main]
 py-version = "3.11"
 source-roots = ["src"]
+
+# Ignore specific directories and files
+ignore = [
+    "tests",
+    "notebooks",
+    "search_profiler.py",
+    "unit_tests.py"
+]
 
 [tool.pylint.messages_control]
 # Disable rules that overlap with Ruff
@@ -133,3 +148,13 @@ allowed-redefined-builtins = ["id", "type", "input"]
 
 [tool.pylint.basic]
 good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
+
+# Ruff Configuration
+[tool.ruff]
+# Exclude directories and files from all ruff checks
+exclude = [
+    "tests/",
+    "notebooks/", 
+    "search_profiler.py",
+    "unit_tests.py"
+]
