@@ -4,7 +4,7 @@
 
 This project is containerized using Docker with a multi-stage build for optimal size. The chess engine includes model weights and is ready to run without additional data.
 
-⚠️ **Note**: Jupyter notebooks and IPython kernels are not included in the production Docker image. If you need to run notebooks for data exploration or model training, you'll need to install the development dependencies locally using `poetry add <package>`.
+⚠️ **Note**: This is a large Python container, it can take 15+ minutes build itself. 
 
 ## Project Structure
 
