@@ -1,16 +1,11 @@
 # Project-specific files
-package.sh
 *.zip
 *.pt
 *lichess_db_eval.jsonl
 *.h5
 *processing_ledger.json
-fixlineendings.sh
-fixlineendings.ps1
-line.sh
-line.ps1
-dev_test.sh
-__TOOLS/
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
