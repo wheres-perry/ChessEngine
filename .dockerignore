@@ -1,10 +1,9 @@
 *
 !**/*.py
-!requirements.txt
 !run_tests.sh
 !templates/
 !pyproject.toml
 !poetry.lock
 !*__init__.py
 !src/
-!data/
+!data/raw/example_fens/*
