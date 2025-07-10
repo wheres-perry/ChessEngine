@@ -113,7 +113,7 @@ class TestMockEvalConfiguration:
     def test_mock_eval_with_any_flags_raises_error(self):
         """Test that using any eval flags with mock eval raises validation error."""
         with pytest.raises(
-            ValueError, match="Evaluation flags.*cannot be used with mock evaluator"
+            ValueError, match=r"Eval flags.*can't be used with mock eval"
         ):
             EngineConfig(
                 evaluation=EvaluationConfig(evaluator_type="mock", use_material=True)
@@ -136,7 +136,7 @@ class TestMockEvalConfiguration:
     def test_mock_eval_default_config_is_invalid(self):
         """Test that default config w/ mock eval type raises error from enabled flags"""
         with pytest.raises(
-            ValueError, match="Evaluation flags.*cannot be used with mock evaluator"
+            ValueError, match=r"Eval flags.*can't be used with mock eval"
         ):
             EngineConfig(
                 evaluation=EvaluationConfig(evaluator_type="mock")

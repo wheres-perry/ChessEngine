@@ -39,18 +39,30 @@ class TestConfigValidation:
 class TestPVSDependency:
     """Test that PVS is properly disabled when alpha-beta pruning is off."""
 
-    def test_pvs_disabled_with_warning(self, caplog):
-        """Test that PVS is disabled when alpha-beta is disabled, with a warning."""
-        caplog.set_level(logging.WARNING)
+    def test_pvs_validation_error(self):
+        """Test that enabling PVS without alpha-beta pruning raises an error."""
+        with pytest.raises(
+            ValueError,
+            match="Principal Variation Search .* requires alpha-beta pruning",
+        ):
+            EngineConfig(
+                minimax=MinimaxConfig(
+                    use_alpha_beta=False,
+                    use_pvs=True,
+                    use_lmr=False,  # Turn off LMR since it requires alpha-beta
+                )
+            )
+
+    def test_pvs_with_alpha_beta_enabled(self):
+        """Test that PVS works properly when alpha-beta is enabled."""
         cfg = EngineConfig(
             minimax=MinimaxConfig(
-                use_alpha_beta=False,
+                use_alpha_beta=True,
                 use_pvs=True,
             )
         )
         engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
-        assert engine.use_pvs is False
-        assert any("Disabling PVS" in rec.getMessage() for rec in caplog.records)
+        assert engine.use_pvs is True
 
 
 class TestIterativeDeepening:
@@ -64,7 +76,6 @@ class TestIterativeDeepening:
         def fake_search(self, depth):
             called.append(depth)
             # Return a move only on the final depth
-
             return float(depth), (dummy_move if depth == 4 else None)
 
         monkeypatch.setattr(Minimax, "_search_fixed_depth", fake_search)
@@ -97,7 +108,6 @@ class TestTimeLimit:
         )
         engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
         # Simulate search starting in the past
-
         engine.start_time = time.time() - 1.0
         assert engine._check_time_limit() is True
         assert engine.time_up is True

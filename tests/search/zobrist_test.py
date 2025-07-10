@@ -28,11 +28,9 @@ class TestZobristBasics:
         board = chess.Board()
 
         # Hash the same board multiple times
-
         hashes = [zobrist.hash_board(board) for _ in range(3)]
 
         # All hashes should be identical
-
         assert hashes[0] == hashes[1] == hashes[2]
 
     def test_hash_uniqueness(self):
@@ -42,14 +40,12 @@ class TestZobristBasics:
         board2 = chess.Board()
 
         # Make different moves on board2
-
         board2.push_san("e4")
 
         hash1 = zobrist.hash_board(board1)
         hash2 = zobrist.hash_board(board2)
 
         # Hashes should be different
-
         assert hash1 != hash2
 
     def test_position_independence(self):
@@ -57,7 +53,6 @@ class TestZobristBasics:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Two different ways to reach the same position
-
         board1 = chess.Board()
         board1.push_san("e4")
         board1.push_san("e5")
@@ -72,7 +67,6 @@ class TestZobristBasics:
         hash2 = zobrist.hash_board(board2)
 
         # Hashes should be identical
-
         assert hash1 == hash2
 
 
@@ -84,17 +78,19 @@ class TestZobristIncrementalUpdates:
         zobrist = Zobrist(seed=42)  # Fixed seed
         board = chess.Board()
 
-        # CRUCIAL: Initialize hash first
+        # Initialize hash first
         zobrist.hash_board(board)
 
         # Store move info
         move = chess.Move.from_uci("e2e4")
 
-        # Make move and update incrementally
-        board.push(move)
+        # Update incrementally BEFORE making the move
         incremental_hash = zobrist.make_move_hash(board, move)
 
-        # Compute hash from scratch for comparison (same zobrist instance)
+        # Now make the move
+        board.push(move)
+
+        # Compute hash from scratch for comparison
         fresh_hash = zobrist.hash_board(board)
 
         # Both methods should give the same hash
@@ -113,10 +109,12 @@ class TestZobristIncrementalUpdates:
 
         for san in moves:
             move = board.parse_san(san)
-            board.push(move)
 
-            # Update hash incrementally
+            # Update incrementally BEFORE making the move
             incremental_hash = zobrist.make_move_hash(board, move)
+
+            # Now make the move
+            board.push(move)
 
             # Verify against full hash calculation
             fresh_hash = zobrist.hash_board(board)
@@ -138,9 +136,12 @@ class TestZobristSpecialMoves:
 
         # Try kingside castling
         move = board.parse_san("O-O")
-        board.push(move)
 
+        # Update hash incrementally BEFORE making the move
         castle_hash = zobrist.make_move_hash(board, move)
+
+        # Now make the move
+        board.push(move)
 
         # Compute fresh hash to verify
         fresh_hash = zobrist.hash_board(board)
@@ -161,9 +162,12 @@ class TestZobristSpecialMoves:
 
         # Make en passant capture
         move = board.parse_san("exf6")
-        board.push(move)
 
+        # Update hash incrementally BEFORE making the move
         ep_hash = zobrist.make_move_hash(board, move)
+
+        # Now make the move
+        board.push(move)
 
         # Compute fresh hash to verify
         fresh_hash = zobrist.hash_board(board)
@@ -182,9 +186,12 @@ class TestZobristSpecialMoves:
 
         # Promote to queen
         move = chess.Move.from_uci("a7a8q")  # a7-a8=Q
-        board.push(move)
 
+        # Update hash incrementally BEFORE making the move
         promotion_hash = zobrist.make_move_hash(board, move)
+
+        # Now make the move
+        board.push(move)
 
         # Compute fresh hash to verify
         fresh_hash = zobrist.hash_board(board)
@@ -204,7 +211,6 @@ class TestZobristIntegration:
         depth = 3  # Reduced depth for faster testing
 
         # First search without Zobrist
-
         config_no_zobrist = EngineConfig(
             minimax=MinimaxConfig(
                 use_zobrist=False,
@@ -217,7 +223,6 @@ class TestZobristIntegration:
         nodes_without_zobrist = minimax_no_zobrist.node_count
 
         # Then search with Zobrist
-
         config_with_zobrist = EngineConfig(
             minimax=MinimaxConfig(
                 use_zobrist=True,
@@ -230,20 +235,17 @@ class TestZobristIntegration:
         nodes_with_zobrist = minimax_with_zobrist.node_count
 
         # Should see a reduction in node count
-
         assert nodes_with_zobrist <= nodes_without_zobrist
 
         # If there's a significant reduction, verify it
-
         if nodes_without_zobrist > nodes_with_zobrist:
             reduction_ratio = (
                 nodes_without_zobrist - nodes_with_zobrist
             ) / nodes_without_zobrist
             # At least some reduction should occur
-
-            assert (
-                reduction_ratio > 0
-            ), f"Expected some node reduction, got {reduction_ratio:.2%}"
+            assert reduction_ratio > 0, (
+                f"Expected some node reduction, got {reduction_ratio:.2%}"
+            )
 
     def test_aging_vs_no_aging_efficiency(self):
         """Test that TT aging provides better efficiency over time."""
@@ -251,7 +253,6 @@ class TestZobristIntegration:
         depth = 3  # Reduced depth for faster testing
 
         # Configuration with aging
-
         config_with_aging = EngineConfig(
             minimax=MinimaxConfig(
                 use_zobrist=True,
@@ -261,7 +262,6 @@ class TestZobristIntegration:
         )
 
         # Configuration without aging
-
         config_without_aging = EngineConfig(
             minimax=MinimaxConfig(
                 use_zobrist=True,
@@ -271,7 +271,6 @@ class TestZobristIntegration:
         )
 
         # Test positions
-
         positions = [
             chess.Board(),  # Starting position
             chess.Board("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"),
@@ -285,21 +284,18 @@ class TestZobristIntegration:
 
         for pos in positions:
             # Create fresh instances for each position to avoid state interference
-
             minimax_with_aging = Minimax(pos, MockEval(pos), config_with_aging)
             minimax_without_aging = Minimax(pos, MockEval(pos), config_without_aging)
 
             # Search with aging
-
             minimax_with_aging.find_top_move(depth=depth)
             total_nodes_with_aging += minimax_with_aging.node_count
 
             # Search without aging
-
             minimax_without_aging.find_top_move(depth=depth)
             total_nodes_without_aging += minimax_without_aging.node_count
-        # Over multiple positions, aging should be equal or more efficient
 
+        # Over multiple positions, aging should be equal or more efficient
         assert total_nodes_with_aging <= total_nodes_without_aging
 
 
