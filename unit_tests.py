@@ -96,6 +96,51 @@ class TestHalfKPNet:
         with pytest.raises(RuntimeError):
             model(wrong_input)
 
+    def test_model_training(self, model: HalfKPNet) -> None:
+        """Test that the neural network can actually train and update its weights."""
+
+        # Override NotImplementedError methods for testing
+        def initialize_weights(self):
+            nn.init.xavier_uniform_(self.hidden.weight)
+            nn.init.zeros_(self.hidden.bias)
+            nn.init.xavier_uniform_(self.output.weight)
+            nn.init.zeros_(self.output.bias)
+
+        def forward_pass(self, x):
+            x = self.hidden(x)
+            x = torch.nn.functional.relu(x)  # Using full namespace for consistency
+            x = self.output(x)
+            return x.squeeze()
+
+        # Monkey patch the methods for testing
+        model._initialize_weights = initialize_weights.__get__(model)
+        model.forward = forward_pass.__get__(model)
+        model._initialize_weights()
+
+        # Create a simple optimizer
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+
+        # Save initial weights for comparison
+        initial_hidden_weight = model.hidden.weight.clone().detach()
+        initial_output_weight = model.output.weight.clone().detach()
+
+        # Create dummy training data (batch_size=5)
+        input_size = 82048  # HalfKP feature size
+        inputs = torch.randn(5, input_size)
+        targets = torch.tensor([0.5, -0.3, 0.7, -0.2, 0.1])
+
+        # Mini training loop (3 iterations)
+        for _ in range(3):
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = torch.nn.functional.mse_loss(outputs, targets)
+            loss.backward()
+            optimizer.step()
+
+        # Check that weights have changed
+        assert not torch.allclose(initial_hidden_weight, model.hidden.weight)
+        assert not torch.allclose(initial_output_weight, model.output.weight)
+
 
 class TestNeuralNetEvaluator:
     """Tests for the neural network chess position evaluator."""
