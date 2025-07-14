@@ -3,11 +3,11 @@
 # pylint: skip-file
 # ruff: noqa
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 import chess
-import pytest
 import torch
+import pytest
 from torch import nn
 
 from src.engine.config import EngineConfig, MinimaxConfig, EvaluationConfig
@@ -185,6 +185,37 @@ class TestNeuralNetEvaluator:
         mock_tensor.side_effect = Exception("Tensor conversion failed")
         score = evaluator.evaluate()
         assert isinstance(score, float)
+
+    @patch("src.engine.evaluators.simple_nn_eval.torch.load")
+    def test_model_loading_from_path(self, mock_torch_load: MagicMock) -> None:
+        """Test that the model attempts to load weights from a given path."""
+        mock_board = chess.Board()
+        model_path = "/fake/path/to/model.pth"
+        mock_weights = {"key": "value"}
+        mock_torch_load.return_value = mock_weights
+
+        # Patch the model's load_state_dict method directly on the instance
+        with patch.object(HalfKPNet, "load_state_dict") as mock_load_state_dict:
+            NeuralNetEvaluator(board=mock_board, model_path=model_path)
+
+            # Assert that torch.load was called with the correct path
+            mock_torch_load.assert_called_once_with(model_path, map_location="cpu")
+
+            # Assert that the model's load_state_dict was called with the loaded weights
+            mock_load_state_dict.assert_called_once_with(mock_weights)
+
+    def test_no_model_loading_without_path(self) -> None:
+        """Test that model loading is not attempted if no path is provided."""
+        mock_board = chess.Board()
+
+        with patch(
+            "src.engine.evaluators.simple_nn_eval.torch.load"
+        ) as mock_torch_load:
+            # Instantiate without a model path
+            NeuralNetEvaluator(board=mock_board, model_path=None)
+
+            # Assert that torch.load was not called
+            mock_torch_load.assert_not_called()
 
 
 class TestHalfKPRepresentation:
