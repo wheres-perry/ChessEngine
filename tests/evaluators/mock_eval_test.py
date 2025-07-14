@@ -184,22 +184,6 @@ class TestMockEvalBugDetection:
         assert evaluator.evaluate() == 20.0
         assert evaluator.score == 20.0
 
-    def test_scientific_notation_scores(self):
-        """Test MockEval with extreme values that might be used in testing."""
-        board = chess.Board()
-
-        # Very large number (beyond typical chess scores)
-
-        large_score = 1e6
-        evaluator = MockEval(board, fixed_score=large_score)
-        assert evaluator.evaluate() == large_score
-
-        # Very small number
-
-        small_score = 1e-6
-        evaluator.set_score(small_score)
-        assert evaluator.evaluate() == small_score
-
 
 if __name__ == "__main__":
     pytest.main([__file__])

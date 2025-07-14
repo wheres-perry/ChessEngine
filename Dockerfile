@@ -40,11 +40,12 @@ COPY data/raw/example_fens/ ./data/raw/example_fens/
 # 3. Root Python files (change occasionally)
 COPY *.py ./
 
-# 4. Test files (change frequently during development)
-COPY tests/ ./tests/
-
-# 5. Source code (MOST frequently changed - copy last)
+# 4. Source code (MOST frequently changed - copy last)
 COPY src/ ./src/
+
+# 5. Specific shell scripts only
+COPY run_tests.sh ./
+RUN chmod +x run_tests.sh
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
