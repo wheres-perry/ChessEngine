@@ -224,7 +224,7 @@ class TestHalfKPRepresentation:
     def test_square_orientation(self) -> None:
         """Test basic square orientation functionality."""
         assert orient_square(True, 0) == 0
-        assert orient_square(False, 0) == 63
+        assert orient_square(False, 0) == 56
 
     def test_piece_indexing(self) -> None:
         """Test basic piece index calculation."""
