@@ -19,6 +19,8 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                // C/C++ Development
+                "ms-vscode.cpptools-extension-pack",
                 // Python Development
                 "ms-python.python",
                 "ms-python.pylance",
@@ -78,6 +80,11 @@
                         "source.organizeImports": "explicit",
                         "source.fixAll": "explicit"
                     }
+                },
+                // C++ Formatting
+                "[cpp]": {
+                    "editor.defaultFormatter": "ms-vscode.cpptools",
+                    "editor.formatOnSave": true
                 },
                 "files.autoSave": "onFocusChange",
                 "ruff.organizeImports": true,

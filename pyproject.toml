@@ -26,6 +26,7 @@ numpy = "^2.2.6"
 chess = "^1.9.0"
 torch = "^2.0.0"
 setuptools = "^80.9.0"
+pybind11 = "^2.13.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
@@ -34,8 +35,14 @@ mypy = "^1.8.0"
 pylint = "^3.0.0"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+# Point to the directory with your CMakeLists.txt
+cmake.source-dir = "src/engine/_core"
+# Tell scikit-build where to find Python packages to include in the wheel
+wheel.packages = ["src/engine", "src/io_utils"]
 
 # MyPy Configuration - Strict Type Checking Only
 [tool.mypy]
