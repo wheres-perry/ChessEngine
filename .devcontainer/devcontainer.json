@@ -3,11 +3,10 @@
     "name": "Chess Engine Dev Env",
     "build": {
         "dockerfile": "Dockerfile.dev",
-        "context": "."
+        "context": ".."
     },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-    // Use docker-outside-of-docker feature (recommended approach)
     "features": {
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
     },
@@ -19,51 +18,38 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                // C/C++ Development
                 "ms-vscode.cpptools-extension-pack",
-                // Python Development
                 "ms-python.python",
                 "ms-python.pylance",
                 "ms-python.debugpy",
-                // Type Checking
                 "ms-python.mypy-type-checker",
-                // Jupyter Notebook Support
                 "ms-toolsai.jupyter",
                 "ms-toolsai.jupyter-keymap",
                 "ms-toolsai.jupyter-renderers",
-                // AI Assistant
                 "GitHub.copilot",
                 "GitHub.copilot-chat",
-                // Development Tools
                 "christian-kohler.path-intellisense",
                 "aaron-bond.better-comments",
-                // Docker & Containers
                 "ms-azuretools.vscode-docker",
-                // Code Quality (Ruff for formatting/basic linting)
                 "charliermarsh.ruff"
             ],
             "settings": {
-                // Python interpreter
                 "python.defaultInterpreterPath": "python",
                 "python.terminal.activateEnvironment": true,
-                // Enable linting but with specific configurations
                 "python.linting.enabled": true,
                 "python.linting.pylintEnabled": true,
                 "python.linting.flake8Enabled": false,
                 "python.linting.mypyEnabled": true,
-                // Pylance - Language Server 
                 "python.languageServer": "Pylance",
-                "python.analysis.typeCheckingMode": "basic", // Basic mode so it doesn't conflict with MyPy
+                "python.analysis.typeCheckingMode": "basic",
                 "python.analysis.autoImportCompletions": true,
                 "pylance.autoImportCompletions": true,
-                // Pylint configuration - focus on code quality issues
                 "python.linting.pylintArgs": [
                     "--disable=C0111,C0103,C0303,C0330,C0326,W0611,E1101,C0111,C0103,R0903,R0913,R0914",
                     "--disable=import-error,unused-import,line-too-long,trailing-whitespace",
                     "--ignore=tests,notebooks,search_profiler.py,unit_tests.py"
                 ],
                 "python.linting.pylintPath": "pylint",
-                // MyPy - Strict Type Checking
                 "mypy-type-checker.args": [
                     "--config-file=pyproject.toml"
                 ],
@@ -72,7 +58,6 @@
                     "note": "Information"
                 },
                 "mypy-type-checker.runUsingActiveInterpreter": true,
-                // Ruff - Formatting & Basic Linting
                 "[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff",
                     "editor.formatOnSave": true,
@@ -81,7 +66,6 @@
                         "source.fixAll": "explicit"
                     }
                 },
-                // C++ Formatting
                 "[cpp]": {
                     "editor.defaultFormatter": "ms-vscode.cpptools",
                     "editor.formatOnSave": true
@@ -90,7 +74,6 @@
                 "ruff.organizeImports": true,
                 "ruff.fixAll": true,
                 "ruff.nativeServer": "on",
-                // File Explorer - Hide cache and config files
                 "files.exclude": {
                     "**/__pycache__": true,
                     "**/.pytest_cache": true,
@@ -99,10 +82,8 @@
                     "**/ruff.toml": true,
                     ".docker-cache/": true
                 },
-                // Jupyter Configuration
                 "jupyter.askForKernelRestart": false,
                 "jupyter.interactiveWindow.creationMode": "perFile",
-                // Better Comments Configuration
                 "better-comments.tags": [
                     {
                         "tag": "!",
@@ -141,7 +122,6 @@
                         "italic": false
                     }
                 ],
-                // Pylance exclusions
                 "python.analysis.exclude": [
                     "**/tests/**",
                     "**/notebooks/**",
@@ -151,8 +131,7 @@
             }
         }
     },
-    // Simplified postCreateCommand without docker group manipulation
-    "postCreateCommand": "poetry install --no-interaction && poetry run pip install -e . && pre-commit install",
+    "postCreateCommand": "poetry install --no-interaction && poetry run mypy --install-types --non-interactive && cd src/engine/_core && mkdir -p build && cd build && cmake .. && make && cd /workspace && pre-commit install",
     "remoteUser": "vscode",
     "containerEnv": {
         "PYTHONPATH": "/workspace"

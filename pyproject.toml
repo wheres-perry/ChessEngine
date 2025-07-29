@@ -1,53 +1,37 @@
-[project]
-name = "ChessEngine"
-version = "0.1.0"
-description = "Neural Network Chess Engine"
-authors = [
-    { name = "Ethan Perry", email = "86326912+wheres-perry@users.noreply.github.com" },
-]
-requires-python = ">=3.11"
-
 [tool.poetry]
-# Change package declaration to include src directly
-packages = [{include = "src"}]  
-package-mode = true
-exclude = [
-    "notebooks",
-    "data",
-    "tests",
-    ".pytest_cache",
-    "__pycache__",
-    ".vscode",
+name = "chessengine"
+version = "0.1.0"
+description = "High-performance chess engine with ML evaluation"
+authors = ["Your Name <you@example.com>"]
+packages = [
+    { include = "engine", from = "src" },
+    { include = "io_utils", from = "src" }
 ]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-numpy = "^2.2.6"
-chess = "^1.9.0"
-torch = "^2.0.0"
-setuptools = "^80.9.0"
-pybind11 = "^2.13.1"
+torch = "^2.1.0"
+numpy = "^1.24.0"
+pybind11 = "^2.11.1"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-pre-commit = "^3.0.0"
-mypy = "^1.8.0"
+pytest = "^7.4.0"
+mypy = "^1.7.0"
+types-setuptools = "^69.0.0"
 pylint = "^3.0.0"
+ruff = "^0.1.0"
+pre-commit = "^3.5.0"
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "scikit-build-core", "pybind11"]
-build-backend = "scikit_build_core.build"
+requires = ["poetry-core", "pybind11", "setuptools", "wheel"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.scikit-build]
-# Point to the directory with your CMakeLists.txt
-cmake.source-dir = "src/engine/_core"
-# Tell scikit-build where to find Python packages to include in the wheel
-wheel.packages = ["src/engine", "src/io_utils"]
+[tool.poetry.build]
+generate-setup-file = true
 
-# MyPy Configuration - Strict Type Checking Only
+# MyPy Configuration
 [tool.mypy]
 python_version = "3.11"
-# Add explicit mypy path to find the package
 mypy_path = "src"
 namespace_packages = true
 strict = true
@@ -67,7 +51,6 @@ warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
 
-# Exclude specific directories and files
 exclude = [
     "tests/",
     "notebooks/",
@@ -75,57 +58,55 @@ exclude = [
     "unit_tests.py"
 ]
 
-# Per-module configuration
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = "chess.*"
+module = "torch.*"
 ignore_missing_imports = true
 
-# Pylint Configuration - Code Quality & Complexity Only
+[[tool.mypy.overrides]]
+module = "pybind11.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools.*"
+ignore_missing_imports = true
+
+# Pylint Configuration
 [tool.pylint.main]
 py-version = "3.11"
 source-roots = ["src"]
 
-# Ignore specific directories and files
 ignore = [
     "tests",
     "notebooks",
     "search_profiler.py",
-    "unit_tests.py"
+    "unit_tests.py",
+    "setup.py"
 ]
 
 [tool.pylint.messages_control]
-# Disable rules that overlap with Ruff
 disable = [
-    # Style/formatting (handled by Ruff)
     "line-too-long",
     "trailing-whitespace", 
     "missing-final-newline",
     "bad-indentation",
     "wrong-spelling-in-comment",
     "wrong-spelling-in-docstring",
-    
-    # Import organization (handled by Ruff)
     "wrong-import-order",
     "ungrouped-imports",
     "wrong-import-position",
-    
-    # Type checking (handled by MyPy)
     "no-member",
     "unsubscriptable-object",
     "unsupported-membership-test",
-    
-    # Too opinionated for development
     "missing-module-docstring",
     "missing-class-docstring", 
     "missing-function-docstring",
 ]
 
-# Enable important code quality checks
 enable = [
     "useless-suppression",
     "deprecated-pragma",
@@ -158,7 +139,6 @@ good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
 
 # Ruff Configuration
 [tool.ruff]
-# Exclude directories and files from all ruff checks
 exclude = [
     "tests/",
     "notebooks/", 
