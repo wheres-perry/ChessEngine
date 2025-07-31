@@ -13,27 +13,27 @@ python = "^3.11"
 torch = "^2.1.0"
 numpy = "^1.24.0"
 pybind11 = "^2.11.1"
+chess = "^1.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 mypy = "^1.7.0"
 types-setuptools = "^69.0.0"
 pylint = "^3.0.0"
-ruff = "^0.1.0"
+ruff = "^0.3.5"
 pre-commit = "^3.5.0"
 
+# Use setuptools build backend to handle C++ extensions via setup.py
 [build-system]
-requires = ["poetry-core", "pybind11", "setuptools", "wheel"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=45", "wheel", "pybind11>=2.6.0"]
+build-backend = "setuptools.build_meta"
 
-[tool.poetry.build]
-generate-setup-file = true
-
-# MyPy Configuration
+# MyPy Configuration - Strict Type Checking
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
 namespace_packages = true
+explicit_package_bases = true
 strict = true
 warn_return_any = true
 warn_unused_configs = true
@@ -75,7 +75,11 @@ ignore_missing_imports = true
 module = "setuptools.*"
 ignore_missing_imports = true
 
-# Pylint Configuration
+[[tool.mypy.overrides]]
+module = "chess.*"
+ignore_missing_imports = true
+
+# Pylint Configuration - Code Quality & Complexity Only
 [tool.pylint.main]
 py-version = "3.11"
 source-roots = ["src"]
@@ -84,24 +88,30 @@ ignore = [
     "tests",
     "notebooks",
     "search_profiler.py",
-    "unit_tests.py",
-    "setup.py"
+    "unit_tests.py"
 ]
 
 [tool.pylint.messages_control]
 disable = [
+    # Style/formatting (handled by Ruff)
     "line-too-long",
     "trailing-whitespace", 
     "missing-final-newline",
     "bad-indentation",
     "wrong-spelling-in-comment",
     "wrong-spelling-in-docstring",
+    
+    # Import organization (handled by Ruff)
     "wrong-import-order",
     "ungrouped-imports",
     "wrong-import-position",
+    
+    # Type checking (handled by MyPy)
     "no-member",
     "unsubscriptable-object",
     "unsupported-membership-test",
+    
+    # Too opinionated for development
     "missing-module-docstring",
     "missing-class-docstring", 
     "missing-function-docstring",
@@ -137,7 +147,7 @@ allowed-redefined-builtins = ["id", "type", "input"]
 [tool.pylint.basic]
 good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
 
-# Ruff Configuration
+# Ruff Configuration - Formatting & Basic Linting
 [tool.ruff]
 exclude = [
     "tests/",
