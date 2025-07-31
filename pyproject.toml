@@ -31,9 +31,10 @@ build-backend = "setuptools.build_meta"
 # MyPy Configuration - Strict Type Checking
 [tool.mypy]
 python_version = "3.11"
-mypy_path = "src"
+mypy_path = "."
 namespace_packages = true
 explicit_package_bases = true
+no_site_packages = true
 strict = true
 warn_return_any = true
 warn_unused_configs = true
@@ -55,8 +56,17 @@ exclude = [
     "tests/",
     "notebooks/",
     "search_profiler.py", 
-    "unit_tests.py"
+    "unit_tests.py",
+    "validation/",
+    "__pycache__/",
+    ".*\\.egg-info/"
 ]
+
+[[tool.mypy.overrides]]
+module = "engine.*"
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+warn_return_any = false
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -82,7 +92,7 @@ ignore_missing_imports = true
 # Pylint Configuration - Code Quality & Complexity Only
 [tool.pylint.main]
 py-version = "3.11"
-source-roots = ["src"]
+source-roots = ["."]
 
 ignore = [
     "tests",

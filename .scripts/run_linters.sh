@@ -2,7 +2,6 @@
 # filepath: /workspace/.scripts/run_linters.sh
 
 set -eo pipefail
-export PYTHONPATH=/workspace
 
 echo "===== Running Python Linters ====="
 EXIT_CODE=0
@@ -21,20 +20,26 @@ run_command() {
     return $CMD_EXIT
 }
 
-# Find poetry and the virtualenv
+# Find poetry
 POETRY_BIN=$(which poetry)
 
-# Install and run Ruff - without --user flag in virtualenv
-run_command "Ruff Linter" "$POETRY_BIN run pip install ruff && $POETRY_BIN run ruff check src/ --fix" || true
+# Clean Python cache before running linters
+echo ">>> Cleaning Python cache files"
+find . -name "*.pyc" -delete 2>/dev/null || true
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+rm -rf .mypy_cache/ 2>/dev/null || true
+
+# Run Ruff Linter
+run_command "Ruff Linter" "$POETRY_BIN run ruff check src/ --fix" || true
 
 # Run Ruff Formatter
 run_command "Ruff Formatter" "$POETRY_BIN run ruff format src/" || true
 
-# Run MyPy for type checking with proper PYTHONPATH
-run_command "MyPy Type Checker" "PYTHONPATH=/workspace $POETRY_BIN run mypy --namespace-packages src/" || true
+# Run MyPy - override PYTHONPATH to empty, set MYPYPATH, and target source paths directly
+run_command "MyPy Type Checker" "PYTHONPATH=/workspace $POETRY_BIN run mypy --config-file pyproject.toml src" || true
 
-# Run Pylint for code quality
-run_command "Pylint" "$POETRY_BIN run pylint src/" || true
+# Run Pylint with PYTHONPATH set for module discovery
+run_command "Pylint" "PYTHONPATH=/workspace $POETRY_BIN run pylint src" || true
 
 # Summary
 echo -e "\n===== Linting Summary ====="
@@ -45,5 +50,4 @@ else
     echo -e "⛔ Commit prevented due to linting errors"
 fi
 
-# Return the actual exit code to prevent commits when there are errors
 exit $EXIT_CODE

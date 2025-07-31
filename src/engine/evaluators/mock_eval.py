@@ -1,9 +1,9 @@
 import chess
 
-from src.engine.evaluators.eval import Eval
+from src.engine.evaluators.evaluator import Evaluator
 
 
-class MockEval(Eval):
+class MockEval(Evaluator):
     """
     A mock evaluator that returns a predefined score for testing.
 
@@ -32,7 +32,7 @@ class MockEval(Eval):
         self.score = self.fixed_score
         return self.score
 
-    def set_score(self, score: float):
+    def set_score(self, score: float) -> None:
         """
         Allows updating the fixed score after instantiation.
         """

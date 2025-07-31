@@ -18,6 +18,7 @@ def piece_to_index(piece_type: int, color: bool) -> int:
 class Zobrist:
     """
     High-performance Zobrist hashing with reliable incremental updates.
+
     Provides efficient position hashing that can be updated incrementally
     as moves are made and unmade.
     """
@@ -30,18 +31,13 @@ class Zobrist:
         """Initialize Zobrist hash keys for all board elements."""
         if seed is not None:
             random.seed(seed)
-
         self.piece_keys = [[rand64() for _ in range(64)] for _ in range(12)]
-
         # [W-K, W-Q, B-K, B-Q] castling rights
         self.castling_keys = [rand64() for _ in range(4)]
-
         # Files a-h for en passant
         self.ep_keys = [rand64() for _ in range(8)]
-
         # Side to move
         self.turn_key = rand64()
-
         # Current hash value for incremental updates
         self._current_hash = None
 
@@ -56,14 +52,12 @@ class Zobrist:
             64-bit Zobrist hash value
         """
         h = 0
-
         # Hash pieces - iterate only over actual pieces
         for piece_type in chess.PIECE_TYPES:
             for color in [chess.WHITE, chess.BLACK]:
                 for square in board.pieces(piece_type, color):
                     piece_index = piece_to_index(piece_type, color)
                     h ^= self.piece_keys[piece_index][square]
-
         # Hash castling rights
         cr = board.castling_rights
         if cr & chess.BB_H1:  # White kingside
@@ -74,16 +68,13 @@ class Zobrist:
             h ^= self.castling_keys[2]
         if cr & chess.BB_A8:  # Black queenside
             h ^= self.castling_keys[3]
-
         # Hash en passant
         if board.ep_square is not None:
             ep_file = chess.square_file(board.ep_square)
             h ^= self.ep_keys[ep_file]
-
         # Hash turn
         if board.turn == chess.BLACK:
             h ^= self.turn_key
-
         self._current_hash = h
         return h
 
@@ -92,11 +83,11 @@ class Zobrist:
         if self._current_hash is None:
             return self.hash_board(board)
 
-        h = self._current_hash
+        # This is the corrected line:
+        h: int = self._current_hash
 
         # 1. Flip turn
         h ^= self.turn_key
-
         # 2. Get piece information
         moving_piece = board.piece_at(move.from_square)
         if not moving_piece:
@@ -105,9 +96,7 @@ class Zobrist:
             result = self.hash_board(board)
             board.pop()
             return result
-
         captured_piece = board.piece_at(move.to_square)
-
         # 3. Handle the moving piece
         if move.promotion:
             pawn_index = piece_to_index(chess.PAWN, moving_piece.color)
@@ -118,7 +107,6 @@ class Zobrist:
             piece_index = piece_to_index(moving_piece.piece_type, moving_piece.color)
             h ^= self.piece_keys[piece_index][move.from_square]
             h ^= self.piece_keys[piece_index][move.to_square]
-
         # 4. Handle captures
         if captured_piece and not board.is_en_passant(move):
             cap_index = piece_to_index(captured_piece.piece_type, captured_piece.color)
@@ -127,7 +115,6 @@ class Zobrist:
             ep_capture_square = move.to_square + (-8 if moving_piece.color else 8)
             cap_index = piece_to_index(chess.PAWN, not moving_piece.color)
             h ^= self.piece_keys[cap_index][ep_capture_square]
-
         # 5. Handle castling rook movement
         if board.is_castling(move):
             rook_index = piece_to_index(chess.ROOK, moving_piece.color)
@@ -144,11 +131,9 @@ class Zobrist:
             else:  # Black
                 h ^= self.piece_keys[rook_index][chess.A8]
                 h ^= self.piece_keys[rook_index][chess.D8]
-
         # 6. Handle castling rights efficiently WITHOUT push/pop
         old_cr = board.castling_rights
         new_cr = old_cr
-
         # Calculate new castling rights based on move
         if moving_piece.piece_type == chess.KING:
             if moving_piece.color:  # White king
@@ -164,7 +149,6 @@ class Zobrist:
                 new_cr &= ~chess.BB_A8
             elif move.from_square == chess.H8:
                 new_cr &= ~chess.BB_H8
-
         # Rook captures
         if move.to_square == chess.A1:
             new_cr &= ~chess.BB_A1
@@ -174,7 +158,6 @@ class Zobrist:
             new_cr &= ~chess.BB_A8
         elif move.to_square == chess.H8:
             new_cr &= ~chess.BB_H8
-
         # Update hash for castling changes
         if (old_cr & chess.BB_H1) != (new_cr & chess.BB_H1):
             h ^= self.castling_keys[0]
@@ -184,34 +167,31 @@ class Zobrist:
             h ^= self.castling_keys[2]
         if (old_cr & chess.BB_A8) != (new_cr & chess.BB_A8):
             h ^= self.castling_keys[3]
-
         # 7. Handle en passant efficiently WITHOUT push/pop
         old_ep = board.ep_square
         new_ep = None
-
         # Calculate new en passant square
         if (
             moving_piece.piece_type == chess.PAWN
             and abs(move.to_square - move.from_square) == 16
         ):
             new_ep = move.from_square + (8 if moving_piece.color else -8)
-
         # Update hash for en passant changes
         if old_ep is not None:
             h ^= self.ep_keys[chess.square_file(old_ep)]
         if new_ep is not None:
             h ^= self.ep_keys[chess.square_file(new_ep)]
-
         self._current_hash = h
         return h
 
-    def get_current_hash(self) -> None | int:
+    def get_current_hash(self) -> int | None:
         """Get the current hash value without recalculating."""
         return self._current_hash
 
     def set_current_hash(self, hash_val: int | None) -> None:
         """
         Set the current hash value.
+
         Used for initialization or restoring after pop.
         """
         self._current_hash = hash_val

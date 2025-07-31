@@ -1,10 +1,10 @@
 import chess
 
 from src.engine.constants import EVAL_PIECES, PIECE_VALUES
-from src.engine.evaluators.eval import Eval
+from src.engine.evaluators.evaluator import Evaluator
 
 
-class SimpleEval(Eval):
+class SimpleEval(Evaluator):
     """
     A simple material-based chess position evaluator.
 

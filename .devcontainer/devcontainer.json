@@ -80,7 +80,9 @@
                     "**/.ruff_cache": true,
                     "**/.mypy_cache": true,
                     "**/ruff.toml": true,
-                    ".docker-cache/": true
+                    ".docker-cache/": true,
+                    "**/*.egg-info": true,
+                    "**/*.so": true
                 },
                 "jupyter.askForKernelRestart": false,
                 "jupyter.interactiveWindow.creationMode": "perFile",
@@ -131,7 +133,7 @@
             }
         }
     },
-    "postCreateCommand": "poetry install --no-interaction && poetry run mypy --install-types --non-interactive && cd src/engine/_core && mkdir -p build && cd build && cmake .. && make && cd /workspace && pre-commit install",
+    "postCreateCommand": "poetry install --no-interaction && poetry run mypy --install-types --non-interactive && python compile.py --no-tests && python .devcontainer/patch_cpp_path.py && pre-commit install",
     "remoteUser": "vscode",
     "containerEnv": {
         "PYTHONPATH": "/workspace"

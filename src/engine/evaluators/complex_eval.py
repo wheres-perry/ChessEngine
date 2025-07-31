@@ -1,8 +1,10 @@
+from typing import cast
+
 import chess
 
 from src.engine.config import EvaluationConfig
 from src.engine.constants import EVAL_PIECES, PIECE_VALUES
-from src.engine.evaluators.eval import Eval
+from src.engine.evaluators.evaluator import Evaluator
 
 
 def make_pst(table: list[int]) -> list[float]:
@@ -47,6 +49,7 @@ mg_pawn_pst = make_pst(
         0,
     ]
 )
+
 eg_pawn_pst = make_pst(
     [
         0,
@@ -83,6 +86,7 @@ eg_pawn_pst = make_pst(
         10,
     ]
 )
+
 mg_knight_pst = make_pst(
     [
         -50,
@@ -119,6 +123,7 @@ mg_knight_pst = make_pst(
         -30,
     ]
 )
+
 eg_knight_pst = make_pst(
     [
         -20,
@@ -155,6 +160,7 @@ eg_knight_pst = make_pst(
         -10,
     ]
 )
+
 mg_bishop_pst = make_pst(
     [
         -20,
@@ -191,6 +197,7 @@ mg_bishop_pst = make_pst(
         -10,
     ]
 )
+
 eg_bishop_pst = make_pst(
     [
         -10,
@@ -227,6 +234,7 @@ eg_bishop_pst = make_pst(
         -10,
     ]
 )
+
 mg_rook_pst = make_pst(
     [
         0,
@@ -263,6 +271,7 @@ mg_rook_pst = make_pst(
         -5,
     ]
 )
+
 eg_rook_pst = make_pst(
     [
         0,
@@ -299,6 +308,7 @@ eg_rook_pst = make_pst(
         0,
     ]
 )
+
 mg_queen_pst = make_pst(
     [
         -20,
@@ -335,6 +345,7 @@ mg_queen_pst = make_pst(
         -5,
     ]
 )
+
 eg_queen_pst = make_pst(
     [
         -10,
@@ -371,6 +382,7 @@ eg_queen_pst = make_pst(
         -10,
     ]
 )
+
 mg_king_pst = make_pst(
     [
         20,
@@ -407,6 +419,7 @@ mg_king_pst = make_pst(
         -20,
     ]
 )
+
 eg_king_pst = make_pst(
     [
         -50,
@@ -445,8 +458,6 @@ eg_king_pst = make_pst(
 )
 
 # Map piece types to their PSTs
-
-
 PST = {
     chess.PAWN: (mg_pawn_pst, eg_pawn_pst),
     chess.KNIGHT: (mg_knight_pst, eg_knight_pst),
@@ -457,10 +468,11 @@ PST = {
 }
 
 
-class ComplexEval(Eval):
+class ComplexEval(Evaluator):
     """
     A complex evaluator that considers material, piece-square tables,
     mobility, pawn structure, and king safety.
+
     The final score is from White's perspective (positive is good for White).
     """
 
@@ -470,7 +482,7 @@ class ComplexEval(Eval):
         self.pawn_files = {chess.WHITE: [0] * 8, chess.BLACK: [0] * 8}
         self._init_pawn_structure()
 
-    def _init_pawn_structure(self):
+    def _init_pawn_structure(self) -> None:
         """Pre-calculates pawn file information."""
         for sq in chess.SQUARES:
             piece = self.board.piece_at(sq)
@@ -481,6 +493,7 @@ class ComplexEval(Eval):
     def evaluate(self) -> float:
         """
         Calculates the evaluation of the current board position.
+
         A positive score favors White, a negative score favors Black.
         """
         if self.board.is_checkmate():
@@ -488,6 +501,7 @@ class ComplexEval(Eval):
             return -9999 if self.board.turn == chess.WHITE else 9999
         if self.board.is_stalemate() or self.board.is_insufficient_material():
             return 0.0
+
         score = 0.0
         game_phase = self._get_game_phase()
 
@@ -501,11 +515,13 @@ class ComplexEval(Eval):
             score += self._evaluate_king_safety(game_phase)
         if self.config.use_mobility:
             score += self._evaluate_mobility()
+
         return score
 
     def _get_game_phase(self) -> float:
         """
         Calculates the game phase, from 1.0 (opening) to 0.0 (endgame).
+
         Based on the material on the board, excluding kings and pawns.
         """
         phase = 0
@@ -533,43 +549,36 @@ class ComplexEval(Eval):
             if not piece:
                 continue
             mg_pst, eg_pst = PST[piece.piece_type]
-
             # Interpolate between midgame and endgame tables
             pst_val = mg_pst[sq] * game_phase + eg_pst[sq] * (1 - game_phase)
-
             if piece.color == chess.WHITE:
                 score += pst_val
-            else:
-                # For black, the square index must be flipped for the table lookup
+            else:  # For black, the square index must be flipped for the table lookup
                 score -= pst_val
         return score
 
     def _evaluate_mobility(self) -> float:
         """
         Evaluates mobility (number of legal moves).
+
         A small weight is applied to this score.
         """
         mobility_weight = 0.05
-
         # White's mobility
         self.board.turn = chess.WHITE
         white_mobility = self.board.legal_moves.count()
-
         # Black's mobility
         self.board.turn = chess.BLACK
         black_mobility = self.board.legal_moves.count()
-
         # Restore the original turn
         self.board.turn = not self.board.turn
-
-        return (white_mobility - black_mobility) * mobility_weight
+        return cast("float", (white_mobility - black_mobility) * mobility_weight)
 
     def _evaluate_pawn_structure(self) -> float:
         """Evaluates pawn structure for doubled and isolated pawns."""
         score = 0.0
         doubled_pawn_penalty = -0.25
         isolated_pawn_penalty = -0.15
-
         for color in [chess.WHITE, chess.BLACK]:
             color_penalty = 0.0
             for file_idx in range(8):
@@ -595,7 +604,6 @@ class ComplexEval(Eval):
         """Evaluates king safety based on pawn shield."""
         score = 0.0
         pawn_shield_bonus = 0.4
-
         # King safety is less important in the endgame
         if game_phase < 0.3:
             return 0.0
@@ -605,9 +613,7 @@ class ComplexEval(Eval):
                 continue
             king_file = chess.square_file(king_sq)
             king_rank = chess.square_rank(king_sq)
-
             shield_bonus = 0.0
-
             # Find pawns in front of the king
             for file_offset in [-1, 0, 1]:
                 check_file = king_file + file_offset

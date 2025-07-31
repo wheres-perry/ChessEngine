@@ -4,13 +4,12 @@ import time
 import chess
 
 from src.engine.config import EngineConfig
-from src.engine.evaluators.eval import Eval
+from src.engine.evaluators.evaluator import Evaluator
 from src.engine.search.move_ordering import MoveOrderer
 from src.engine.search.transposition_table import TranspositionTable
 from src.engine.search.zobrist import Zobrist
 
 logger = logging.getLogger(__name__)
-
 
 # pylint: disable=too-many-instance-attributes,too-many-boolean-expressions,too-many-branches
 # pylint: disable=too-many-statements,too-many-positional-arguments
@@ -28,7 +27,6 @@ class Minimax:
     POS_INF = float("inf")
     DEFAULT_TT_SIZE = 10000
     TIME_CHECK_INTERVAL = 10000
-
     # LMR parameters
     LMR_MIN_DEPTH = 2
     LMR_MIN_MOVES = 2
@@ -37,7 +35,7 @@ class Minimax:
     def __init__(
         self,
         board: chess.Board,
-        evaluator: Eval,
+        evaluator: Evaluator,
         config: EngineConfig,
     ):
         """
@@ -94,7 +92,7 @@ class Minimax:
         self.start_time: float | None = None
         self.best_move_first: chess.Move | None = None
 
-    def find_top_move(self, depth: int = 1) -> tuple[None | float, None | chess.Move]:
+    def find_top_move(self, depth: int = 1) -> tuple[float | None, chess.Move | None]:
         """
         Find the best move for the current position.
 
@@ -140,6 +138,7 @@ class Minimax:
     ) -> tuple[float | None, chess.Move | None]:
         """
         Perform iterative deepening search from depth 1 to max_depth.
+
         Each iteration provides a better move estimate and enables early
         termination when time runs out while maintaining the best move
         found so far.
@@ -152,21 +151,16 @@ class Minimax:
         """
         best_score: float | None = None
         best_move: chess.Move | None = None
-
         for current_depth in range(1, max_depth + 1):
             if self._check_time_limit():
                 break
-
             score, move = self._search_fixed_depth(current_depth)
-
             if self.time_up:
                 break
-
             if move is not None:
                 best_score = score
                 best_move = move
                 self.best_move_first = move
-
         return best_score, best_move
 
     def _search_fixed_depth(self, depth: int) -> tuple[float, chess.Move | None]:  # noqa: C901, PLR0912
@@ -182,7 +176,6 @@ class Minimax:
         # Only reset nodes if not using IDDFS (to allow accumulation)
         if not self.use_iddfs:
             self.nodes_searched = 0
-
         self.start_time = time.time()
 
         # Initial hash for the root position
@@ -211,7 +204,9 @@ class Minimax:
             current_hash = None
             if self.zobrist:
                 current_hash = self.zobrist.make_move_hash(self.board, m)
-                self.hash_stack.append(self.zobrist.get_current_hash())
+            self.hash_stack.append(
+                self.zobrist.get_current_hash() if self.zobrist else None
+            )
 
             # Make the move
             self.board.push(m)
@@ -266,7 +261,6 @@ class Minimax:
         """
         if not self.use_move_ordering:
             return moves
-
         return self.move_orderer.order_moves(moves)
 
     def _gives_check_fast(self, move: chess.Move) -> bool:
@@ -283,7 +277,9 @@ class Minimax:
         self.board.push(move)
         gives_check = self.board.is_check()
         self.board.pop()
-        return gives_check
+        if self.board.is_game_over():
+            return False
+        return bool(gives_check)
 
     def minimax_alpha_beta(  # noqa: C901, PLR0912
         self, depth: int, alpha: float, beta: float, maximizing_player: bool
@@ -303,7 +299,6 @@ class Minimax:
         """
         # Node counting and time limit checks
         self.nodes_searched += 1
-
         if (
             self.nodes_searched % self.TIME_CHECK_INTERVAL == 0
             and self._check_time_limit()
@@ -316,7 +311,6 @@ class Minimax:
 
         # Check transposition table
         position_hash = None
-
         if self.zobrist and self.transposition_table:
             position_hash = self.zobrist.get_current_hash()
             if position_hash is not None:
@@ -339,16 +333,16 @@ class Minimax:
 
         if maximizing_player:
             max_eval = self.NEG_INF
-
             for i, m in enumerate(ordered_moves):
                 if self._check_time_limit():
                     break
-
                 # Store current hash before making move
                 new_hash = None
                 if self.zobrist:
                     new_hash = self.zobrist.make_move_hash(self.board, m)
-                    self.hash_stack.append(self.zobrist.get_current_hash())
+                self.hash_stack.append(
+                    self.zobrist.get_current_hash() if self.zobrist else None
+                )
 
                 # Make the move
                 self.board.push(m)
@@ -374,7 +368,6 @@ class Minimax:
                     eval_score = self.minimax_alpha_beta(
                         reduced_depth, alpha, beta, maximizing_player=False
                     )
-
                     # Re-search if promising
                     if eval_score > alpha:
                         eval_score = self.minimax_alpha_beta(
@@ -386,7 +379,6 @@ class Minimax:
                     eval_score = self.minimax_alpha_beta(
                         search_depth, alpha, alpha + 1e-10, maximizing_player=False
                     )
-
                     # Re-search with full window if better than alpha
                     if alpha < eval_score < beta:
                         eval_score = self.minimax_alpha_beta(
@@ -432,16 +424,16 @@ class Minimax:
             return max_eval
 
         min_eval = self.POS_INF
-
         for i, m in enumerate(ordered_moves):
             if self._check_time_limit():
                 break
-
             # Store current hash before making move
             new_hash = None
             if self.zobrist:
                 new_hash = self.zobrist.make_move_hash(self.board, m)
-                self.hash_stack.append(self.zobrist.get_current_hash())
+            self.hash_stack.append(
+                self.zobrist.get_current_hash() if self.zobrist else None
+            )
 
             # Make the move
             self.board.push(m)
@@ -467,7 +459,6 @@ class Minimax:
                 eval_score = self.minimax_alpha_beta(
                     reduced_depth, beta - 1e-10, beta, maximizing_player=True
                 )
-
                 # Re-search if promising
                 if eval_score < beta:
                     eval_score = self.minimax_alpha_beta(
@@ -479,7 +470,6 @@ class Minimax:
                 eval_score = self.minimax_alpha_beta(
                     search_depth, beta - 1e-10, beta, maximizing_player=True
                 )
-
                 # Re-search with full window if better than beta
                 if alpha < eval_score < beta:
                     eval_score = self.minimax_alpha_beta(

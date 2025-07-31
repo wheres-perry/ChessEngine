@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import chess
 
 
-class Eval(ABC):
+class Evaluator(ABC):
     """Abstract base class for chess position evaluators."""
 
     current_board: chess.Board

@@ -1,9 +1,6 @@
 import chess
 import torch
-import torch.nn.functional as f
 from torch import nn
-
-from src.engine.board.halfkp_representation import board_to_input_tensor
 
 
 # mypy: ignore-errors
