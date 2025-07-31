@@ -6,7 +6,7 @@
 echo "Converting line endings from DOS to Unix (recursive from $(pwd))..."
 
 # Find and convert files recursively
-find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.toml" -o -name "*.sh" \) -exec dos2unix {} \; 2>/dev/null
+find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.toml" -o -name "*.sh" -o -name "*.cpp" -o -name "*.hpp" \) -exec dos2unix {} \; 2>/dev/null
 
 echo "Line ending conversion completed!"
 
