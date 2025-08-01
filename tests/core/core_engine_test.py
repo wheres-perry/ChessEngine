@@ -23,9 +23,9 @@ def verify_legal_moves(
     print(core.moves_to_string(moves, board))
 
     # Assert count
-    assert len(moves) == expected_count, (
-        f"Expected {expected_count} legal moves, but found {len(moves)}"
-    )
+    assert (
+        len(moves) == expected_count
+    ), f"Expected {expected_count} legal moves, but found {len(moves)}"
 
     # Convert generated moves to tuples
     generated_tuples = [(m.from_square, m.to, m.promotion) for m in moves]

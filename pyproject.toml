@@ -16,7 +16,8 @@ pybind11 = "^2.11.1"
 chess = "^1.9.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
+pytest = "^8.0.0"
+pytest-benchmark = "^4.0.0"
 mypy = "^1.7.0"
 types-setuptools = "^69.0.0"
 pylint = "^3.0.0"
