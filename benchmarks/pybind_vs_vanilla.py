@@ -11,7 +11,7 @@ from src.engine._core import chess_engine_core as core  # Your custom library
 # ==============================================================================
 
 FEN_FILE_PATH = "/workspace/benchmarks/fens.txt"
-LINES_TO_BENCHMARK = 1_000_000
+LINES_TO_BENCHMARK = 100_000
 
 # ==============================================================================
 # Data Loading

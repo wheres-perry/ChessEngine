@@ -5,14 +5,38 @@
 
 #include "board.hpp"
 
+// Fast bit manipulation helpers - moved to top for earlier declaration
+inline constexpr uint8_t pop_lsb(Bitboard& bb) noexcept {
+  uint8_t sq = __builtin_ctzll(bb);
+  bb &= bb - 1;
+  return sq;
+}
+
+// Fast popcount (count bits set)
+inline constexpr int popcount(Bitboard bb) noexcept {
+  return __builtin_popcountll(bb);
+}
+
 // Forward declarations for move generation functions
-[[nodiscard]] Bitboard get_ray_attacks(int sq, const int* directions,
-                                       int num_dirs,
-                                       Bitboard occupied) noexcept;
-[[nodiscard]] Bitboard get_attacked_squares(const Board& board,
-                                            Color by_color) noexcept;
-[[nodiscard]] bool is_in_check(const Board& board, Color us) noexcept;
-[[nodiscard]] bool is_castling_legal(const Board& board, Color us,
-                                     bool kingside) noexcept;
-[[nodiscard]] std::pair<Bitboard, std::array<Bitboard, 64>>
+[[nodiscard]] inline Bitboard get_ray_attacks(int sq, const int* directions,
+                                              int num_dirs,
+                                              Bitboard occupied) noexcept;
+
+[[nodiscard]] inline Bitboard get_attacked_squares(const Board& board,
+                                                   Color by_color) noexcept;
+
+[[nodiscard]] inline bool is_in_check(const Board& board, Color us) noexcept;
+
+[[nodiscard]] inline bool is_castling_legal(const Board& board, Color us,
+                                            bool kingside) noexcept;
+
+[[nodiscard]] inline std::pair<Bitboard, std::array<Bitboard, 64>>
 compute_pinned_pieces(const Board& board, Color us) noexcept;
+
+// Add lookup table declarations
+extern const std::array<Bitboard, 64> KNIGHT_ATTACKS;
+extern const std::array<std::array<Bitboard, 64>, 2> PAWN_ATTACKS;
+extern const std::array<Bitboard, 64> KING_ATTACKS;
+extern const int ROOK_DIRECTIONS[4];
+extern const int BISHOP_DIRECTIONS[4];
+extern const int QUEEN_DIRECTIONS[8];
