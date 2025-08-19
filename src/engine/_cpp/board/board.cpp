@@ -6,6 +6,8 @@
 #include <sstream>
 #include <vector>
 
+#include "../move_generation/move_generation.hpp"
+
 // Helper function to get the piece type at a square
 [[nodiscard]] inline PieceType get_piece_at(
     const std::array<Bitboard, NUM_PIECE_TYPES>& piece_bbs,
@@ -295,4 +297,80 @@ std::string Board::pretty() const {
 
   result += "\n   a b c d e f g h\n";
   return result;
+}
+
+// Optimized helper method to check for insufficient material
+bool Board::has_insufficient_material() const noexcept {
+  // Direct popcount for material counting - leverages hardware instructions
+  const int white_knights =
+      popcount(get_piece_bb(PieceType::KNIGHT, Color::WHITE));
+  const int white_bishops =
+      popcount(get_piece_bb(PieceType::BISHOP, Color::WHITE));
+  const int white_rooks = popcount(get_piece_bb(PieceType::ROOK, Color::WHITE));
+  const int white_queens =
+      popcount(get_piece_bb(PieceType::QUEEN, Color::WHITE));
+  const int white_pawns = popcount(get_piece_bb(PieceType::PAWN, Color::WHITE));
+
+  const int black_knights =
+      popcount(get_piece_bb(PieceType::KNIGHT, Color::BLACK));
+  const int black_bishops =
+      popcount(get_piece_bb(PieceType::BISHOP, Color::BLACK));
+  const int black_rooks = popcount(get_piece_bb(PieceType::ROOK, Color::BLACK));
+  const int black_queens =
+      popcount(get_piece_bb(PieceType::QUEEN, Color::BLACK));
+  const int black_pawns = popcount(get_piece_bb(PieceType::PAWN, Color::BLACK));
+
+  // Early exit for common cases (most efficient branch ordering)
+  if (white_pawns || black_pawns || white_rooks || black_rooks ||
+      white_queens || black_queens) {
+    return false;
+  }
+
+  // Pre-compute sums to avoid redundant calculations
+  const int white_minors = white_knights + white_bishops;
+  const int black_minors = black_knights + black_bishops;
+
+  // King vs King - most common insufficient material case
+  if (white_minors == 0 && black_minors == 0) return true;
+
+  // King + minor vs King
+  if ((white_minors == 1 && black_minors == 0) ||
+      (white_minors == 0 && black_minors == 1))
+    return true;
+
+  // King + Knight vs King + Knight
+  if (white_minors == 1 && black_minors == 1 && white_knights == 1 &&
+      black_knights == 1)
+    return true;
+
+  return false;
+}
+
+// Efficient game state detection - checks in order of computational cost
+GameState Board::is_game_over() const noexcept {
+  // First generate legal moves (needed for both checkmate and stalemate)
+  const std::vector<Move> legal_moves = generate_legal_moves();
+
+  // If there are no legal moves, the game ends in either checkmate or stalemate
+  // This takes precedence over other conditions
+  if (legal_moves.empty()) {
+    // Direct computation of current player using side_to_move bit
+    const Color us = side_to_move ? Color::WHITE : Color::BLACK;
+
+    // Use is_in_check to determine checkmate vs stalemate
+    return is_in_check(*this, us) ? GameState::CHECKMATE : GameState::STALEMATE;
+  }
+
+  // Check for 50-move rule next
+  if (halfmove_clock >= 100) {  // 50 moves = 100 half-moves
+    return GameState::DRAW_BY_FIFTY_MOVE;
+  }
+
+  // Finally, check for insufficient material
+  if (has_insufficient_material()) {
+    return GameState::DRAW_BY_INSUFFICIENT_MATERIAL;
+  }
+
+  // If none of the above conditions are met, the game is ongoing
+  return GameState::ONGOING;
 }

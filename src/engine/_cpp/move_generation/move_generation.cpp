@@ -1,4 +1,4 @@
-#include "movegen.hpp"
+#include "move_generation.hpp"
 
 #include <algorithm>
 #include <array>
@@ -6,7 +6,7 @@
 #include <sstream>
 #include <vector>
 
-#include "board.hpp"
+#include "../board/board.hpp"
 
 // Precomputed attack masks (compile-time generation for efficiency)
 // Knight moves from each square (bitboards of possible targets)
@@ -75,9 +75,8 @@ const int BISHOP_DIRECTIONS[4] = {9, -9, 7, -7};  // NE, SW, NW, SE
 const int QUEEN_DIRECTIONS[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 
 // Robust ray attack function with wrap detection - optimized version
-[[nodiscard]] inline Bitboard get_ray_attacks(int sq, const int* directions,
-                                              int num_dirs,
-                                              Bitboard occupied) noexcept {
+Bitboard get_ray_attacks(int sq, const int* directions, int num_dirs,
+                         Bitboard occupied) noexcept {
   Bitboard attacks = 0;
   int sq_r = sq / 8;
   int sq_f = sq % 8;
@@ -114,8 +113,7 @@ const int QUEEN_DIRECTIONS[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 }
 
 // Get all squares attacked by opponent (for check detection and castling)
-[[nodiscard]] inline Bitboard get_attacked_squares(const Board& board,
-                                                   Color by_color) noexcept {
+Bitboard get_attacked_squares(const Board& board, Color by_color) noexcept {
   Bitboard attacked = 0;
   Bitboard occupied = board.get_all_pieces_bb();
   uint8_t color_idx = static_cast<uint8_t>(by_color);
@@ -166,7 +164,7 @@ const int QUEEN_DIRECTIONS[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 }
 
 // Complete check detection implementation - optimized
-[[nodiscard]] inline bool is_in_check(const Board& board, Color us) noexcept {
+bool is_in_check(const Board& board, Color us) noexcept {
   // Find king's square
   Bitboard king_bb = board.get_piece_bb(PieceType::KING, us);
   if (!king_bb) return false;  // No king (edge case)
@@ -219,8 +217,7 @@ const int QUEEN_DIRECTIONS[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 }
 
 // Castling legality - optimized
-[[nodiscard]] inline bool is_castling_legal(const Board& board, Color us,
-                                            bool kingside) noexcept {
+bool is_castling_legal(const Board& board, Color us, bool kingside) noexcept {
   // Fast check for in-check first
   if (is_in_check(board, us)) return false;
 
@@ -239,8 +236,7 @@ const int QUEEN_DIRECTIONS[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 }
 
 // Helper function to check if two squares are on the same ray - optimized
-[[nodiscard]] inline bool squares_on_same_ray(uint8_t sq1,
-                                              uint8_t sq2) noexcept {
+bool squares_on_same_ray(uint8_t sq1, uint8_t sq2) noexcept {
   int r1 = sq1 / 8, f1 = sq1 % 8;
   int r2 = sq2 / 8, f2 = sq2 % 8;
 
@@ -257,8 +253,8 @@ const int QUEEN_DIRECTIONS[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 }
 
 // Fixed pinned pieces computation - optimized
-[[nodiscard]] inline std::pair<Bitboard, std::array<Bitboard, 64>>
-compute_pinned_pieces(const Board& board, Color us) noexcept {
+std::pair<Bitboard, std::array<Bitboard, 64>> compute_pinned_pieces(
+    const Board& board, Color us) noexcept {
   Bitboard pinned = 0;
   std::array<Bitboard, 64> pin_rays = {0};
 

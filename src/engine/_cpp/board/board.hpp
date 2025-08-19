@@ -24,6 +24,16 @@ enum class PieceType : uint8_t {
   KING = 5
 };
 
+// Game state enum for is_game_over()
+enum class GameState : uint8_t {
+  ONGOING = 0,
+  CHECKMATE = 1,
+  STALEMATE = 2,
+  DRAW_BY_FIFTY_MOVE = 3,
+  DRAW_BY_INSUFFICIENT_MATERIAL = 4,
+  DRAW_BY_REPETITION = 5
+};
+
 // Move structure - packed for memory efficiency
 struct Move {
   uint8_t from;
@@ -39,6 +49,12 @@ class Board {
   inline void clear() noexcept;
   void load_fen(const std::string& fen);
   static inline Board from_fen(const std::string& fen) noexcept;
+
+  // Copy method
+  [[nodiscard]] inline Board copy() const noexcept;
+
+  // Game state checking
+  [[nodiscard]] GameState is_game_over() const noexcept;
 
   // Accessors (all const and noexcept for performance)
   [[nodiscard]] constexpr Bitboard get_piece_bb(PieceType pt,
@@ -98,6 +114,9 @@ class Board {
   [[nodiscard]] std::vector<float> to_half_kp_features() const;
 
  private:
+  // Helper method for insufficient material detection
+  [[nodiscard]] bool has_insufficient_material() const noexcept;
+
   // Bitboard representation - aligned for better cache performance
   alignas(16) std::array<Bitboard, NUM_PIECE_TYPES> piece_bitboards{};
   alignas(16) std::array<Bitboard, NUM_COLORS> color_bitboards{};
@@ -168,6 +187,11 @@ inline Board Board::from_fen(const std::string& fen) noexcept {
   Board board;
   board.load_fen(fen);
   return board;
+}
+
+// Copy method implementation
+inline Board Board::copy() const noexcept {
+  return *this;  // Uses default copy constructor
 }
 
 // Make move - inline implementation

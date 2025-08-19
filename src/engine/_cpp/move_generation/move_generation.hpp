@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 
-#include "board.hpp"
+#include "../board/board.hpp"
 
 // Fast bit manipulation helpers - moved to top for earlier declaration
 inline constexpr uint8_t pop_lsb(Bitboard& bb) noexcept {
@@ -18,19 +18,19 @@ inline constexpr int popcount(Bitboard bb) noexcept {
 }
 
 // Forward declarations for move generation functions
-[[nodiscard]] inline Bitboard get_ray_attacks(int sq, const int* directions,
-                                              int num_dirs,
-                                              Bitboard occupied) noexcept;
+[[nodiscard]] Bitboard get_ray_attacks(int sq, const int* directions,
+                                       int num_dirs,
+                                       Bitboard occupied) noexcept;
 
-[[nodiscard]] inline Bitboard get_attacked_squares(const Board& board,
-                                                   Color by_color) noexcept;
+[[nodiscard]] Bitboard get_attacked_squares(const Board& board,
+                                            Color by_color) noexcept;
 
-[[nodiscard]] inline bool is_in_check(const Board& board, Color us) noexcept;
+[[nodiscard]] bool is_in_check(const Board& board, Color us) noexcept;
 
-[[nodiscard]] inline bool is_castling_legal(const Board& board, Color us,
-                                            bool kingside) noexcept;
+[[nodiscard]] bool is_castling_legal(const Board& board, Color us,
+                                     bool kingside) noexcept;
 
-[[nodiscard]] inline std::pair<Bitboard, std::array<Bitboard, 64>>
+[[nodiscard]] std::pair<Bitboard, std::array<Bitboard, 64>>
 compute_pinned_pieces(const Board& board, Color us) noexcept;
 
 // Add lookup table declarations

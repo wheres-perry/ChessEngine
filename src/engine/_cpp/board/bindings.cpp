@@ -2,14 +2,10 @@
 #include <pybind11/stl.h>
 
 #include "board.hpp"
-#include "movegen.hpp"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(chess_engine_core, m) {
-  // Module documentation
-  m.doc() = "High-performance C++ chess engine core components";
-
+void init_board_bindings(py::module_& m) {
   // Enums
   py::enum_<Color>(m, "Color")
       .value("WHITE", Color::WHITE)
@@ -25,6 +21,16 @@ PYBIND11_MODULE(chess_engine_core, m) {
       .value("KING", PieceType::KING)
       .export_values();
 
+  py::enum_<GameState>(m, "GameState")
+      .value("ONGOING", GameState::ONGOING)
+      .value("CHECKMATE", GameState::CHECKMATE)
+      .value("STALEMATE", GameState::STALEMATE)
+      .value("DRAW_BY_FIFTY_MOVE", GameState::DRAW_BY_FIFTY_MOVE)
+      .value("DRAW_BY_INSUFFICIENT_MATERIAL",
+             GameState::DRAW_BY_INSUFFICIENT_MATERIAL)
+      .value("DRAW_BY_REPETITION", GameState::DRAW_BY_REPETITION)
+      .export_values();
+
   // Move class
   py::class_<Move>(m, "Move")
       .def(py::init<uint8_t, uint8_t, uint8_t>(), py::arg("from"),
@@ -37,25 +43,23 @@ PYBIND11_MODULE(chess_engine_core, m) {
   py::class_<Board>(m, "Board")
       .def(py::init<>())
       .def_static("from_fen", &Board::from_fen, py::arg("fen"))
-      // Core board operations
       .def("make_move", &Board::make_move, py::arg("move"))
-      .def("generate_legal_moves", &Board::generate_legal_moves)
-      // Display functions
       .def("to_fen", &Board::to_fen)
       .def("pretty", &Board::pretty)
-      // State accessors
       .def("get_castling_rights", &Board::get_castling_rights)
       .def("get_side_to_move", &Board::get_side_to_move)
       .def("get_en_passant_square", &Board::get_en_passant_square)
       .def("get_halfmove_clock", &Board::get_halfmove_clock)
       .def("get_fullmove_number", &Board::get_fullmove_number)
-      // Bitboard access
       .def(
           "get_piece_bb",
           py::overload_cast<PieceType, Color>(&Board::get_piece_bb, py::const_),
           py::arg("piece_type"), py::arg("color"))
       .def("get_color_bb", &Board::get_color_bb, py::arg("color"))
-      .def("get_all_pieces_bb", &Board::get_all_pieces_bb);
+      .def("get_all_pieces_bb", &Board::get_all_pieces_bb)
+      .def("copy", &Board::copy)
+      .def("is_game_over", &Board::is_game_over)
+      .def("generate_legal_moves", &Board::generate_legal_moves);
 
   // Helper functions
   m.def("move_to_string", &move_to_string, py::arg("move"), py::arg("board"));

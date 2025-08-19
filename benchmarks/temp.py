@@ -2,6 +2,10 @@ import random
 
 import chess.pgn
 
+# mypy: ignore-errors
+# pyright: ignore
+# pylint: skip-file
+# ruff: noqa
 input_pgn_path = "benchmarks/lichess_db_standard_rated_2014-07.pgn/lichess_db_standard_rated_2014-07.pgn"
 output_fens_path = "./fens.txt"
 n_fens = 1_000_000

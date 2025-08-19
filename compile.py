@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Build script for the chess engine C++ extensions.
 Handles the complete build process for development and testing.
@@ -44,7 +43,7 @@ class ChessEngineBuild:
 
         try:
             subprocess.run(
-                ["poetry", "install", "--no-interaction"],  # noqa: S607
+                ["poetry", "install", "--no-interaction"],  # noqa: S607,S603
                 check=True,
                 cwd=self.project_root,
             )
@@ -59,7 +58,7 @@ class ChessEngineBuild:
 
         try:
             subprocess.run(
-                ["poetry", "run", "mypy", "--install-types", "--non-interactive"],  # noqa: S607
+                ["poetry", "run", "mypy", "--install-types", "--non-interactive"],  # noqa: S607,S603
                 check=True,
                 cwd=self.project_root,
             )
@@ -75,7 +74,7 @@ class ChessEngineBuild:
         try:
             # Check if already installed in editable mode
             result = subprocess.run(
-                ["poetry", "run", "pip", "show", "chessengine"],  # noqa: S607
+                ["poetry", "run", "pip", "show", "chessengine"],  # noqa: S607,S603
                 check=False,
                 capture_output=True,
                 text=True,
@@ -86,7 +85,7 @@ class ChessEngineBuild:
             if result.returncode == 0 and "editable" in result.stdout.lower():
                 print("   Package already installed in editable mode, updating...")
                 subprocess.run(
-                    [  # noqa: S607
+                    [  # noqa: S607,S603
                         "poetry",
                         "run",
                         "pip",
@@ -104,7 +103,7 @@ class ChessEngineBuild:
                 # Fresh install (first time or not in editable mode)
                 print("   Installing package in editable mode...")
                 subprocess.run(
-                    ["poetry", "run", "pip", "install", "-e", "."],  # noqa: S607
+                    ["poetry", "run", "pip", "install", "-e", "."],  # noqa: S607,S603
                     check=True,
                     cwd=self.project_root,
                 )
@@ -120,7 +119,7 @@ class ChessEngineBuild:
 
         try:
             result = subprocess.run(
-                [  # noqa: S607
+                [  # noqa: S607,S603
                     "poetry",
                     "run",
                     "python",
@@ -159,7 +158,7 @@ except Exception as e:
 
         try:
             subprocess.run(
-                [  # noqa: S607
+                [  # noqa: S607,S603
                     "poetry",
                     "run",
                     "pytest",
