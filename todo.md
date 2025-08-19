@@ -1,0 +1,2 @@
+-[ ] convert zobrist completely to cpp binding (do not include original python core muddies repo)
+-[ ] update/refactor cpp structure for better organization
