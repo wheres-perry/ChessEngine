@@ -18,6 +18,7 @@ RUN pipx install ruff
 RUN pipx install pylint
 RUN pipx install mypy
 RUN pipx ensurepath
+RUN pip install --upgrade pip
 ENV PATH="/root/.local/bin:$PATH"
 
 # Install Docker CLI
