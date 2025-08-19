@@ -6,6 +6,7 @@
 *processing_ledger.json
 .docker-cache
 validation/
+*.DS_Store
 
 
 # Byte-compiled / optimized / DLL files
