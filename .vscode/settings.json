@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "/workspace/src/engine/_core",
+    "cmake.sourceDirectory": "/workspace",
     "files.associations": {
         "array": "cpp",
         "atomic": "cpp",
@@ -62,5 +62,6 @@
         "typeindex": "cpp",
         "valarray": "cpp",
         "variant": "cpp"
-    }
+    },
+    "python.languageServer": "None"
 }

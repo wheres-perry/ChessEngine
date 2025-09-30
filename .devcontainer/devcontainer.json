@@ -7,9 +7,7 @@
     },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-    "features": {
-        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-    },
+    // Removed the "features" block for docker-outside-of-docker
     "forwardPorts": [
         8000,
         8888,
@@ -31,10 +29,10 @@
                 "christian-kohler.path-intellisense",
                 "aaron-bond.better-comments",
                 "ms-azuretools.vscode-docker",
-                "charliermarsh.ruff"
+                "charliermarsh.ruff",
+                "astral.uv"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "python",
                 "python.terminal.activateEnvironment": true,
                 "python.linting.enabled": true,
                 "python.linting.pylintEnabled": true,
@@ -133,7 +131,7 @@
             }
         }
     },
-    "postCreateCommand": "poetry install --no-interaction && poetry run mypy --install-types --non-interactive && python compile.py --no-tests && python .devcontainer/patch_cpp_path.py && pre-commit install",
+    "postCreateCommand": "uv venv --clear && uv pip install -e .[dev] && .venv/bin/mypy --install-types --non-interactive && python compile.py --no-tests && python .devcontainer/patch_cpp_path.py && .venv/bin/pre-commit install",
     "remoteUser": "vscode",
     "containerEnv": {
         "PYTHONPATH": "/workspace"

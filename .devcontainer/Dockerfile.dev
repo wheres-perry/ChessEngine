@@ -1,28 +1,22 @@
 FROM mcr.microsoft.com/devcontainers/python:3.11
 
-# Install system dependencies
+# Install system dependencies, adding ccache
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
+    ccache \
     curl \
     git \
-    pipx \
     stockfish \
     dos2unix \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install global Python tools
-RUN pipx install poetry
-RUN pipx install pre-commit
-RUN pipx install ruff
-RUN pipx install pylint
-RUN pipx install mypy
-RUN pipx ensurepath
-RUN pip install --upgrade pip
-ENV PATH="/root/.local/bin:$PATH"
 
-# Install Docker CLI
-RUN curl -fsSL https://get.docker.com | sh
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && mv /root/.local/bin/uv /usr/local/bin/uv \
+    && mv /root/.local/bin/uvx /usr/local/bin/uvx \
+    && rm -rf /root/.local/bin/env* /root/.cargo /root/.uv
 
 # User creation
 ARG USERNAME=vscode
@@ -35,13 +29,11 @@ RUN if ! getent group $USER_GID >/dev/null 2>&1; then \
     && if ! id -u $USERNAME >/dev/null 2>&1; then \
     useradd --uid $USER_UID --gid $USER_GID -m $USERNAME; \
     fi \
-    && apt-get update \
-    && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-RUN usermod -aG docker $USERNAME
 
+    
 USER $USERNAME
 
 # Create a .condarc file that disables auto activation of base environment

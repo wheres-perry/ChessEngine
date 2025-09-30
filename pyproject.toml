@@ -1,35 +1,60 @@
-[tool.poetry]
+[project]
 name = "chessengine"
 version = "0.1.0"
 description = "High-performance chess engine with ML evaluation"
-authors = ["Your Name <you@example.com>"]
-packages = [
-    { include = "engine", from = "src" },
-    { include = "io_utils", from = "src" }
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.11"
+# Core dependencies required for the engine to run
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.24.0",
+    "chess>=1.9.0",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-torch = "^2.1.0"
-numpy = "^1.24.0"
-pybind11 = "^2.11.1"
-chess = "^1.9.0"
+[project.optional-dependencies]
+# Tools for development workflow
+dev = [
+    "pytest>=8.0.0",
+    "pytest-benchmark>=4.0.0",
+    "mypy>=1.7.0",
+    "types-setuptools>=69.0.0",
+    "pylint>=3.0.0",
+    "ruff>=0.3.5",
+    "pre-commit>=3.5.0",
+]
+# NEW: Tools for analysis and notebooks
+analysis = [
+    "jupyter",
+    "pandas",
+    "matplotlib",
+    "seaborn"
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-pytest-benchmark = "^4.0.0"
-mypy = "^1.7.0"
-types-setuptools = "^69.0.0"
-pylint = "^3.0.0"
-ruff = "^0.3.5"
-pre-commit = "^3.5.0"
-
-# Use setuptools build backend to handle C++ extensions via setup.py
 [build-system]
-requires = ["setuptools>=69", "wheel", "pybind11>=2.11"]
-build-backend = "setuptools.build_meta"
+# Ensure CMake and pybind11 are available during the build process
+requires = ["scikit-build-core>=0.5.0", "pybind11>=2.10.0"]
+build-backend = "scikit_build_core.build"
 
-# MyPy Configuration - Strict Type Checking
+# Configure scikit-build-core
+[tool.scikit-build]
+# General build settings
+minimum-version = "0.5.0"
+build-dir = "build/{wheel_tag}"
+
+# C++ standard should be set in cmake.define, not as a separate top-level key
+[tool.scikit-build.cmake]
+args = []  # e.g., "-DSOME_OPTION=ON"
+
+[tool.scikit-build.cmake.define]
+CMAKE_CXX_STANDARD = "17"  # Use 17, 20, etc. as needed
+CMAKE_CXX_STANDARD_REQUIRED = "ON"
+CMAKE_POSITION_INDEPENDENT_CODE = "ON"
+
+# For development mode
+[tool.scikit-build.editable]
+mode = "redirect"
+
+# MyPy Configuration - (Configurations remain the same)
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "."
@@ -90,7 +115,7 @@ ignore_missing_imports = true
 module = "chess.*"
 ignore_missing_imports = true
 
-# Pylint Configuration - Code Quality & Complexity Only
+# Pylint Configuration - (Configurations remain the same)
 [tool.pylint.main]
 py-version = "3.11"
 source-roots = ["."]
@@ -158,7 +183,7 @@ allowed-redefined-builtins = ["id", "type", "input"]
 [tool.pylint.basic]
 good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
 
-# Ruff Configuration - Formatting & Basic Linting
+# Ruff Configuration - (Configurations remain the same)
 [tool.ruff]
 exclude = [
     "tests/",

@@ -188,3 +188,5 @@ cython_debug/
 # Dev container specific
 .devcontainer/.devcontainer.json.history
 .devcontainer/.last_build_state
+.cursorindexingignore
+.specstory/history/2025-09-30_21-03Z-deactivate-precommit-hook-in-git.md

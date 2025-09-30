@@ -1,22 +1,183 @@
-{
-    "configurations": [
-        {
-            "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/src/engine/_core",
-                "${workspaceFolder}/src/engine/_core/**",
-                "/usr/include",
-                "/usr/local/include",
-                "/home/vscode/.cache/pypoetry/virtualenvs/chessengine-xS3fZVNL-py3.11/lib/python3.11/site-packages/pybind11/include",
-                "/home/vscode/.cache/pypoetry/virtualenvs/chessengine-xS3fZVNL-py3.11/include",
-                "/usr/local/include/python3.11"
-            ],
-            "defines": [],
-            "compilerPath": "/usr/bin/g++",
-            "cStandard": "c11",
-            "cppStandard": "c++20",
-            "intelliSenseMode": "linux-gcc-x64"
-        }
-    ],
-    "version": 4
-}
+[project]
+name = "chessengine"
+version = "0.1.0"
+description = "High-performance chess engine with ML evaluation"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.11"
+# Core dependencies required for the engine to run
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.24.0",
+    "chess>=1.9.0",
+]
+
+[project.optional-dependencies]
+# Tools for development workflow
+dev = [
+    "pytest>=8.0.0",
+    "pytest-benchmark>=4.0.0",
+    "mypy>=1.7.0",
+    "types-setuptools>=69.0.0",
+    "pylint>=3.0.0",
+    "ruff>=0.3.5",
+    "pre-commit>=3.5.0",
+]
+# Tools for analysis and notebooks
+analysis = [
+    "jupyter",
+    "pandas",
+    "matplotlib",
+    "seaborn"
+]
+
+# Switch to scikit-build-core and CMake
+[build-system]
+# Ensure CMake and pybind11 are available during the build process
+requires = ["scikit-build-core>=0.8.0", "cmake>=3.21", "pybind11>=2.11.1"]
+build-backend = "scikit_build_core.build"
+
+# Configure scikit-build-core
+[tool.scikit-build]
+# Default to "Release" mode to ensure optimizations (like -O3) are enabled.
+# CORRECTION: Changed from 'cmake.config' to 'cmake.build-type'.
+cmake.build-type = "Release"
+# REMOVED: 'cxx-standard' is moved to CMakeLists.txt.
+
+
+# MyPy Configuration - (Configurations remain the same)
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "."
+namespace_packages = true
+explicit_package_bases = true
+no_site_packages = true
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+strict_concatenate = true
+
+exclude = [
+    "tests/",
+    "notebooks/",
+    "search_profiler.py", 
+    "unit_tests.py",
+    "validation/",
+    "__pycache__/",
+    ".*\\.egg-info/"
+]
+
+[[tool.mypy.overrides]]
+module = "engine.*"
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = "torch.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pybind11.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "chess.*"
+ignore_missing_imports = true
+
+# Pylint Configuration - (Configurations remain the same)
+[tool.pylint.main]
+py-version = "3.11"
+source-roots = ["."]
+
+ignore = [
+    "tests",
+    "notebooks",
+    "search_profiler.py",
+    "unit_tests.py"
+]
+
+[tool.pylint.messages_control]
+disable = [
+    # Style/formatting (handled by Ruff)
+    "line-too-long",
+    "trailing-whitespace", 
+    "missing-final-newline",
+    "bad-indentation",
+    "wrong-spelling-in-comment",
+    "wrong-spelling-in-docstring",
+    
+    # Import organization (handled by Ruff)
+    "wrong-import-order",
+    "ungrouped-imports",
+    "wrong-import-position",
+    
+    # Type checking (handled by MyPy)
+    "no-member",
+    "unsubscriptable-object",
+    "unsupported-membership-test",
+    
+    # Too opinionated for development
+    "missing-module-docstring",
+    "missing-class-docstring", 
+    "missing-function-docstring",
+]
+
+enable = [
+    "useless-suppression",
+    "deprecated-pragma",
+    "use-symbolic-message-instead",
+]
+
+[tool.pylint.design]
+max-args = 7
+max-attributes = 10
+max-bool-expr = 5
+max-branches = 15
+max-locals = 20
+max-parents = 7
+max-public-methods = 25
+max-returns = 8
+max-statements = 60
+min-public-methods = 1
+
+[tool.pylint.similarities]
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
+min-similarity-lines = 6
+
+[tool.pylint.variables]
+allowed-redefined-builtins = ["id", "type", "input"]
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
+
+# Ruff Configuration - (Configurations remain the same)
+[tool.ruff]
+exclude = [
+    "tests/",
+    "notebooks/", 
+    "search_profiler.py",
+    "unit_tests.py"
+]
