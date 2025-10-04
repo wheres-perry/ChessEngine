@@ -1,9 +1,0 @@
-*
-!**/*.py
-!run_tests.sh
-!templates/
-!pyproject.toml
-!poetry.lock
-!*__init__.py
-!src/
-!data/raw/example_fens/*

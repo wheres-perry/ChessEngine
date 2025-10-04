@@ -1,82 +1,85 @@
+# Ruff configuration file
+# See https://docs.astral.sh/ruff/configuration/
+
 target-version = "py311"
 line-length = 88
 
 [lint]
 select = [
     # Pycodestyle
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+
     # Pyflakes
-    "F",    # pyflakes
-    
+    "F", # pyflakes
+
     # Import sorting
-    "I",    # isort
-    
+    "I", # isort
+
     # Flake8 plugins
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "UP",   # pyupgrade
-    "SIM",  # flake8-simplify
-    "PIE",  # flake8-pie
-    "PT",   # flake8-pytest-style
-    "RET",  # flake8-return
-    "TCH",  # flake8-type-checking
-    "ARG",  # flake8-unused-arguments
-    "PL",   # pylint
-    "RUF",  # Ruff-specific rules
-    
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "PIE", # flake8-pie
+    "PT",  # flake8-pytest-style
+    "RET", # flake8-return
+    "TCH", # flake8-type-checking
+    "ARG", # flake8-unused-arguments
+    "PL",  # pylint
+    "RUF", # Ruff-specific rules
+
     # Security and performance
     "S",    # flake8-bandit (security)
     "PERF", # perflint (performance)
-    
+
     # Code complexity
-    "C90",  # mccabe complexity
-    
+    "C90", # mccabe complexity
+
     # Error handling
-    "BLE",  # flake8-blind-except
-    "FBT",  # flake8-boolean-trap
-    
+    "BLE", # flake8-blind-except
+    "FBT", # flake8-boolean-trap
+
     # Import conventions
-    "ICN",  # flake8-import-conventions
-    
+    "ICN", # flake8-import-conventions
+
     # Logging
-    "G",    # flake8-logging-format
-    
+    "G", # flake8-logging-format
+
     # Naming conventions (but not type-related)
-    "N",    # pep8-naming
-    
+    "N", # pep8-naming
+
     # Quote consistency (new addition)
-    "Q",    # flake8-quotes
+    "Q", # flake8-quotes
 ]
 
 ignore = [
     # Type annotation rules (let Pylance/MyPy handle these)
-    "ANN",    # flake8-annotations (disable all type annotation rules)
-    
+    "ANN", # flake8-annotations (disable all type annotation rules)
+
     # Docstring rules (can be too strict for development)
-    "D",      # pydocstyle
-    
+    "D", # pydocstyle
+
     # Specific rules that might conflict with Pylance
-    "F401",   # unused-import (Pylance handles this better)
-    "F841",   # unused-variable (Pylance handles this better)
-    
+    "F401", # unused-import (Pylance handles this better)
+    "F841", # unused-variable (Pylance handles this better)
+
     # Rules that might be too opinionated
     "FBT001", # boolean-positional-arg-in-function-definition
     "FBT002", # boolean-default-arg-in-function-definition
 
-    
+
     # Performance rules that might be premature optimization
     "PERF203", # try-except-in-loop
-    
+
     # Pylint rules that might be too strict
     "PLR0913", # too-many-arguments
     "PLR2004", # magic-value-comparison
     "PLR0915", # too-many-statements
-    
+
     # Security rules for development (can enable in production)
-    "S101",   # assert-used (common in tests/development)
-    "S311",   # suspicious-non-cryptographic-random-usage
+    "S101", # assert-used (common in tests/development)
+    "S311", # suspicious-non-cryptographic-random-usage
 ]
 
 # Enable all available auto-fixes
@@ -85,16 +88,16 @@ unfixable = []
 # Per-file ignores for specific patterns
 [lint.per-file-ignores]
 "tests/*" = [
-    "S101",   # Allow asserts in tests
+    "S101",    # Allow asserts in tests
     "PLR2004", # Allow magic values in tests
-    "ARG001", # Allow unused function arguments in tests
+    "ARG001",  # Allow unused function arguments in tests
 ]
 "__init__.py" = [
-    "F401",   # Allow unused imports in __init__.py
+    "F401", # Allow unused imports in __init__.py
 ]
 
 [format]
-quote-style = "double"  
+quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
@@ -109,7 +112,7 @@ split-on-trailing-comma = true
 
 # Pylint configuration
 [lint.pylint]
-max-args = 10  # More lenient than default 5
+max-args = 10 # More lenient than default 5
 
 # McCabe complexity
 [lint.mccabe]

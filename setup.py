@@ -4,7 +4,10 @@ import os
 
 import pybind11
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from setuptools import find_packages, setup  # pyright: ignore[reportMissingModuleSource]
+from setuptools import (  # pyright: ignore[reportMissingModuleSource]
+    find_packages,
+    setup,
+)
 
 # Performance-optimized compiler flags
 extra_compile_args = [

@@ -33,7 +33,7 @@
                 "astral.uv"
             ],
             "settings": {
-                "python.terminal.activateEnvironment": true,
+                "python.terminal.activateEnvironment": false,
                 "python.linting.enabled": true,
                 "python.linting.pylintEnabled": true,
                 "python.linting.flake8Enabled": false,
@@ -77,10 +77,9 @@
                     "**/.pytest_cache": true,
                     "**/.ruff_cache": true,
                     "**/.mypy_cache": true,
-                    "**/ruff.toml": true,
                     ".docker-cache/": true,
                     "**/*.egg-info": true,
-                    "**/*.so": true
+                    "**/.ipynb_checkpoints": true
                 },
                 "jupyter.askForKernelRestart": false,
                 "jupyter.interactiveWindow.creationMode": "perFile",
@@ -131,7 +130,7 @@
             }
         }
     },
-    "postCreateCommand": "uv venv --clear && uv pip install -e .[dev] && .venv/bin/mypy --install-types --non-interactive && python compile.py --no-tests && python .devcontainer/patch_cpp_path.py && .venv/bin/pre-commit install",
+    "postCreateCommand": "bash .devcontainer/post-create.sh",
     "remoteUser": "vscode",
     "containerEnv": {
         "PYTHONPATH": "/workspace"

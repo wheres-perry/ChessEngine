@@ -20,7 +20,6 @@ dev = [
     "types-setuptools>=69.0.0",
     "pylint>=3.0.0",
     "ruff>=0.3.5",
-    "pre-commit>=3.5.0",
 ]
 # NEW: Tools for analysis and notebooks
 analysis = [
@@ -31,28 +30,9 @@ analysis = [
 ]
 
 [build-system]
-# Ensure CMake and pybind11 are available during the build process
-requires = ["scikit-build-core>=0.5.0", "pybind11>=2.10.0"]
-build-backend = "scikit_build_core.build"
-
-# Configure scikit-build-core
-[tool.scikit-build]
-# General build settings
-minimum-version = "0.5.0"
-build-dir = "build/{wheel_tag}"
-
-# C++ standard should be set in cmake.define, not as a separate top-level key
-[tool.scikit-build.cmake]
-args = []  # e.g., "-DSOME_OPTION=ON"
-
-[tool.scikit-build.cmake.define]
-CMAKE_CXX_STANDARD = "17"  # Use 17, 20, etc. as needed
-CMAKE_CXX_STANDARD_REQUIRED = "ON"
-CMAKE_POSITION_INDEPENDENT_CODE = "ON"
-
-# For development mode
-[tool.scikit-build.editable]
-mode = "redirect"
+# Build system for setuptools with pybind11
+requires = ["setuptools>=45", "wheel", "pybind11>=2.10.0"]
+build-backend = "setuptools.build_meta"
 
 # MyPy Configuration - (Configurations remain the same)
 [tool.mypy]
@@ -60,7 +40,6 @@ python_version = "3.11"
 mypy_path = "."
 namespace_packages = true
 explicit_package_bases = true
-no_site_packages = true
 strict = true
 warn_return_any = true
 warn_unused_configs = true
@@ -81,7 +60,7 @@ strict_concatenate = true
 exclude = [
     "tests/",
     "notebooks/",
-    "search_profiler.py", 
+    "search_profiler.py",
     "unit_tests.py",
     "validation/",
     "__pycache__/",
@@ -131,25 +110,25 @@ ignore = [
 disable = [
     # Style/formatting (handled by Ruff)
     "line-too-long",
-    "trailing-whitespace", 
+    "trailing-whitespace",
     "missing-final-newline",
     "bad-indentation",
     "wrong-spelling-in-comment",
     "wrong-spelling-in-docstring",
-    
+
     # Import organization (handled by Ruff)
     "wrong-import-order",
     "ungrouped-imports",
     "wrong-import-position",
-    
+
     # Type checking (handled by MyPy)
     "no-member",
     "unsubscriptable-object",
     "unsupported-membership-test",
-    
+
     # Too opinionated for development
     "missing-module-docstring",
-    "missing-class-docstring", 
+    "missing-class-docstring",
     "missing-function-docstring",
 ]
 
@@ -187,7 +166,7 @@ good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z", "df", "ax", "fig"]
 [tool.ruff]
 exclude = [
     "tests/",
-    "notebooks/", 
+    "notebooks/",
     "search_profiler.py",
     "unit_tests.py"
 ]

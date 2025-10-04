@@ -37,77 +37,27 @@ class ChessEngineBuild:
 
         print("✅ Clean complete")
 
-    def install_dependencies(self) -> None:
-        """Install Python dependencies via Poetry."""
-        print("📦 Installing Python dependencies...")
-
-        try:
-            subprocess.run(
-                ["poetry", "install", "--no-interaction"],  # noqa: S607,S603
-                check=True,
-                cwd=self.project_root,
-            )
-            print("✅ Python dependencies installed")
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to install dependencies: {e}")
-            sys.exit(1)
-
-    def install_type_stubs(self) -> None:
-        """Install mypy type stubs."""
-        print("🔍 Installing type stubs...")
-
-        try:
-            subprocess.run(
-                ["poetry", "run", "mypy", "--install-types", "--non-interactive"],  # noqa: S607,S603
-                check=True,
-                cwd=self.project_root,
-            )
-            print("✅ Type stubs installed")
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️  Warning: Type stub installation failed: {e}")
-
     def install_python_package(self) -> None:
         """Install the Python package with C++ extensions"""
         print("🐍 Installing Python package with C++ extensions...")
-        print("   setup.py will compile C++ extensions automatically...")
+        print("   This command will compile C++ extensions via setup.py...")
 
         try:
-            # Check if already installed in editable mode
-            result = subprocess.run(
-                ["poetry", "run", "pip", "show", "chessengine"],  # noqa: S607,S603
-                check=False,
-                capture_output=True,
-                text=True,
+            # Reinstall the package to ensure C++ extensions are compiled
+            subprocess.run(
+                [
+                    "sudo",
+                    "pip",
+                    "install",
+                    "-e",
+                    ".",
+                    "--upgrade",
+                    "--no-deps",
+                    "--force-reinstall",
+                ],
+                check=True,
                 cwd=self.project_root,
             )
-
-            # If installed and in editable mode, just reinstall the package
-            if result.returncode == 0 and "editable" in result.stdout.lower():
-                print("   Package already installed in editable mode, updating...")
-                subprocess.run(
-                    [  # noqa: S607,S603
-                        "poetry",
-                        "run",
-                        "pip",
-                        "install",
-                        "-e",
-                        ".",
-                        "--upgrade",
-                        "--no-deps",
-                        "--force-reinstall",
-                    ],
-                    check=True,
-                    cwd=self.project_root,
-                )
-            else:
-                # Fresh install (first time or not in editable mode)
-                print("   Installing package in editable mode...")
-                subprocess.run(
-                    ["poetry", "run", "pip", "install", "-e", "."],  # noqa: S607,S603
-                    check=True,
-                    cwd=self.project_root,
-                )
-
             print("✅ Python package installed (C++ extensions compiled)")
         except subprocess.CalledProcessError as e:
             print(f"❌ Python package installation failed: {e}")
@@ -120,13 +70,11 @@ class ChessEngineBuild:
         try:
             result = subprocess.run(
                 [  # noqa: S607,S603
-                    "poetry",
-                    "run",
                     "python",
                     "-c",
                     """
 try:
-    from src.engine._core import chess_engine_core as core
+    from engine._core import chess_engine_core as core
     board = core.Board()
     moves = board.generate_legal_moves()
     print(f'✅ C++ extension working! Found {len(moves)} moves in starting position')
@@ -159,8 +107,6 @@ except Exception as e:
         try:
             subprocess.run(
                 [  # noqa: S607,S603
-                    "poetry",
-                    "run",
                     "pytest",
                     "tests/core/core_engine_test.py",
                     "-v",
@@ -181,8 +127,7 @@ except Exception as e:
         if clean:
             self.clean()
 
-        self.install_dependencies()
-        self.install_type_stubs()
+        # Dependencies are installed via devcontainer postCreateCommand with uv
         self.install_python_package()  # This handles C++ compilation via setup.py
         self.verify_installation()
 
