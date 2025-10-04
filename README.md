@@ -4,7 +4,7 @@
 
 This project is containerized using Docker with a multi-stage build for optimal size. The chess engine includes model weights and is ready to run without additional data.
 
-⚠️ **Note**: This is a large Python container, it can take 15+ minutes build itself. 
+⚠️ **Note**: This is a large Python container, it can take 15+ minutes build itself.
 
 ## Project Structure
 
