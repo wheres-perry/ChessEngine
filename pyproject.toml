@@ -16,6 +16,7 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-benchmark>=4.0.0",
+    "pytest-cov>=5.0.0",
     "mypy>=1.7.0",
     "types-setuptools>=69.0.0",
     "pylint>=3.0.0",
@@ -169,4 +170,10 @@ exclude = [
     "notebooks/",
     "search_profiler.py",
     "unit_tests.py"
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov=src/engine --cov-report=term-missing"
+testpaths = [
+    "tests",
 ]
