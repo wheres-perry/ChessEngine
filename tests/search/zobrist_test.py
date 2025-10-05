@@ -13,7 +13,7 @@ efficient position hashing with incremental updates. Tests cover:
 import chess
 import pytest
 
-from src.engine.config import EngineConfig, MinimaxConfig
+from src.engine.config import EngineConfig, SearchConfig
 from src.engine.evaluators.mock_eval import MockEval
 from src.engine.search.minimax import Minimax
 from src.engine.search.zobrist import Zobrist
@@ -212,7 +212,7 @@ class TestZobristIntegration:
 
         # First search without Zobrist
         config_no_zobrist = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=False,
                 use_tt_aging=False,
                 max_time=None,  # No timeout for testing
@@ -224,7 +224,7 @@ class TestZobristIntegration:
 
         # Then search with Zobrist
         config_with_zobrist = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=False,  # Test just Zobrist, not aging
                 max_time=None,  # No timeout for testing
@@ -254,7 +254,7 @@ class TestZobristIntegration:
 
         # Configuration with aging
         config_with_aging = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=True,
                 max_time=None,  # No timeout for testing
@@ -263,7 +263,7 @@ class TestZobristIntegration:
 
         # Configuration without aging
         config_without_aging = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=False,
                 max_time=None,  # No timeout for testing

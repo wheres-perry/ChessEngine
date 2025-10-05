@@ -10,7 +10,7 @@ import torch
 import pytest
 from torch import nn
 
-from src.engine.config import EngineConfig, MinimaxConfig, EvaluationConfig
+from src.engine.config import EngineConfig, SearchConfig, EvaluationConfig
 from src.engine.evaluators.simple_nn_eval import (  # type: ignore[import-untyped]
     HalfKPNet,
     NeuralNetEvaluator,
@@ -35,7 +35,7 @@ class TestPassToPass:
     @pytest.fixture
     def config(self) -> EngineConfig:
         return EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=False,
                 use_iddfs=False,
                 use_alpha_beta=True,
@@ -282,7 +282,7 @@ class TestMinimaxNeuralNetIntegration:
     @pytest.fixture
     def config(self) -> EngineConfig:
         return EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=False,
                 use_iddfs=False,
                 use_alpha_beta=True,

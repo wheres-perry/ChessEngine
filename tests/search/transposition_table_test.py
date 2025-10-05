@@ -14,7 +14,7 @@ Tests cover:
 import chess
 import pytest
 
-from src.engine.config import EngineConfig, MinimaxConfig
+from src.engine.config import EngineConfig, SearchConfig
 from src.engine.evaluators.mock_eval import MockEval
 from src.engine.search.minimax import Minimax
 from src.engine.search.transposition_table import TranspositionTable
@@ -202,7 +202,7 @@ class TestTranspositionTableIntegration:
             ValueError,
             match="Transposition table aging requires Zobrist hashing to be enabled",
         ):
-            EngineConfig(minimax=MinimaxConfig(use_zobrist=False, use_tt_aging=True))
+            EngineConfig(minimax=SearchConfig(use_zobrist=False, use_tt_aging=True))
 
     def test_node_count_reduction(self):
         """Test that TT reduces node count during search."""
@@ -212,7 +212,7 @@ class TestTranspositionTableIntegration:
 
         # First search without TT
         config_no_tt = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=False,
                 use_tt_aging=False,
                 max_time=None,  # No timeout for testing
@@ -224,7 +224,7 @@ class TestTranspositionTableIntegration:
 
         # Then search with TT
         config_with_tt = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=True,
                 max_time=None,  # No timeout for testing
@@ -247,7 +247,7 @@ class TestTranspositionTableIntegration:
         depth = 5
 
         config = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=True,
                 max_time=None,  # No timeout for testing

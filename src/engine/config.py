@@ -5,17 +5,111 @@ from src.engine.constants import DEFAULT_DEPTH, DEFAULT_TIMEOUT
 
 
 @dataclass
-class MinimaxConfig:
-    """Configuration for the Minimax search algorithm."""
+class SearchConfig:
+    """
+    Configuration for the chess engine search algorithm and optimizations.
+    Features are grouped by their function based on the dependency graph.
+    """
 
-    use_zobrist: bool = True
-    use_iddfs: bool = True
-    use_alpha_beta: bool = True
-    use_move_ordering: bool = True
-    use_pvs: bool = True
-    use_tt_aging: bool = True
-    use_lmr: bool = True
+    # --- Time Management and Limits ---
     max_time: float | None = DEFAULT_TIMEOUT
+    max_depth: int | None = None  # Useful for depth-limited searches
+
+    # ========================================================================
+    # 2. Core Search
+    # ========================================================================
+    # The foundational search structure (Assumes NegaMax framework).
+    use_alpha_beta: bool = True  # Alpha-Beta Pruning (Essential optimization)
+    use_iddfs: bool = True  # Iterative Deepening Depth-First Search
+    use_quiescence_search: bool = True  # (QS) Search tactical sequences at leaf nodes
+
+    # ========================================================================
+    # 3. Memory and Transposition Tables (TT)
+    # ========================================================================
+    # Techniques for reusing past search results.
+    use_zobrist: bool = True  # Hashing method (Required for TT)
+    use_transposition_table: bool = True  # The main cache for search results
+    # Strategy for replacing old entries (e.g., depth-preferred or aging)
+    use_tt_aging: bool = True
+
+    # ========================================================================
+    # 4. Move Ordering
+    # ========================================================================
+    # Techniques to maximize Alpha-Beta cutoffs.
+    use_move_ordering: bool = True  # Master switch for move ordering heuristics
+
+    # 4a. Prioritized Moves
+    use_hash_move_ordering: bool = True  # Prioritize the move suggested by the TT
+
+    # 4b. Static Ordering (Captures)
+    use_mvv_lva: bool = True  # Most Valuable Victim / Least Valuable Aggressor
+    use_see_ordering: bool = (
+        True  # Static Exchange Evaluation (SEE) for ordering captures
+    )
+
+    # 4c. Dynamic Ordering (Quiet Moves)
+    use_killer_moves: bool = True  # Store recent moves that caused beta cutoffs
+    use_history_heuristic: bool = True  # Score moves based on historical cutoff success
+    use_countermove_heuristic: bool = (
+        True  # Store moves that counter the opponent's previous move
+    )
+
+    # ========================================================================
+    # 5. Search Refinements
+    # ========================================================================
+    # Improvements to the core Alpha-Beta framework.
+    use_pvs: bool = True  # Principal Variation Search (PVS / NegaScout)
+    use_aspiration_windows: bool = True  # Narrow the initial Alpha-Beta window
+    use_iid: bool = (
+        True  # Internal Iterative Deepening (Search shallow if no hash move)
+    )
+
+    # ========================================================================
+    # 6. Search Reductions and Pruning
+    # ========================================================================
+    # Techniques to aggressively reduce the search space.
+
+    # 6a. Reductions (Reducing depth)
+    use_lmr: bool = True  # Late Move Reductions
+
+    # 6b. Aggressive Forward Pruning
+    use_null_move_pruning: bool = True  # (NMP)
+
+    # 6c. Pruning near leaf nodes (Futility variants)
+    use_futility_pruning: bool = True
+    use_extended_futility_pruning: bool = True
+    use_reverse_futility_pruning: bool = True  # (Static Null Move Pruning)
+
+    # 6d. Pruning in Quiescence Search
+    use_delta_pruning: bool = True
+    use_see_pruning_in_qs: bool = True  # Use SEE to prune bad captures in Q-Search
+
+    # 6e. Advanced/Experimental Pruning
+    use_probcut: bool = False  # Pruning based on probability
+    use_multicut_pruning: bool = False
+    use_razoring: bool = False  # Aggressive pruning at shallow depths (Risky)
+
+    # ========================================================================
+    # 7. Search Extensions
+    # ========================================================================
+    # Techniques to increase the search depth in critical positions.
+    use_check_extensions: bool = True
+    use_recapture_extensions: bool = False
+    use_singular_extensions: bool = (
+        False  # Extend if a move is significantly better than all others
+    )
+
+    # ========================================================================
+    # 8. Parallelization & Alternatives
+    # ========================================================================
+    use_parallel_search: bool = False  # Master switch for multi-threading
+    use_lazy_smp: bool = False  # Lazy Symmetric Multiprocessing
+    use_ybwc: bool = False  # Young Brothers Wait Concept
+    use_dts: bool = False  # Dynamic Tree Splitting
+    num_threads: int = 1
+
+    # Alternative Search Drivers (Usually exclusive of standard PVS/ABP)
+    use_mtdf: bool = False  # Memory-enhanced Test Driver (MTD-f)
 
 
 @dataclass
@@ -36,7 +130,7 @@ class EvaluationConfig:
 class EngineConfig:
     """Top-level configuration for the chess engine."""
 
-    minimax: MinimaxConfig = field(default_factory=MinimaxConfig)
+    minimax: SearchConfig = field(default_factory=SearchConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     search_depth: int = DEFAULT_DEPTH
 

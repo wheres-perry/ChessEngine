@@ -12,7 +12,7 @@ import time
 import chess
 import pytest
 
-from src.engine.config import EngineConfig, MinimaxConfig
+from src.engine.config import EngineConfig, SearchConfig
 from src.engine.evaluators.mock_eval import MockEval
 from src.engine.search.minimax import Minimax
 
@@ -29,7 +29,7 @@ class TestConfigValidation:
             match="Transposition table aging requires Zobrist hashing to be enabled",
         ):
             EngineConfig(
-                minimax=MinimaxConfig(
+                minimax=SearchConfig(
                     use_zobrist=False,
                     use_tt_aging=True,
                 )
@@ -46,7 +46,7 @@ class TestPVSDependency:
             match="Principal Variation Search .* requires alpha-beta pruning",
         ):
             EngineConfig(
-                minimax=MinimaxConfig(
+                minimax=SearchConfig(
                     use_alpha_beta=False,
                     use_pvs=True,
                     use_lmr=False,  # Turn off LMR since it requires alpha-beta
@@ -56,7 +56,7 @@ class TestPVSDependency:
     def test_pvs_with_alpha_beta_enabled(self):
         """Test that PVS works properly when alpha-beta is enabled."""
         cfg = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_alpha_beta=True,
                 use_pvs=True,
             )
@@ -81,7 +81,7 @@ class TestIterativeDeepening:
         monkeypatch.setattr(Minimax, "_search_fixed_depth", fake_search)
 
         cfg = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 use_iddfs=True,
                 use_zobrist=False,
                 use_tt_aging=False,
@@ -102,7 +102,7 @@ class TestTimeLimit:
     def test_check_time_limit_flags_time_up(self):
         """Test that _check_time_limit sets time_up flag when time is exceeded."""
         cfg = EngineConfig(
-            minimax=MinimaxConfig(
+            minimax=SearchConfig(
                 max_time=0.01,
             )
         )
