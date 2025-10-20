@@ -20,20 +20,25 @@ from src.engine.search.minimax import Minimax
 class TestConfigValidation:
     """Test validation of EngineConfig during Minimax initialization."""
 
-    def test_tt_aging_without_zobrist_raises(self):
-        """Test that enabling TT aging without Zobrist hashing raises a ValueError."""
-        # The validation happens in EngineConfig.__post_init__, not in Minimax
+    def test_tt_aging_without_tt_raises(self):
+        """Test that enabling TT aging without TT enabled raises an error."""
+        # The validation happens in DependencyResolver.resolve(), not in EngineConfig
 
-        with pytest.raises(
-            ValueError,
-            match="Transposition table aging requires Zobrist hashing to be enabled",
-        ):
-            EngineConfig(
-                minimax=SearchConfig(
-                    use_zobrist=False,
-                    use_tt_aging=True,
-                )
+        from src.engine.module_dependency_resolver import (
+            DependencyResolutionError,
+            DependencyResolver,
+        )
+
+        config = EngineConfig(
+            search=SearchConfig(
+                use_transposition_table=False,
+                use_tt_aging=True,
             )
+        )
+        resolver = DependencyResolver(config)
+
+        with pytest.raises(DependencyResolutionError):
+            resolver.resolve()
 
 
 class TestPVSDependency:
@@ -41,22 +46,28 @@ class TestPVSDependency:
 
     def test_pvs_validation_error(self):
         """Test that enabling PVS without alpha-beta pruning raises an error."""
-        with pytest.raises(
-            ValueError,
-            match="Principal Variation Search .* requires alpha-beta pruning",
-        ):
-            EngineConfig(
-                minimax=SearchConfig(
-                    use_alpha_beta=False,
-                    use_pvs=True,
-                    use_lmr=False,  # Turn off LMR since it requires alpha-beta
-                )
+        from src.engine.module_dependency_resolver import (
+            DependencyResolutionError,
+            DependencyResolver,
+        )
+
+        config = EngineConfig(
+            search=SearchConfig(
+                use_alpha_beta=False,
+                use_move_ordering=False,  # Turn off move ordering since it requires alpha-beta
+                use_pvs=True,
+                use_lmr=False,  # Turn off LMR since it requires alpha-beta
             )
+        )
+        resolver = DependencyResolver(config)
+
+        with pytest.raises(DependencyResolutionError):
+            resolver.resolve()
 
     def test_pvs_with_alpha_beta_enabled(self):
         """Test that PVS works properly when alpha-beta is enabled."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_alpha_beta=True,
                 use_pvs=True,
             )
@@ -81,7 +92,7 @@ class TestIterativeDeepening:
         monkeypatch.setattr(Minimax, "_search_fixed_depth", fake_search)
 
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_iddfs=True,
                 use_zobrist=False,
                 use_tt_aging=False,
@@ -102,7 +113,7 @@ class TestTimeLimit:
     def test_check_time_limit_flags_time_up(self):
         """Test that _check_time_limit sets time_up flag when time is exceeded."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 max_time=0.01,
             )
         )
