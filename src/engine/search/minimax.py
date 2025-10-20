@@ -47,7 +47,7 @@ class Minimax:
             config: Engine configuration (assumed to be pre-validated)
         """
         # Extract
-        minimax_config = config.minimax
+        minimax_config = config.search
         self.use_zobrist = minimax_config.use_zobrist
         self.use_iddfs = minimax_config.use_iddfs
         self.use_alpha_beta = minimax_config.use_alpha_beta
