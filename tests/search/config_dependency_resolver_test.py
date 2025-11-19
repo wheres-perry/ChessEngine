@@ -15,7 +15,7 @@ Tests cover:
 import pytest
 
 from src.engine.config import EngineConfig, SearchConfig
-from src.engine.module_dependency_resolver import (
+from src.engine.config_dependency_resolver import (
     DependencyResolutionError,
     DependencyResolver,
 )

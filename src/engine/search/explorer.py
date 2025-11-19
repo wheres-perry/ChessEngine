@@ -11,8 +11,8 @@ import logging
 
 from engine._core import chess_engine_core as chess
 from src.engine.config import EngineConfig
+from src.engine.config_dependency_resolver import DependencyResolver
 from src.engine.evaluators.base_evaluator import BaseEvaluator
-from src.engine.module_dependency_resolver import DependencyResolver
 from src.engine.search.move_ordering import MoveOrderer
 from src.engine.search.transposition_table import TranspositionTable
 from src.engine.search.zobrist import Zobrist

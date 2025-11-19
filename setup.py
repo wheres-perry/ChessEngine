@@ -43,6 +43,8 @@ ext_modules = [
             "src/engine/_cpp/move_generation/move_generation.cpp",
             "src/engine/_cpp/move_generation/bindings.cpp",
             "src/engine/_cpp/search/bindings.cpp",
+            "src/engine/_cpp/halfkp/halfkp.cpp",
+            "src/engine/_cpp/halfkp/bindings.cpp",
         ],
         cxx_std=20,
         include_dirs=[pybind11.get_cmake_dir() + "/../include", "src/engine/_core"],

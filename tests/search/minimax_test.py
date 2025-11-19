@@ -11,11 +11,11 @@ import pytest
 
 from engine._core import chess_engine_core as chess
 from src.engine.config import EngineConfig, SearchConfig
-from src.engine.evaluators import MockEvaluator
-from src.engine.module_dependency_resolver import (
+from src.engine.config_dependency_resolver import (
     DependencyResolutionError,
     DependencyResolver,
 )
+from src.engine.evaluators import MockEvaluator
 from src.engine.search.minimax import Minimax
 
 
