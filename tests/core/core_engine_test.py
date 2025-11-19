@@ -6,7 +6,21 @@ These tests target specific bugs and edge cases that commonly break chess engine
 # ruff: noqa
 import pytest
 
-from src.engine._core import chess_engine_core as core  # type: ignore
+from engine._core import chess_engine_core as core  # type: ignore
+
+
+def _move_to_tuple(move: core.Move) -> tuple[int, int, int]:
+    """Normalize a move object into a tuple for easier comparison in assertions."""
+    to_square: int | None = getattr(move, "to", None)
+    if to_square is None:
+        to_square = getattr(move, "to_square", None)
+
+    if to_square is None:
+        raise AttributeError(
+            "Move objects must expose either 'to' or 'to_square' attributes."
+        )
+
+    return move.from_square, to_square, move.promotion
 
 
 def verify_legal_moves(
@@ -21,11 +35,11 @@ def verify_legal_moves(
 
     print(core.moves_to_string(moves, board))
 
-    assert (
-        len(moves) == expected_count
-    ), f"Expected {expected_count} legal moves, but found {len(moves)}"
+    assert len(moves) == expected_count, (
+        f"Expected {expected_count} legal moves, but found {len(moves)}"
+    )
 
-    generated_tuples = [(m.from_square, m.to, m.promotion) for m in moves]
+    generated_tuples = [_move_to_tuple(move) for move in moves]
 
     expected_moves_sorted = sorted(expected_moves)
     generated_tuples_sorted = sorted(generated_tuples)
@@ -42,9 +56,9 @@ def verify_game_state(
     board = core.Board.from_fen(fen)
     state = board.is_game_over()
 
-    assert (
-        state == expected_state
-    ), f"Expected {expected_state}, but found {state}: {message}"
+    assert state == expected_state, (
+        f"Expected {expected_state}, but found {state}: {message}"
+    )
 
 
 class TestMoveGenerationEdgeCases:
@@ -524,21 +538,21 @@ class TestGameStateAndCopy:
 
         # Verify all state is preserved
         assert original.to_fen() == copy.to_fen(), "FEN representation should match"
-        assert (
-            original.get_side_to_move() == copy.get_side_to_move()
-        ), "Side to move should match"
-        assert (
-            original.get_castling_rights() == copy.get_castling_rights()
-        ), "Castling rights should match"
-        assert (
-            original.get_en_passant_square() == copy.get_en_passant_square()
-        ), "En passant square should match"
-        assert (
-            original.get_halfmove_clock() == copy.get_halfmove_clock()
-        ), "Halfmove clock should match"
-        assert (
-            original.get_fullmove_number() == copy.get_fullmove_number()
-        ), "Fullmove number should match"
+        assert original.get_side_to_move() == copy.get_side_to_move(), (
+            "Side to move should match"
+        )
+        assert original.get_castling_rights() == copy.get_castling_rights(), (
+            "Castling rights should match"
+        )
+        assert original.get_en_passant_square() == copy.get_en_passant_square(), (
+            "En passant square should match"
+        )
+        assert original.get_halfmove_clock() == copy.get_halfmove_clock(), (
+            "Halfmove clock should match"
+        )
+        assert original.get_fullmove_number() == copy.get_fullmove_number(), (
+            "Fullmove number should match"
+        )
 
     # ============================================================================
     # CHECKMATE GAME STATE

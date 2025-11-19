@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,8 @@ using Bitboard = uint64_t;
 // Constants
 static constexpr uint8_t NUM_PIECE_TYPES = 6;
 static constexpr uint8_t NUM_COLORS = 2;
+static constexpr const char* STARTING_FEN =
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 // Enums
 enum class Color : uint8_t { WHITE = 0, BLACK = 1 };
@@ -41,11 +44,60 @@ struct Move {
   uint8_t promotion;  // 0 if no promotion, otherwise PieceType value
 };
 
+struct Piece {
+  PieceType type{PieceType::PAWN};
+  Color color{Color::WHITE};
+  bool valid{false};
+
+  [[nodiscard]] char symbol() const noexcept;
+};
+
+struct StateInfo {
+  Move move{};
+  PieceType moving_piece{PieceType::PAWN};
+  Color mover{Color::WHITE};
+  bool was_capture{false};
+  PieceType captured_piece{PieceType::PAWN};
+  Color captured_color{Color::BLACK};
+  uint8_t captured_square{64};
+  bool was_en_passant{false};
+  bool was_castling{false};
+  bool was_kingside_castle{false};
+  bool was_promotion{false};
+  uint8_t previous_castling_rights{0};
+  int8_t previous_en_passant_square{-1};
+  uint8_t previous_halfmove_clock{0};
+  uint16_t previous_fullmove_number{1};
+  bool previous_side_to_move{true};
+};
+
+// Helpers for square metadata
+constexpr uint8_t square_file(uint8_t square) noexcept { return square % 8; }
+constexpr uint8_t square_rank(uint8_t square) noexcept { return square / 8; }
+constexpr Bitboard square_bitboard(uint8_t square) noexcept {
+  return 1ULL << square;
+}
+
+constexpr std::array<uint8_t, 64> SQUARES = []() constexpr {
+  std::array<uint8_t, 64> squares{};
+  for (uint8_t i = 0; i < 64; ++i) squares[i] = i;
+  return squares;
+}();
+
+constexpr std::array<PieceType, NUM_PIECE_TYPES> PIECE_TYPES_ARRAY = {
+    PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP,
+    PieceType::ROOK, PieceType::QUEEN,  PieceType::KING};
+
+constexpr Bitboard BB_A1 = 1ULL << 0;
+constexpr Bitboard BB_H1 = 1ULL << 7;
+constexpr Bitboard BB_A8 = 1ULL << 56;
+constexpr Bitboard BB_H8 = 1ULL << 63;
+
 // Board class
 class Board {
  public:
   // Constructors and basic operations
-  inline Board() noexcept;
+  inline Board();
   inline void clear() noexcept;
   void load_fen(const std::string& fen);
   static inline Board from_fen(const std::string& fen) noexcept;
@@ -109,13 +161,42 @@ class Board {
 
   // Moved make_move implementation from inline declaration to inline definition
   inline void make_move(const Move& move) noexcept;
+  void push(const Move& move);
+  Move pop();
+  Move push_san(const std::string& san);
+
+  [[nodiscard]] bool is_capture(const Move& move) const noexcept;
+  [[nodiscard]] bool is_castling(const Move& move) const noexcept;
+  [[nodiscard]] bool is_kingside_castling(const Move& move) const noexcept;
+  [[nodiscard]] bool is_queenside_castling(const Move& move) const noexcept;
+  [[nodiscard]] bool is_en_passant(const Move& move) const noexcept;
+  [[nodiscard]] bool is_check() const noexcept;
+
+  [[nodiscard]] std::optional<Piece> piece_at(uint8_t square) const noexcept;
+  [[nodiscard]] std::vector<uint8_t> pieces(PieceType pt,
+                                            Color color) const noexcept;
+  [[nodiscard]] std::optional<uint8_t> king(Color color) const noexcept;
+
+  [[nodiscard]] bool has_kingside_castling_rights(Color color) const noexcept;
+  [[nodiscard]] bool has_queenside_castling_rights(Color color) const noexcept;
+
+  [[nodiscard]] bool turn() const noexcept { return side_to_move; }
+  [[nodiscard]] std::optional<uint8_t> ep_square() const noexcept;
+
+  void set_fen(const std::string& fen) { load_fen(fen); }
+  [[nodiscard]] std::string fen() const { return to_fen(); }
 
   // Feature extraction (placeholder)
   [[nodiscard]] std::vector<float> to_half_kp_features() const;
 
+  [[nodiscard]] std::string print_move(const Move& move) const;
+
  private:
   // Helper method for insufficient material detection
   [[nodiscard]] bool has_insufficient_material() const noexcept;
+  void apply_move(const Move& move, StateInfo* state) noexcept;
+  void undo_move(const StateInfo& state) noexcept;
+  [[nodiscard]] Move parse_san(const std::string& san) const;
 
   // Bitboard representation - aligned for better cache performance
   alignas(16) std::array<Bitboard, NUM_PIECE_TYPES> piece_bitboards{};
@@ -127,6 +208,7 @@ class Board {
   int8_t en_passant_square = -1;  // -1 if no en passant
   uint8_t halfmove_clock = 0;     // For 50-move rule
   uint16_t fullmove_number = 1;   // Increments after Black's move
+  std::vector<StateInfo> state_history;
 };
 
 // Helper functions for move formatting (made inline with definitions)
@@ -170,8 +252,11 @@ inline std::string moves_to_string(const std::vector<Move>& moves,
   return result;
 }
 
+Move move_from_uci(const std::string& uci);
+std::string move_to_uci(const Move& move);
+
 // Inline implementation of simple methods
-inline Board::Board() noexcept { clear(); }
+inline Board::Board() { load_fen(STARTING_FEN); }
 
 inline void Board::clear() noexcept {
   for (auto& bb : piece_bitboards) bb = 0ULL;
@@ -181,6 +266,7 @@ inline void Board::clear() noexcept {
   en_passant_square = -1;
   halfmove_clock = 0;
   fullmove_number = 1;
+  state_history.clear();
 }
 
 inline Board Board::from_fen(const std::string& fen) noexcept {
@@ -196,116 +282,5 @@ inline Board Board::copy() const noexcept {
 
 // Make move - inline implementation
 inline void Board::make_move(const Move& move) noexcept {
-  uint8_t from = move.from;
-  uint8_t to = move.to;
-  uint8_t promotion = move.promotion;
-
-  Bitboard from_bb = 1ULL << from;
-  Bitboard to_bb = 1ULL << to;
-
-  // Initialize moving_pt with a proper default value
-  PieceType moving_pt = PieceType::PAWN;  // Safe default
-  // Find the actual piece type
-  for (uint8_t pt = 0; pt < NUM_PIECE_TYPES; ++pt) {
-    if (piece_bitboards[pt] & from_bb) {
-      moving_pt = static_cast<PieceType>(pt);
-      break;
-    }
-  }
-
-  Color us = (color_bitboards[0] & from_bb) ? Color::WHITE : Color::BLACK;
-  uint8_t us_idx = static_cast<uint8_t>(us);
-  uint8_t them_idx = us_idx ^ 1;
-
-  // Handle capture - direct bitboard operations
-  bool is_capture = (to_bb & color_bitboards[them_idx]);
-
-  // Reset halfmove clock if capture or pawn move
-  halfmove_clock =
-      (is_capture || moving_pt == PieceType::PAWN) ? 0 : halfmove_clock + 1;
-
-  // Update fullmove number if Black moved
-  if (us == Color::BLACK) ++fullmove_number;
-
-  // Save old en passant for restoration if needed
-  int8_t old_ep = en_passant_square;
-  en_passant_square = -1;
-
-  // For each piece type, remove captured piece (if any)
-  if (is_capture) {
-    for (uint8_t pt = 0; pt < NUM_PIECE_TYPES; ++pt) {
-      piece_bitboards[pt] &= ~(to_bb & color_bitboards[them_idx]);
-    }
-    color_bitboards[them_idx] &= ~to_bb;
-  }
-
-  // Move the piece - update from square
-  piece_bitboards[static_cast<uint8_t>(moving_pt)] &= ~from_bb;
-  color_bitboards[us_idx] &= ~from_bb;
-
-  // Handle promotion
-  if (promotion != 0) {
-    piece_bitboards[promotion] |= to_bb;
-  } else {
-    piece_bitboards[static_cast<uint8_t>(moving_pt)] |= to_bb;
-  }
-
-  // Update destination square
-  color_bitboards[us_idx] |= to_bb;
-
-  // Special cases - en passant capture
-  if (moving_pt == PieceType::PAWN) {
-    if (old_ep != -1 && to == old_ep) {
-      // En passant capture - remove captured pawn
-      int8_t cap_square = old_ep + (us == Color::WHITE ? -8 : 8);
-      Bitboard cap_bb = 1ULL << cap_square;
-      piece_bitboards[static_cast<uint8_t>(PieceType::PAWN)] &= ~cap_bb;
-      color_bitboards[them_idx] &= ~cap_bb;
-    } else if (std::abs(static_cast<int>(to) - static_cast<int>(from)) == 16) {
-      // Double pawn push - set en passant square
-      en_passant_square = from + (us == Color::WHITE ? 8 : -8);
-    }
-  }
-
-  // Castling
-  if (moving_pt == PieceType::KING &&
-      std::abs(static_cast<int>(to) - static_cast<int>(from)) == 2) {
-    bool kingside = (to > from);
-    int8_t rook_from = kingside ? (us == Color::WHITE ? 7 : 63)
-                                : (us == Color::WHITE ? 0 : 56);
-    int8_t rook_to = kingside ? (from + 1) : (from - 1);
-
-    Bitboard rook_from_bb = 1ULL << rook_from;
-    Bitboard rook_to_bb = 1ULL << rook_to;
-    Bitboard rook_from_to_bb = rook_from_bb | rook_to_bb;
-
-    // Move rook with minimal operations
-    piece_bitboards[static_cast<uint8_t>(PieceType::ROOK)] ^= rook_from_to_bb;
-    color_bitboards[us_idx] ^= rook_from_to_bb;
-  }
-
-  // Update castling rights - optimized bitwise operations
-  if (castling_rights) {
-    // King moved - lose all castling rights for that side
-    if (moving_pt == PieceType::KING) {
-      castling_rights &= (us == Color::WHITE ? ~0x03 : ~0x0C);
-    }
-    // Rook moved or captured
-    else if ((moving_pt == PieceType::ROOK &&
-              (from == 0 || from == 7 || from == 56 || from == 63)) ||
-             (is_capture && (to == 0 || to == 7 || to == 56 || to == 63))) {
-      // Update specific castling right bits based on square
-      if (from == 0 || to == 0)
-        castling_rights &= ~0x02;  // a1 - White queenside
-      else if (from == 7 || to == 7)
-        castling_rights &= ~0x01;  // h1 - White kingside
-      else if (from == 56 || to == 56)
-        castling_rights &= ~0x08;  // a8 - Black queenside
-      else if (from == 63 || to == 63)
-        castling_rights &= ~0x04;  // h8 - Black kingside
-    }
-  }
-
-  // Switch side to move
-  side_to_move = !side_to_move;
+  apply_move(move, nullptr);
 }

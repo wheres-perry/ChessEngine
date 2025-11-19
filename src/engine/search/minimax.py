@@ -1,10 +1,9 @@
 import logging
 import time
 
-import chess
-
+from engine._core import chess_engine_core as chess
 from src.engine.config import EngineConfig
-from src.engine.evaluators.evaluator import Evaluator
+from src.engine.evaluators.base_evaluator import BaseEvaluator
 from src.engine.search.move_ordering import MoveOrderer
 from src.engine.search.transposition_table import TranspositionTable
 from src.engine.search.zobrist import Zobrist
@@ -17,10 +16,15 @@ logger = logging.getLogger(__name__)
 
 class Minimax:
     """
-    Minimax search engine with alpha-beta pruning, transposition tables,
-    and iterative deepening. Implements a chess engine that searches for
-    the best move using minimax algorithm with various optimizations
-    including move ordering, zobrist hashing, and time management.
+    Modular minimax search engine that can be configured with various optimizations.
+
+    Supports a full spectrum of configurations from basic minimax to advanced
+    alpha-beta with pruning, transposition tables, and iterative deepening.
+    The control flow adapts based on which features are enabled, following
+    the dependency tree structure.
+
+    Tree 1: Move Exploration (Search) Optimizations
+    A (Minimax) -> B (Alpha-Beta), C (IDDFS), D (Move Ordering), L (TT)
     """
 
     NEG_INF = float("-inf")
@@ -35,51 +39,56 @@ class Minimax:
     def __init__(
         self,
         board: chess.Board,
-        evaluator: Evaluator,
+        evaluator: BaseEvaluator,
         config: EngineConfig,
     ):
         """
-        Initialize the minimax search engine.
+        Initialize the modular minimax search engine.
 
         Args:
             board: Chess board position to search from
             evaluator: Position evaluation function
             config: Engine configuration (assumed to be pre-validated)
         """
-        # Extract
+        # Store full config
+        self.config = config
         minimax_config = config.minimax
-        self.use_zobrist = minimax_config.use_zobrist
-        self.use_iddfs = minimax_config.use_iddfs
+
+        # Extract core flags
+        self.use_minimax = minimax_config.use_minimax
         self.use_alpha_beta = minimax_config.use_alpha_beta
+        self.use_iddfs = minimax_config.use_iddfs
         self.use_move_ordering = minimax_config.use_move_ordering
+        self.use_transposition_table = minimax_config.use_transposition_table
+        self.use_zobrist = minimax_config.use_zobrist
         self.use_pvs = minimax_config.use_pvs
         self.use_tt_aging = minimax_config.use_tt_aging
         self.use_lmr = minimax_config.use_lmr
+        self.use_check_extensions = minimax_config.use_check_extensions
+        self.use_quiescence_search = minimax_config.use_quiescence_search
         self.max_time = minimax_config.max_time
 
-        # Initialize Zobrist hashing and transposition table
-        self.zobrist: Zobrist | None
-        self.transposition_table: TranspositionTable | None
-        if self.use_zobrist:
+        # Core components
+        self.board = board
+        self.evaluator = evaluator
+
+        # Initialize Zobrist hashing and transposition table (if enabled)
+        self.zobrist: Zobrist | None = None
+        self.transposition_table: TranspositionTable | None = None
+        if self.use_zobrist and self.use_transposition_table:
             self.zobrist = Zobrist()
             self.transposition_table = TranspositionTable(
                 self.DEFAULT_TT_SIZE, use_tt_aging=self.use_tt_aging
             )
-        else:
-            self.zobrist = None
-            self.transposition_table = None
-
-        self.board = board
-        self.evaluator = evaluator
-
-        # Initialize the move orderer
-        self.move_orderer = MoveOrderer(
-            self.board, self.zobrist, self.transposition_table
-        )
-
-        # Initialize hash for the starting position
-        if self.zobrist:
+            # Initialize hash for the starting position
             self.zobrist.hash_board(self.board)
+
+        # Initialize the move orderer (if enabled)
+        self.move_orderer: MoveOrderer | None = None
+        if self.use_move_ordering:
+            self.move_orderer = MoveOrderer(
+                self.board, minimax_config, self.zobrist, self.transposition_table
+            )
 
         # Initialize hash stack for efficient incremental updates
         self.hash_stack: list[int | None] = []
@@ -94,7 +103,13 @@ class Minimax:
 
     def find_top_move(self, depth: int = 1) -> tuple[float | None, chess.Move | None]:
         """
-        Find the best move for the current position.
+        Find the best move for the current position using modular search.
+
+        The control flow adapts based on enabled features:
+        - If use_minimax is False, returns None (should not happen with validation)
+        - If use_iddfs is True and depth > 1, uses iterative deepening
+        - Otherwise uses single-depth search
+        - Uses alpha-beta if enabled, otherwise pure minimax
 
         Args:
             depth: Maximum search depth
@@ -102,23 +117,28 @@ class Minimax:
         Returns:
             Tuple of (evaluation_score, best_move)
         """
-        # FIXED: Use consistent node counting
+        if not self.use_minimax:
+            logger.warning("Minimax is disabled, cannot search")
+            return None, None
+
+        # Initialize search state
         self.nodes_searched = 0
         self.node_count = 0  # For backward compatibility with tests
         self.time_up = False
         self.start_time = time.time()
         self.best_move_first = None
 
-        # FIXED: Only increment age ONCE per search, not per depth
-        if self.use_zobrist and self.transposition_table and self.use_tt_aging:
+        # Increment TT age once per search (if enabled)
+        if self.transposition_table and self.use_tt_aging:
             self.transposition_table.increment_age()
 
+        # Choose search strategy based on configuration
         if self.use_iddfs and depth > 1:
             result = self._iterative_deepening(depth)
         else:
             result = self._search_fixed_depth(depth)
 
-        # FIXED: Update node_count for test compatibility
+        # Update node_count for test compatibility
         self.node_count = self.nodes_searched
         return result
 
@@ -136,19 +156,7 @@ class Minimax:
     def _iterative_deepening(
         self, max_depth: int
     ) -> tuple[float | None, chess.Move | None]:
-        """
-        Perform iterative deepening search from depth 1 to max_depth.
-
-        Each iteration provides a better move estimate and enables early
-        termination when time runs out while maintaining the best move
-        found so far.
-
-        Args:
-            max_depth: Maximum depth to search to
-
-        Returns:
-            Tuple of (best_score, best_move) from deepest completed iteration
-        """
+        """Perform iterative deepening from depth 1 to max_depth."""
         best_score: float | None = None
         best_move: chess.Move | None = None
         for current_depth in range(1, max_depth + 1):
@@ -164,15 +172,7 @@ class Minimax:
         return best_score, best_move
 
     def _search_fixed_depth(self, depth: int) -> tuple[float, chess.Move | None]:  # noqa: C901, PLR0912
-        """
-        Search to a fixed depth and return the best move.
-
-        Args:
-            depth: Depth to search to
-
-        Returns:
-            (score, best_move) tuple
-        """
+        """Search to fixed depth and return best move with score."""
         # Only reset nodes if not using IDDFS (to allow accumulation)
         if not self.use_iddfs:
             self.nodes_searched = 0
@@ -216,7 +216,7 @@ class Minimax:
                 self.zobrist.set_current_hash(current_hash)
 
             # Search from this new position
-            score = self.minimax_alpha_beta(
+            score = self._search_recursive(
                 depth - 1, alpha, beta, maximizing_player=is_maximizing
             )
 
@@ -250,29 +250,24 @@ class Minimax:
 
     def order_moves(self, moves: list[chess.Move]) -> list[chess.Move]:
         """
-        Order moves to improve alpha-beta pruning efficiency by delegating
-        to the move orderer.
+        Order moves to improve alpha-beta pruning efficiency.
+
+        If move ordering is disabled, returns moves in their original order.
+        If enabled, delegates to the MoveOrderer which uses various heuristics
+        based on the configuration.
 
         Args:
             moves: List of legal moves to order
 
         Returns:
-            Ordered list of moves
+            Ordered list of moves (or original order if ordering disabled)
         """
-        if not self.use_move_ordering:
+        if not self.use_move_ordering or self.move_orderer is None:
             return moves
         return self.move_orderer.order_moves(moves)
 
     def _gives_check_fast(self, move: chess.Move) -> bool:
-        """
-        Fast check detection without making the move.
-
-        Args:
-            move: Move to check
-
-        Returns:
-            True if move gives check
-        """
+        """Check if move gives check (fast detection)."""
         # Simple implementation - can be optimized further
         self.board.push(move)
         gives_check = self.board.is_check()
@@ -281,21 +276,12 @@ class Minimax:
             return False
         return bool(gives_check)
 
-    def minimax_alpha_beta(  # noqa: C901, PLR0912
+    def _search_recursive(  # noqa: C901, PLR0912
         self, depth: int, alpha: float, beta: float, maximizing_player: bool
     ) -> float:
-        """
-        Minimax search with alpha-beta pruning, transposition tables,
-        and move ordering.
+        """Modular recursive search adapting to enabled features.
 
-        Args:
-            depth: Current search depth
-            alpha: Alpha value (best already explored option for maximizer)
-            beta: Beta value (best already explored option for minimizer)
-            maximizing_player: Whether the current player is maximizing
-
-        Returns:
-            Best evaluation score for the current player
+        Supports minimax/alpha-beta/PVS/LMR.
         """
         # Node counting and time limit checks
         self.nodes_searched += 1
@@ -365,28 +351,28 @@ class Minimax:
                     and not self._gives_check_fast(m)
                 ):
                     reduced_depth = max(1, search_depth - self.LMR_REDUCTION)
-                    eval_score = self.minimax_alpha_beta(
+                    eval_score = self._search_recursive(
                         reduced_depth, alpha, beta, maximizing_player=False
                     )
                     # Re-search if promising
                     if eval_score > alpha:
-                        eval_score = self.minimax_alpha_beta(
+                        eval_score = self._search_recursive(
                             search_depth, alpha, beta, maximizing_player=False
                         )
                 # Principal Variation Search
                 elif self.use_pvs and i > 0:
                     # Search with zero window to see if we can improve alpha
-                    eval_score = self.minimax_alpha_beta(
+                    eval_score = self._search_recursive(
                         search_depth, alpha, alpha + 1e-10, maximizing_player=False
                     )
                     # Re-search with full window if better than alpha
                     if alpha < eval_score < beta:
-                        eval_score = self.minimax_alpha_beta(
+                        eval_score = self._search_recursive(
                             search_depth, alpha, beta, maximizing_player=False
                         )
                 else:
-                    # Regular alpha-beta
-                    eval_score = self.minimax_alpha_beta(
+                    # Regular alpha-beta or pure minimax
+                    eval_score = self._search_recursive(
                         search_depth, alpha, beta, maximizing_player=False
                     )
 
@@ -456,28 +442,28 @@ class Minimax:
                 and not self._gives_check_fast(m)
             ):
                 reduced_depth = max(1, search_depth - self.LMR_REDUCTION)
-                eval_score = self.minimax_alpha_beta(
+                eval_score = self._search_recursive(
                     reduced_depth, beta - 1e-10, beta, maximizing_player=True
                 )
                 # Re-search if promising
                 if eval_score < beta:
-                    eval_score = self.minimax_alpha_beta(
+                    eval_score = self._search_recursive(
                         search_depth, alpha, beta, maximizing_player=True
                     )
             # Principal Variation Search
             elif self.use_pvs and i > 0:
                 # Search with zero window to see if we can improve beta
-                eval_score = self.minimax_alpha_beta(
+                eval_score = self._search_recursive(
                     search_depth, beta - 1e-10, beta, maximizing_player=True
                 )
                 # Re-search with full window if better than beta
                 if alpha < eval_score < beta:
-                    eval_score = self.minimax_alpha_beta(
+                    eval_score = self._search_recursive(
                         search_depth, alpha, beta, maximizing_player=True
                     )
             else:
-                # Regular alpha-beta
-                eval_score = self.minimax_alpha_beta(
+                # Regular alpha-beta or pure minimax
+                eval_score = self._search_recursive(
                     search_depth, alpha, beta, maximizing_player=True
                 )
 

@@ -1,8 +1,11 @@
+"""Utilities for converting board states to tensor representations."""
+
 import logging
 from typing import Final
 
-import chess
 import torch
+
+from engine._core import chess_engine_core as chess
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +121,7 @@ def create_attacked_squares_plane(
     return attack_plane
 
 
-def _is_passed_pawn(board: chess.Board, i: chess.Square, color: chess.Color) -> bool:
+def _is_passed_pawn(board: chess.Board, i: int, color: chess.Color) -> bool:
     pawn_file = chess.square_file(i)
     pawn_rank = chess.square_rank(i)
     opponent_color = not color

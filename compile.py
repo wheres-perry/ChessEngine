@@ -45,7 +45,7 @@ class ChessEngineBuild:
         try:
             # Reinstall the package to ensure C++ extensions are compiled
             subprocess.run(
-                [
+                [  # noqa: S607
                     "sudo",
                     "pip",
                     "install",
@@ -69,7 +69,7 @@ class ChessEngineBuild:
 
         try:
             result = subprocess.run(
-                [  # noqa: S607,S603
+                [  # noqa: S607
                     "python",
                     "-c",
                     """
@@ -106,7 +106,7 @@ except Exception as e:
 
         try:
             subprocess.run(
-                [  # noqa: S607,S603
+                [  # noqa: S607
                     "pytest",
                     "tests/core/core_engine_test.py",
                     "-v",

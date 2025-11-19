@@ -1,6 +1,8 @@
+"""Fundamental constants shared by search and evaluation components."""
+
 from typing import Final
 
-import chess
+from engine._core import chess_engine_core as chess
 
 DEFAULT_TIMEOUT: Final[float] = 250.0
 

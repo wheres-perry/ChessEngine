@@ -116,7 +116,7 @@ class TestAlphaBetaDependencies:
 
         with pytest.raises(
             DependencyResolutionError,
-            match="Principal Variation Search \\(PVS\\) requires alpha-beta pruning",
+            match="Principal Variation Search requires both alpha-beta and IDDFS",
         ):
             resolver.resolve()
 
@@ -184,6 +184,10 @@ class TestMoveOrderingDependencies:
         config.minimax.use_hash_move_ordering = True
         config.minimax.use_move_ordering = True
         config.minimax.use_transposition_table = False
+        config.minimax.use_zobrist = (
+            False  # Must also disable Zobrist since it requires TT
+        )
+        config.minimax.use_tt_aging = False  # Must also disable TT aging
 
         resolver = DependencyResolver(config)
 
@@ -228,9 +232,10 @@ class TestSearchRefinementDependencies:
 
         resolver = DependencyResolver(config)
 
+        # PVS is enabled by default, so it will fail first when IDDFS is disabled
         with pytest.raises(
             DependencyResolutionError,
-            match="Internal Iterative Deepening \\(IID\\) requires IDDFS",
+            match="Principal Variation Search requires both alpha-beta and IDDFS",
         ):
             resolver.resolve()
 
@@ -308,7 +313,7 @@ class TestValidConfigurations:
         assert result.use_move_ordering is True
 
     def test_zobrist_without_transposition_table(self):
-        """Test that Zobrist can be used without TT."""
+        """Test that Zobrist without TT is now rejected (strict dependency)."""
         config = EngineConfig()
         config.minimax.use_zobrist = True
         config.minimax.use_transposition_table = False
@@ -316,10 +321,13 @@ class TestValidConfigurations:
         config.minimax.use_hash_move_ordering = False
 
         resolver = DependencyResolver(config)
-        result = resolver.resolve()
 
-        assert result.use_zobrist is True
-        assert result.use_transposition_table is False
+        # With strict dependency checking, Zobrist without TT is now invalid
+        with pytest.raises(
+            DependencyResolutionError,
+            match="Zobrist hashing should only be enabled with transposition table",
+        ):
+            resolver.resolve()
 
     def test_move_ordering_without_advanced_features(self):
         """Test move ordering with basic heuristics only."""

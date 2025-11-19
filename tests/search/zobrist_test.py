@@ -10,11 +10,11 @@ efficient position hashing with incremental updates. Tests cover:
 - Integration with search algorithm
 """
 
-import chess
 import pytest
 
+from engine._core import chess_engine_core as chess
 from src.engine.config import EngineConfig, SearchConfig
-from src.engine.evaluators.mock_eval import MockEval
+from src.engine.evaluators import MockEvaluator
 from src.engine.search.minimax import Minimax
 from src.engine.search.zobrist import Zobrist
 
@@ -105,10 +105,10 @@ class TestZobristIncrementalUpdates:
         zobrist.hash_board(board)
 
         # Make several moves and update hash incrementally
-        moves = ["e4", "e5", "Nf3", "Nc6", "Bc4"]
+        moves = ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4"]
 
-        for san in moves:
-            move = board.parse_san(san)
+        for uci in moves:
+            move = chess.Move.from_uci(uci)
 
             # Update incrementally BEFORE making the move
             incremental_hash = zobrist.make_move_hash(board, move)
@@ -129,13 +129,13 @@ class TestZobristSpecialMoves:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Setup a position where castling is possible
-        board = chess.Board(
+        board = chess.Board.from_fen(
             "r3k2r/ppp1pppp/2n2n2/8/8/2N2N2/PPP1PPPP/R3K2R w KQkq - 0 1"
         )
         original_hash = zobrist.hash_board(board)
 
         # Try kingside castling
-        move = board.parse_san("O-O")
+        move = chess.Move.from_uci("e1g1")
 
         # Update hash incrementally BEFORE making the move
         castle_hash = zobrist.make_move_hash(board, move)
@@ -155,13 +155,13 @@ class TestZobristSpecialMoves:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Setup a position where en passant is possible
-        board = chess.Board(
+        board = chess.Board.from_fen(
             "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3"
         )
         original_hash = zobrist.hash_board(board)
 
         # Make en passant capture
-        move = board.parse_san("exf6")
+        move = chess.Move.from_uci("e5f6")
 
         # Update hash incrementally BEFORE making the move
         ep_hash = zobrist.make_move_hash(board, move)
@@ -181,7 +181,7 @@ class TestZobristSpecialMoves:
         zobrist = Zobrist(seed=42)  # Fixed seed
 
         # Setup a position where promotion is possible
-        board = chess.Board("8/P6k/8/8/8/8/8/K7 w - - 0 1")
+        board = chess.Board.from_fen("8/P6k/8/8/8/8/8/K7 w - - 0 1")
         original_hash = zobrist.hash_board(board)
 
         # Promote to queen
@@ -207,14 +207,17 @@ class TestZobristIntegration:
     def test_node_count_reduction(self):
         """Test that Zobrist hashing reduces node count in search."""
         board = chess.Board()
-        evaluator = MockEval(board)
+        evaluator = MockEvaluator(board)
         depth = 3  # Reduced depth for faster testing
 
-        # First search without Zobrist
+        # First search without Zobrist (must also disable TT since it requires Zobrist)
         config_no_zobrist = EngineConfig(
             minimax=SearchConfig(
                 use_zobrist=False,
+                use_transposition_table=False,
                 use_tt_aging=False,
+                use_hash_move_ordering=False,  # Requires TT
+                use_iid=False,  # IID requires TT
                 max_time=None,  # No timeout for testing
             )
         )
@@ -249,7 +252,7 @@ class TestZobristIntegration:
 
     def test_aging_vs_no_aging_efficiency(self):
         """Test that TT aging provides better efficiency over time."""
-        evaluator = MockEval(chess.Board())
+        evaluator = MockEvaluator(chess.Board())
         depth = 3  # Reduced depth for faster testing
 
         # Configuration with aging
@@ -273,8 +276,10 @@ class TestZobristIntegration:
         # Test positions
         positions = [
             chess.Board(),  # Starting position
-            chess.Board("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"),
-            chess.Board(
+            chess.Board.from_fen(
+                "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+            ),
+            chess.Board.from_fen(
                 "rnbqkbnr/ppp2ppp/8/3pp3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3"
             ),
         ]
@@ -284,8 +289,10 @@ class TestZobristIntegration:
 
         for pos in positions:
             # Create fresh instances for each position to avoid state interference
-            minimax_with_aging = Minimax(pos, MockEval(pos), config_with_aging)
-            minimax_without_aging = Minimax(pos, MockEval(pos), config_without_aging)
+            minimax_with_aging = Minimax(pos, MockEvaluator(pos), config_with_aging)
+            minimax_without_aging = Minimax(
+                pos, MockEvaluator(pos), config_without_aging
+            )
 
             # Search with aging
             minimax_with_aging.find_top_move(depth=depth)
