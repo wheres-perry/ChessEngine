@@ -5,7 +5,8 @@ namespace py = pybind11;
 // Forward declarations for each component's bindings
 void init_board_bindings(py::module_& m);
 void init_movegen_bindings(py::module_& m);
-void init_search_bindings(py::module_& m);  // added
+void init_search_bindings(py::module_& m);
+void bind_halfkp(py::module_& m);
 
 PYBIND11_MODULE(chess_engine_core, m) {
   m.doc() = "High-performance C++ chess engine core components";
@@ -13,5 +14,6 @@ PYBIND11_MODULE(chess_engine_core, m) {
   // Initialize each component's bindings
   init_board_bindings(m);
   init_movegen_bindings(m);
-  init_search_bindings(m);  // added
+  init_search_bindings(m);
+  bind_halfkp(m);
 }
