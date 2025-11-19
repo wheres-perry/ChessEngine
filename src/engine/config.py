@@ -20,7 +20,9 @@ class SearchConfig:
     B -> N (Quiescence Search)
     """
 
-    # --- Time Management and Limits ---
+    # ========================================================================
+    # 1. General Search Settings
+    # ========================================================================
     max_time: float | None = DEFAULT_TIMEOUT
     max_depth: int | None = None  # Useful for depth-limited searches
 
@@ -112,6 +114,9 @@ class SearchConfig:
     # 8. Parallelization & Alternatives
     # ========================================================================
     use_parallel_search: bool = False  # Master switch for multi-threading
+
+    # Specific Parallel Algorithms (Mutually Exclusive):
+    use_naive_parallel: bool = False  # (NEW) Basic root split parallelism
     use_lazy_smp: bool = False  # Lazy Symmetric Multiprocessing
     use_ybwc: bool = False  # Young Brothers Wait Concept
     use_dts: bool = False  # Dynamic Tree Splitting
@@ -119,6 +124,16 @@ class SearchConfig:
 
     # Alternative Search Drivers (Usually exclusive of standard PVS/ABP)
     use_mtdf: bool = False  # Memory-enhanced Test Driver (MTD-f)
+
+    # ========================================================================
+    # 9. External Knowledge (Books and Tablebases)
+    # ========================================================================
+    use_opening_book: bool = False
+    opening_book_path: str | None = None
+
+    use_endgame_tablebases: bool = False  # (EGTB, e.g., Syzygy)
+    egtb_path: str | None = None
+    egtb_probe_depth: int = 6  # Depth at which to start probing EGTB during search
 
 
 @dataclass
@@ -176,7 +191,7 @@ class EvaluationConfig:
 class EngineConfig:
     """Top-level configuration for the chess engine."""
 
-    minimax: SearchConfig = field(default_factory=SearchConfig)
+    search: SearchConfig = field(default_factory=SearchConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     search_depth: int = DEFAULT_DEPTH
 
@@ -191,11 +206,14 @@ class EngineConfig:
             raise ValueError(
                 f"Search depth must be at least 1, got {self.search_depth}"
             )
-        if self.search_depth > 20:
-            raise ValueError(f"Search depth too high (max 20), got {self.search_depth}")
+        # Increased max depth limit as modern engines can go much deeper than 20.
+        if self.search_depth > 128:
+            raise ValueError(
+                f"Search depth too high (max 128), got {self.search_depth}"
+            )
 
-        # Validate minimax configuration
-        self._validate_minimax_config()
+        # Validate search configuration (Basic value checks)
+        self._validate_search_config()
 
         # Validate evaluation configuration
         self._validate_evaluation_config()
@@ -431,33 +449,81 @@ class EngineConfig:
         parts: list[str] = []
         parts.append(f"Depth: {self.search_depth}")
 
-        parts.append(self._format_minimax_flags())
+        parts.append(self._format_search_flags())
         parts.append(self._format_evaluation_flags())
 
         return " | ".join(parts)
 
-    def _format_minimax_flags(self) -> str:
-        mm_flags: list[str] = []
-        if self.minimax.use_zobrist:
-            tt_flags = "TT/Zobrist"
-            if self.minimax.use_tt_aging:
-                tt_flags += "+Aging"
-            mm_flags.append(tt_flags)
-        if self.minimax.use_iddfs:
-            mm_flags.append("IDDFS")
-        if self.minimax.use_alpha_beta:
-            mm_flags.append("α-β")  # noqa: RUF001
-        if self.minimax.use_move_ordering:
-            mm_flags.append("MoveOrder")
-        if self.minimax.use_pvs:
-            mm_flags.append("PVS")
-        if self.minimax.use_lmr:
-            mm_flags.append("LMR")
+    def _format_search_flags(self) -> str:  # noqa: C901, PLR0912
+        s_flags: list[str] = []
+        cfg = self.search
 
-        if mm_flags:
-            formatted = ", ".join(mm_flags)
+        if cfg.use_alpha_beta:
+            s_flags.append("α-β")  # noqa: RUF001
+        else:
+            return (
+                "Search: [Base Minimax]"  # If Alpha-Beta is off, most else is off too.
+            )
+
+        if cfg.use_iddfs:
+            s_flags.append("IDDFS")
+
+        # Search Driver
+        if cfg.use_mtdf:
+            s_flags.append("MTD(f)")
+        elif cfg.use_pvs:
+            s_flags.append("PVS")
+            if cfg.use_aspiration_windows:
+                s_flags.append("AspWin")
+
+        # Memory
+        if cfg.use_transposition_table:
+            tt_flags = "TT"
+            if cfg.use_zobrist:
+                tt_flags += "/Z"
+            if cfg.use_tt_aging:
+                tt_flags += "+Age"
+            s_flags.append(tt_flags)
+            if cfg.use_iid:
+                s_flags.append("IID")
+
+        # Ordering
+        if cfg.use_move_ordering:
+            s_flags.append("MoveOrder")
+
+        # Pruning/Reductions
+        if cfg.use_lmr:
+            s_flags.append("LMR")
+        if cfg.use_null_move_pruning:
+            s_flags.append("NMP")
+        if cfg.use_futility_pruning:
+            s_flags.append("Futility")
+        if cfg.use_quiescence_search:
+            s_flags.append("QS")
+
+        # Parallelism
+        if cfg.use_parallel_search:
+            parallel_type = "Parallel"
+            if cfg.use_ybwc:
+                parallel_type = "YBWC"
+            elif cfg.use_dts:
+                parallel_type = "DTS"
+            elif cfg.use_lazy_smp:
+                parallel_type = "LazySMP"
+            elif cfg.use_naive_parallel:
+                parallel_type = "NaiveParallel"
+            s_flags.append(f"{parallel_type}[{cfg.num_threads}T]")
+
+        # External
+        if cfg.use_opening_book:
+            s_flags.append("Book")
+        if cfg.use_endgame_tablebases:
+            s_flags.append("EGTB")
+
+        if s_flags:
+            formatted = ", ".join(s_flags)
             return f"Search: [{formatted}]"
-        return "Search: [Base Minimax]"
+        return "Search: [Empty]"
 
     def _format_evaluation_flags(self) -> str:
         eval_parts: list[str] = [self.evaluation.evaluator_type.capitalize()]

@@ -36,6 +36,11 @@ class TestConfigValidation:
                     use_tt_aging=True,
                 )
             )
+        )
+        resolver = DependencyResolver(config)
+
+        with pytest.raises(DependencyResolutionError):
+            resolver.resolve()
 
 
 class TestPVSDependency:
@@ -54,11 +59,16 @@ class TestPVSDependency:
                     use_lmr=False,  # Turn off LMR since it requires alpha-beta
                 )
             )
+        )
+        resolver = DependencyResolver(config)
+
+        with pytest.raises(DependencyResolutionError):
+            resolver.resolve()
 
     def test_pvs_with_alpha_beta_enabled(self):
         """Test that PVS works properly when alpha-beta is enabled."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_alpha_beta=True,
                 use_pvs=True,
             )
@@ -85,7 +95,7 @@ class TestIterativeDeepening:
         # Disable TT and related features since we're disabling Zobrist
         # (TT requires Zobrist)
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_iddfs=True,
                 use_zobrist=False,
                 use_transposition_table=False,
@@ -109,7 +119,7 @@ class TestTimeLimit:
     def test_check_time_limit_flags_time_up(self):
         """Test that _check_time_limit sets time_up flag when time is exceeded."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 max_time=0.01,
             )
         )

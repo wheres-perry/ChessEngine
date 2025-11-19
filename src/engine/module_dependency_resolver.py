@@ -51,7 +51,8 @@ class DependencyResolver:
             config: Engine configuration to resolve dependencies for
         """
         self.config = config
-        self.search_config = config.minimax
+        # Accessing the search config via the updated attribute name 'search'
+        self.search_config = config.search
 
     def resolve(self) -> SearchConfig:
         """
@@ -144,7 +145,8 @@ class DependencyResolver:
         # Aspiration windows require alpha-beta
         if cfg.use_aspiration_windows and not cfg.use_alpha_beta:
             raise DependencyResolutionError(
-                "Aspiration windows require alpha-beta pruning"
+                "LMR requires dynamic move ordering (History or Killer moves) "
+                "to be effective."
             )
 
         # Null move pruning requires alpha-beta (Node H)
@@ -181,16 +183,26 @@ class DependencyResolver:
                 "Late Move Reduction (LMR) requires both alpha-beta pruning "
                 "and move ordering"
             )
+            self._check_dependency(
+                cfg.use_dts,
+                prerequisite_enabled=False,
+                message=f"DTS {reason}",
+            )
+            return
 
         # Hash move ordering requires move ordering + TT
         if cfg.use_hash_move_ordering and not cfg.use_move_ordering:
             raise DependencyResolutionError(
-                "Hash move ordering requires move ordering to be enabled"
+                "Parallel Search enabled but num_threads is not > 1."
             )
 
-        if cfg.use_hash_move_ordering and not cfg.use_transposition_table:
+    def _validate_external_knowledge(self) -> None:
+        """Validate Books and Tablebases."""
+        cfg = self.search_config
+
+        if cfg.use_opening_book and not cfg.opening_book_path:
             raise DependencyResolutionError(
-                "Hash move ordering requires transposition table"
+                "Opening Book enabled but opening_book_path is not specified."
             )
 
         # Static ordering features require move ordering

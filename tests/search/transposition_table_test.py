@@ -217,7 +217,7 @@ class TestTranspositionTableIntegration:
 
         # First search without TT (must also disable Zobrist since it requires TT)
         config_no_tt = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_zobrist=False,
                 use_transposition_table=False,
                 use_tt_aging=False,
@@ -232,7 +232,7 @@ class TestTranspositionTableIntegration:
 
         # Then search with TT
         config_with_tt = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=True,
                 max_time=None,  # No timeout for testing
@@ -252,7 +252,7 @@ class TestTranspositionTableIntegration:
         depth = 5
 
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_zobrist=True,
                 use_tt_aging=True,
                 max_time=None,  # No timeout for testing
