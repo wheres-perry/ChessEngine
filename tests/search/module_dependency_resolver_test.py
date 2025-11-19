@@ -170,13 +170,13 @@ class TestMoveOrderingDependencies:
     def test_hash_move_ordering_requires_transposition_table(self):
         """Test that hash move ordering requires transposition table."""
         config = EngineConfig()
-        config.minimax.use_hash_move_ordering = True
-        config.minimax.use_move_ordering = True
-        config.minimax.use_transposition_table = False
-        config.minimax.use_zobrist = (
+        config.search.use_hash_move_ordering = True
+        config.search.use_move_ordering = True
+        config.search.use_transposition_table = False
+        config.search.use_zobrist = (
             False  # Must also disable Zobrist since it requires TT
         )
-        config.minimax.use_tt_aging = False  # Must also disable TT aging
+        config.search.use_tt_aging = False  # Must also disable TT aging
 
         resolver = DependencyResolver(config)
 

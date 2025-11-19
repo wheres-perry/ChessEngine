@@ -204,7 +204,7 @@ class TestTranspositionTableIntegration:
             match="TT aging requires Zobrist hashing",
         ):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_zobrist=False, use_transposition_table=False, use_tt_aging=True
                 )
             )

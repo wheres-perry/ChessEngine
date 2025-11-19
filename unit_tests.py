@@ -36,7 +36,7 @@ class TestPassToPass:
     @pytest.fixture
     def config(self) -> EngineConfig:
         return EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_zobrist=False,
                 use_iddfs=False,
                 use_alpha_beta=True,
@@ -283,7 +283,7 @@ class TestMinimaxNeuralNetIntegration:
     @pytest.fixture
     def config(self) -> EngineConfig:
         return EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_zobrist=False,
                 use_iddfs=False,
                 use_alpha_beta=True,

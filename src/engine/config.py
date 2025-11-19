@@ -212,15 +212,15 @@ class EngineConfig:
                 f"Search depth too high (max 128), got {self.search_depth}"
             )
 
-        # Validate search configuration (Basic value checks)
-        self._validate_search_config()
+        # Validate search configuration (basic dependency checks)
+        self._validate_minimax_config()
 
         # Validate evaluation configuration
         self._validate_evaluation_config()
 
     def _validate_minimax_config(self) -> None:  # noqa: C901, PLR0912
         """Validate minimax-specific configuration (Tree 1 dependencies)."""
-        cfg = self.minimax
+        cfg = self.search
 
         # Validate timeout
         if cfg.max_time is not None and cfg.max_time <= 0:
@@ -442,7 +442,7 @@ class EngineConfig:
         ):
             raise ValueError("Evaluation caching requires full evaluation features")
 
-        if eval_config.use_eval_caching and not self.minimax.use_transposition_table:
+        if eval_config.use_eval_caching and not self.search.use_transposition_table:
             raise ValueError("Evaluation caching requires transposition table")
 
     def __str__(self) -> str:

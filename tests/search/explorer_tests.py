@@ -38,7 +38,7 @@ class TestExplorerInitialization:
         board = chess.Board()
         evaluator = MockEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=False,
                 use_iddfs=False,
@@ -94,7 +94,7 @@ class TestExplorerBasicSearch:
         board = chess.Board()
         evaluator = MockEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=False,
                 use_alpha_beta=False,
                 use_iddfs=False,
@@ -143,7 +143,7 @@ class TestExplorerPureMinimaxMode:
         board = chess.Board()
         evaluator = SimpleEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=False,
                 use_iddfs=False,
@@ -165,7 +165,7 @@ class TestExplorerPureMinimaxMode:
         evaluator = MockEvaluator(board, None)
 
         config_pure = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=False,
                 use_iddfs=False,
@@ -175,7 +175,7 @@ class TestExplorerPureMinimaxMode:
             )
         )
         config_ab = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_iddfs=False,
@@ -203,7 +203,7 @@ class TestExplorerAlphaBetaMode:
         board = chess.Board()
         evaluator = SimpleEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_iddfs=False,
@@ -224,7 +224,7 @@ class TestExplorerAlphaBetaMode:
         board = chess.Board()
         evaluator = MockEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_iddfs=False,
@@ -251,7 +251,7 @@ class TestExplorerIterativeDeepening:
         board = chess.Board()
         evaluator = SimpleEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_iddfs=True,
@@ -272,7 +272,7 @@ class TestExplorerIterativeDeepening:
         board = chess.Board()
         evaluator = SimpleEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_iddfs=False,
@@ -293,7 +293,7 @@ class TestExplorerIterativeDeepening:
         board = chess.Board()
         evaluator = SimpleEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_iddfs=True,
             )
@@ -314,7 +314,7 @@ class TestExplorerTranspositionTable:
         board = chess.Board()
         evaluator = MockEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_zobrist=True,
@@ -334,7 +334,7 @@ class TestExplorerTranspositionTable:
         evaluator = MockEvaluator(board, None)
 
         config_no_tt = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_zobrist=False,
@@ -343,7 +343,7 @@ class TestExplorerTranspositionTable:
             )
         )
         config_with_tt = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_zobrist=True,
@@ -369,7 +369,7 @@ class TestExplorerMoveOrdering:
         board = chess.Board()
         evaluator = MockEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_move_ordering=True,
@@ -387,7 +387,7 @@ class TestExplorerMoveOrdering:
         board = chess.Board()
         evaluator = MockEvaluator(board, None)
         config = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_move_ordering=False,
@@ -407,7 +407,7 @@ class TestExplorerMoveOrdering:
         evaluator = MockEvaluator(board, None)
 
         config_no_ordering = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_move_ordering=False,
@@ -416,7 +416,7 @@ class TestExplorerMoveOrdering:
             )
         )
         config_with_ordering = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_move_ordering=True,
@@ -532,13 +532,13 @@ class TestExplorerConsistency:
         evaluator = MockEvaluator(board, None)
 
         config1 = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=False,
             )
         )
         config2 = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
             )

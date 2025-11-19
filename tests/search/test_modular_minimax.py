@@ -19,7 +19,7 @@ class TestModularMinimaxConfigurations:
     def test_basic_minimax_only(self):
         """Test pure minimax without any optimizations."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=False,
                 use_iddfs=False,
@@ -65,7 +65,7 @@ class TestModularMinimaxConfigurations:
     def test_minimax_with_alpha_beta(self):
         """Test minimax with alpha-beta pruning."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=True,
                 use_iddfs=False,
@@ -104,7 +104,7 @@ class TestModularMinimaxConfigurations:
     def test_minimax_with_transposition_table(self):
         """Test minimax with TT and Zobrist (no alpha-beta)."""
         cfg = EngineConfig(
-            minimax=SearchConfig(
+            search=SearchConfig(
                 use_minimax=True,
                 use_alpha_beta=False,
                 use_iddfs=False,
@@ -173,7 +173,7 @@ class TestModularDependencyValidation:
             ValueError, match="All search optimizations require basic minimax"
         ):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=False,
                     use_alpha_beta=True,
                 )
@@ -183,7 +183,7 @@ class TestModularDependencyValidation:
         """Test that PVS requires alpha-beta."""
         with pytest.raises(ValueError, match="Principal Variation Search"):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=True,
                     use_alpha_beta=False,
                     use_iddfs=True,
@@ -199,7 +199,7 @@ class TestModularDependencyValidation:
         """Test that LMR requires both alpha-beta and move ordering."""
         with pytest.raises(ValueError, match="Late Move Reduction"):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=True,
                     use_alpha_beta=True,
                     use_move_ordering=False,
@@ -221,7 +221,7 @@ class TestModularDependencyValidation:
         """Test that transposition table requires Zobrist hashing."""
         with pytest.raises(ValueError, match="Transposition table requires Zobrist"):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=True,
                     use_transposition_table=True,
                     use_zobrist=False,
@@ -232,7 +232,7 @@ class TestModularDependencyValidation:
         """Test that Zobrist should only be enabled with TT."""
         with pytest.raises(ValueError, match="Zobrist hashing is only useful"):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=True,
                     use_zobrist=True,
                     use_transposition_table=False,
@@ -243,7 +243,7 @@ class TestModularDependencyValidation:
         """Test that IID requires both IDDFS and TT."""
         with pytest.raises(ValueError, match="Internal Iterative Deepening"):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=True,
                     use_iddfs=True,
                     use_iid=True,
@@ -258,7 +258,7 @@ class TestModularDependencyValidation:
         """Test that killer moves require both move ordering and alpha-beta."""
         with pytest.raises(ValueError, match="Killer heuristic"):
             EngineConfig(
-                minimax=SearchConfig(
+                search=SearchConfig(
                     use_minimax=True,
                     use_alpha_beta=False,
                     use_move_ordering=True,

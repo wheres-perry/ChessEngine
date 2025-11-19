@@ -52,7 +52,7 @@ class Minimax:
         """
         # Store full config
         self.config = config
-        minimax_config = config.minimax
+        minimax_config = config.search
 
         # Extract core flags
         self.use_minimax = minimax_config.use_minimax
