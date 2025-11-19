@@ -69,6 +69,10 @@ exclude = [
 ]
 
 [[tool.mypy.overrides]]
+module = "engine._core"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "engine.*"
 disallow_untyped_calls = false
 disallow_untyped_defs = false

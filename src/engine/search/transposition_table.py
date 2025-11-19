@@ -1,6 +1,8 @@
+"""Transposition table implementation leveraging incremental Zobrist hashing."""
+
 from typing import Literal, TypedDict
 
-import chess
+from engine._core import chess_engine_core as chess
 
 
 class TTEntry(TypedDict):

@@ -1,6 +1,6 @@
 """Helper functions for tests to reduce code duplication."""
 
-import chess
+from engine._core import chess_engine_core as chess
 
 
 def make_candidate_move(board: chess.Board, candidate_moves: list[str]) -> bool:
@@ -18,7 +18,7 @@ def make_candidate_move(board: chess.Board, candidate_moves: list[str]) -> bool:
         try:
             board.push_san(candidate_move)
             return True
-        except chess.IllegalMoveError:
+        except RuntimeError:
             continue
     return False
 

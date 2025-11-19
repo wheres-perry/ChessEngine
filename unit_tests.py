@@ -5,10 +5,11 @@
 
 from unittest.mock import Mock, MagicMock, patch
 
-import chess
 import torch
 import pytest
 from torch import nn
+
+from engine._core import chess_engine_core as chess
 
 from src.engine.config import EngineConfig, SearchConfig, EvaluationConfig
 from src.engine.evaluators.simple_nn_eval import (  # type: ignore[import-untyped]
@@ -170,7 +171,7 @@ class TestNeuralNetEvaluator:
 
     def test_board_updates(self, evaluator: NeuralNetEvaluator) -> None:
         """Test that board updates work correctly."""
-        new_board = chess.Board(
+        new_board = chess.Board.from_fen(
             "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
         )
         evaluator.update_board(new_board)
@@ -318,7 +319,7 @@ class TestMinimaxNeuralNetIntegration:
 
     def test_complex_position_search(self, config: EngineConfig) -> None:
         """Test search works from a complex middlegame position."""
-        board = chess.Board(
+        board = chess.Board.from_fen(
             "r3k2r/ppp2ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/R3K2R w KQkq - 0 1"
         )
         evaluator = NeuralNetEvaluator(board)
@@ -333,7 +334,7 @@ class TestMinimaxNeuralNetIntegration:
     def test_terminal_position_handling(self, config: EngineConfig) -> None:
         """Test that terminal positions are handled correctly."""
 
-        board = chess.Board(
+        board = chess.Board.from_fen(
             "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3"
         )
         evaluator = NeuralNetEvaluator(board)

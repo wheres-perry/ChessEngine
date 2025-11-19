@@ -4,6 +4,23 @@ Dependency resolver for chess engine search components.
 This module validates feature dependencies and resolves them into a set of
 flags that can be safely used by search engines. It ensures that features
 that depend on other features are only enabled when their dependencies are met.
+
+This is complementary to the EngineConfig validation - while EngineConfig
+validates at construction time, DependencyResolver provides runtime validation
+and can be used to verify configurations during search initialization.
+
+Tree 1: Move Exploration (Search) Optimizations
+A (Minimax) -> B (Alpha-Beta), C (IDDFS), D (Move Ordering), L (TT), I (Check Ext)
+B -> G (PVS), N (Quiescence)
+C + L -> M (IID)
+D -> E (Killer), F (History)
+D + B -> K (LMR), J (Futility)
+G -> H (NMP)
+
+Tree 2: State Evaluation Optimizations
+E0 (Material) -> E1 (PST) -> E2 (Tapered), E3 (Pawn), E4 (Mobility), E6 (SEE)
+E4 -> E5 (King Safety)
+E2 -> E9 (Endgame Tables)
 """
 
 import logging
@@ -22,7 +39,8 @@ class DependencyResolver:
     Resolves and validates feature dependencies for search engines.
 
     Takes an EngineConfig and validates that all feature dependencies are met,
-    returning the validated SearchConfig.
+    returning the validated SearchConfig. This provides an additional layer
+    of validation beyond the EngineConfig.__post_init__ validation.
     """
 
     def __init__(self, config: EngineConfig) -> None:
@@ -50,275 +68,120 @@ class DependencyResolver:
         return self.search_config
 
     def _validate_dependencies(self) -> None:
-        """
-        Validate that all feature dependencies are met.
-        """
-        # The order matters here. Core dependencies must be checked first.
-        self._validate_core_alpha_beta()
-        self._validate_transposition_table()
-
-        # Features relying on the core
-        self._validate_move_ordering()
-        self._validate_quiescence_search()
-        self._validate_search_refinements()
-        self._validate_pruning_and_reductions()
-        self._validate_extensions()
-        self._validate_parallelization()
-        self._validate_external_knowledge()
-
-        # Mutual exclusions must be checked last
-        self._validate_mutual_exclusions()
-
+        """Validate that all feature dependencies are met (Tree 1)."""
+        self._validate_core_dependencies()
+        self._validate_zobrist_dependencies()
+        self._validate_alpha_beta_dependencies()
+        self._validate_move_ordering_dependencies()
+        self._validate_search_refinement_dependencies()
         logger.debug("All feature dependencies validated successfully")
 
-    def _check_dependency(
-        self, feature_enabled: bool, prerequisite_enabled: bool, message: str
-    ) -> None:
-        """Helper to check a dependency and raise an error if not met."""
-        if feature_enabled and not prerequisite_enabled:
-            raise DependencyResolutionError(message)
-
-    # ========================================================================
-    # Dependency Validation Groups
-    # ========================================================================
-
-    def _validate_core_alpha_beta(self) -> None:
-        """Validate features that fundamentally rely on the Alpha-Beta framework."""
-        cfg = self.search_config
-        if cfg.use_alpha_beta:
-            return
-
-        # If Alpha-Beta is disabled, many optimizations are incompatible.
-        reason = "requires Alpha-Beta Pruning."
-        self._check_dependency(
-            cfg.use_move_ordering,
-            prerequisite_enabled=False,
-            message=f"Move Ordering {reason}",
-        )
-        self._check_dependency(
-            cfg.use_pvs,
-            prerequisite_enabled=False,
-            message=f"PVS {reason}",
-        )
-        self._check_dependency(
-            cfg.use_mtdf,
-            prerequisite_enabled=False,
-            message=f"MTD(f) {reason}",
-        )
-        self._check_dependency(
-            cfg.use_aspiration_windows,
-            prerequisite_enabled=False,
-            message=f"Aspiration Windows {reason}",
-        )
-        self._check_dependency(
-            cfg.use_null_move_pruning,
-            prerequisite_enabled=False,
-            message=f"Null Move Pruning {reason}",
-        )
-        self._check_dependency(
-            cfg.use_lmr,
-            prerequisite_enabled=False,
-            message=f"LMR {reason}",
-        )
-        self._check_dependency(
-            cfg.use_futility_pruning,
-            prerequisite_enabled=False,
-            message=f"Futility Pruning {reason}",
-        )
-        self._check_dependency(
-            cfg.use_razoring,
-            prerequisite_enabled=False,
-            message=f"Razoring {reason}",
-        )
-        self._check_dependency(
-            cfg.use_parallel_search,
-            prerequisite_enabled=False,
-            message=f"Parallel Search {reason}",
-        )
-        # QS relies on the AB framework (Stand-Pat mechanism)
-        self._check_dependency(
-            cfg.use_quiescence_search,
-            prerequisite_enabled=False,
-            message=f"Quiescence Search {reason}",
-        )
-
-    def _validate_transposition_table(self) -> None:
-        """Validate TT and Zobrist related dependencies."""
+    def _validate_core_dependencies(self) -> None:
+        """Validate core minimax dependencies (Node A)."""
         cfg = self.search_config
 
-        # Zobrist is required for TT
-        self._check_dependency(
-            cfg.use_transposition_table,
-            cfg.use_zobrist,
-            "Transposition table requires Zobrist hashing.",
-        )
+        if not cfg.use_minimax:
+            # If minimax is disabled, no other features should be enabled
+            advanced_features = [
+                cfg.use_alpha_beta,
+                cfg.use_iddfs,
+                cfg.use_move_ordering,
+                cfg.use_transposition_table,
+                cfg.use_check_extensions,
+            ]
+            if any(advanced_features):
+                raise DependencyResolutionError(
+                    "All search features require basic minimax to be enabled"
+                )
 
-        if not cfg.use_transposition_table:
-            # Ensure features requiring TT are off if TT is off
-            reason = "requires Transposition Table."
-            self._check_dependency(
-                cfg.use_tt_aging,
-                prerequisite_enabled=False,
-                message=f"TT Aging {reason}",
-            )
-            self._check_dependency(
-                cfg.use_iid,
-                prerequisite_enabled=False,
-                message=f"IID {reason}",
-            )
-            self._check_dependency(
-                cfg.use_mtdf,
-                prerequisite_enabled=False,
-                message=f"MTD(f) {reason}",
-            )
-            self._check_dependency(
-                cfg.use_singular_extensions,
-                prerequisite_enabled=False,
-                message=f"Singular Extensions {reason}",
-            )
-
-    def _validate_move_ordering(self) -> None:
-        """Validate move ordering related dependencies."""
+    def _validate_zobrist_dependencies(self) -> None:
+        """Validate Zobrist hashing related dependencies (Node L)."""
         cfg = self.search_config
 
-        if not cfg.use_move_ordering:
-            # If master switch is off, all sub-features must be off.
-            reason = "requires Move Ordering master switch."
-            self._check_dependency(
-                cfg.use_hash_move_ordering,
-                prerequisite_enabled=False,
-                message=f"Hash Move Ordering {reason}",
+        # TT requires Zobrist
+        if cfg.use_transposition_table and not cfg.use_zobrist:
+            raise DependencyResolutionError(
+                "Transposition table requires Zobrist hashing to be enabled"
             )
-            self._check_dependency(
-                cfg.use_mvv_lva,
-                prerequisite_enabled=False,
-                message=f"MVV-LVA {reason}",
-            )
-            self._check_dependency(
-                cfg.use_see_ordering,
-                prerequisite_enabled=False,
-                message=f"SEE Ordering {reason}",
-            )
-            self._check_dependency(
-                cfg.use_killer_moves,
-                prerequisite_enabled=False,
-                message=f"Killer Moves {reason}",
-            )
-            self._check_dependency(
-                cfg.use_history_heuristic,
-                prerequisite_enabled=False,
-                message=f"History Heuristic {reason}",
-            )
-            self._check_dependency(
-                cfg.use_countermove_heuristic,
-                prerequisite_enabled=False,
-                message=f"Countermove Heuristic {reason}",
-            )
-            return
 
-        # PVS efficiency relies heavily on move ordering
-        self._check_dependency(
-            cfg.use_pvs,
-            cfg.use_move_ordering,
-            "PVS requires Move Ordering to be effective.",
-        )
+        # TT requires minimax
+        if cfg.use_transposition_table and not cfg.use_minimax:
+            raise DependencyResolutionError(
+                "Transposition table requires basic minimax"
+            )
 
-        # Hash move ordering requires TT
-        self._check_dependency(
-            cfg.use_hash_move_ordering,
-            cfg.use_transposition_table,
-            "Hash move ordering requires Transposition Table.",
-        )
+        # TT aging requires Zobrist
+        if cfg.use_tt_aging and not cfg.use_zobrist:
+            raise DependencyResolutionError(
+                "TT aging requires Zobrist hashing to be enabled"
+            )
 
-        # Countermove often relies on History infrastructure
-        self._check_dependency(
-            cfg.use_countermove_heuristic,
-            cfg.use_history_heuristic,
-            "Countermove Heuristic usually depends on History Heuristic "
-            "implementation.",
-        )
+        # Zobrist is only useful with TT
+        if cfg.use_zobrist and not cfg.use_transposition_table:
+            raise DependencyResolutionError(
+                "Zobrist hashing should only be enabled with transposition table"
+            )
 
-        # LMR requires dynamic move ordering (History or Killer) to be effective.
-        if cfg.use_lmr and not (cfg.use_history_heuristic or cfg.use_killer_moves):
+    def _validate_alpha_beta_dependencies(self) -> None:
+        """Validate alpha-beta pruning related dependencies (Node B)."""
+        cfg = self.search_config
+
+        # Alpha-beta requires minimax
+        if cfg.use_alpha_beta and not cfg.use_minimax:
+            raise DependencyResolutionError("Alpha-beta pruning requires basic minimax")
+
+        # PVS requires alpha-beta + IDDFS (Node G)
+        if cfg.use_pvs and not (cfg.use_alpha_beta and cfg.use_iddfs):
+            raise DependencyResolutionError(
+                "Principal Variation Search requires both alpha-beta and IDDFS"
+            )
+
+        # Quiescence requires alpha-beta (Node N)
+        if cfg.use_quiescence_search and not cfg.use_alpha_beta:
+            raise DependencyResolutionError(
+                "Quiescence search requires alpha-beta pruning"
+            )
+
+        # Aspiration windows require alpha-beta
+        if cfg.use_aspiration_windows and not cfg.use_alpha_beta:
             raise DependencyResolutionError(
                 "LMR requires dynamic move ordering (History or Killer moves) "
                 "to be effective."
             )
 
-    def _validate_quiescence_search(self) -> None:
-        """Validate QS related dependencies."""
-        cfg = self.search_config
-
-        if not cfg.use_quiescence_search:
-            reason = "requires Quiescence Search."
-            self._check_dependency(
-                cfg.use_delta_pruning,
-                prerequisite_enabled=False,
-                message=f"Delta Pruning {reason}",
-            )
-            self._check_dependency(
-                cfg.use_see_pruning_in_qs,
-                prerequisite_enabled=False,
-                message=f"SEE Pruning in QS {reason}",
+        # Null move pruning requires alpha-beta (Node H)
+        if cfg.use_null_move_pruning and not cfg.use_alpha_beta:
+            raise DependencyResolutionError(
+                "Null move pruning requires alpha-beta pruning"
             )
 
-    def _validate_search_refinements(self) -> None:
-        """Validate search refinement dependencies."""
-        cfg = self.search_config
-
-        # Aspiration windows require IDDFS to establish bounds from previous iterations
-        self._check_dependency(
-            cfg.use_aspiration_windows,
-            cfg.use_iddfs,
-            "Aspiration Windows require Iterative Deepening (IDDFS).",
-        )
-
-        # Note: The original check for IID requiring IDDFS is removed, as IID primarily
-        # depends on the TT (checked in _validate_transposition_table).
-
-    def _validate_pruning_and_reductions(self) -> None:
-        """Validate pruning and reduction dependencies."""
-        cfg = self.search_config
-
-        # Extended futility depends on basic futility
-        self._check_dependency(
-            cfg.use_extended_futility_pruning,
-            cfg.use_futility_pruning,
-            "Extended Futility Pruning requires basic Futility Pruning.",
-        )
-
-        # ProbCut uses SEE to estimate outcomes
-        self._check_dependency(
-            cfg.use_probcut,
-            cfg.use_see_ordering,
-            "ProbCut requires SEE Ordering (Static Exchange Evaluation).",
-        )
-
-    def _validate_extensions(self) -> None:
-        # Currently, only Singular Extensions have a hard dependency (on TT),
-        # checked in _validate_transposition_table.
-        pass
-
-    def _validate_parallelization(self) -> None:
-        """Validate parallel search dependencies."""
-        cfg = self.search_config
-
-        if not cfg.use_parallel_search:
-            reason = "requires Parallel Search master switch."
-            self._check_dependency(
-                cfg.use_naive_parallel,
-                prerequisite_enabled=False,
-                message=f"Naive Parallel {reason}",
+        # Futility pruning variants require alpha-beta (Node J)
+        if cfg.use_futility_pruning and not cfg.use_alpha_beta:
+            raise DependencyResolutionError(
+                "Futility pruning requires alpha-beta pruning"
             )
-            self._check_dependency(
-                cfg.use_lazy_smp,
-                prerequisite_enabled=False,
-                message=f"Lazy SMP {reason}",
+        if cfg.use_extended_futility_pruning and not cfg.use_alpha_beta:
+            raise DependencyResolutionError(
+                "Extended futility pruning requires alpha-beta pruning"
             )
-            self._check_dependency(
-                cfg.use_ybwc,
-                prerequisite_enabled=False,
-                message=f"YBWC {reason}",
+        if cfg.use_reverse_futility_pruning and not cfg.use_alpha_beta:
+            raise DependencyResolutionError(
+                "Reverse futility pruning requires alpha-beta pruning"
+            )
+
+    def _validate_move_ordering_dependencies(self) -> None:
+        """Validate move ordering related dependencies (Nodes D, E, F)."""
+        cfg = self.search_config
+
+        # Move ordering requires minimax (Node D)
+        if cfg.use_move_ordering and not cfg.use_minimax:
+            raise DependencyResolutionError("Move ordering requires basic minimax")
+
+        # LMR requires alpha-beta + move ordering (Node K)
+        if cfg.use_lmr and not (cfg.use_alpha_beta and cfg.use_move_ordering):
+            raise DependencyResolutionError(
+                "Late Move Reduction (LMR) requires both alpha-beta pruning "
+                "and move ordering"
             )
             self._check_dependency(
                 cfg.use_dts,
@@ -327,8 +190,8 @@ class DependencyResolver:
             )
             return
 
-        # If parallel search is on, threads must be > 1
-        if cfg.num_threads <= 1:
+        # Hash move ordering requires move ordering + TT
+        if cfg.use_hash_move_ordering and not cfg.use_move_ordering:
             raise DependencyResolutionError(
                 "Parallel Search enabled but num_threads is not > 1."
             )
@@ -342,44 +205,57 @@ class DependencyResolver:
                 "Opening Book enabled but opening_book_path is not specified."
             )
 
-        if cfg.use_endgame_tablebases and not cfg.egtb_path:
-            raise DependencyResolutionError(
-                "Endgame Tablebases (EGTB) enabled but egtb_path is not specified."
-            )
+        # Static ordering features require move ordering
+        static_ordering_features = [
+            (cfg.use_mvv_lva, "MVV-LVA ordering"),
+            (cfg.use_see_ordering, "SEE ordering"),
+        ]
 
-    # ========================================================================
-    # Mutual Exclusion Validation
-    # ========================================================================
+        for feature_enabled, feature_name in static_ordering_features:
+            if feature_enabled and not cfg.use_move_ordering:
+                raise DependencyResolutionError(
+                    f"{feature_name} requires move ordering to be enabled"
+                )
 
-    def _validate_mutual_exclusions(self) -> None:
-        """Ensure mutually exclusive features are not enabled simultaneously."""
+        # Killer and history heuristics require move ordering + alpha-beta (Nodes E, F)
+        dynamic_ordering_features = [
+            (cfg.use_killer_moves, "Killer moves"),
+            (cfg.use_history_heuristic, "History heuristic"),
+            (cfg.use_countermove_heuristic, "Countermove heuristic"),
+        ]
+
+        for feature_enabled, feature_name in dynamic_ordering_features:
+            if feature_enabled and not (cfg.use_move_ordering and cfg.use_alpha_beta):
+                raise DependencyResolutionError(
+                    f"{feature_name} requires both move ordering and alpha-beta pruning"
+                )
+
+    def _validate_search_refinement_dependencies(self) -> None:
+        """Validate search refinement related dependencies (Nodes C, M, N)."""
         cfg = self.search_config
 
-        # 1. Search Drivers (MTD(f) vs PVS/Aspiration)
-        # MTD(f) is an alternative driver to PVS and Aspiration Windows.
-        if cfg.use_mtdf and (cfg.use_pvs or cfg.use_aspiration_windows):
+        # IDDFS requires minimax (Node C)
+        if cfg.use_iddfs and not cfg.use_minimax:
             raise DependencyResolutionError(
-                "MTD(f) is mutually exclusive with PVS and Aspiration Windows. "
-                "Enable only one search driver approach."
+                "Iterative Deepening requires basic minimax"
             )
 
-        # 2. Parallel Algorithms
-        if cfg.use_parallel_search:
-            parallel_algo_group = [
-                (cfg.use_ybwc, "YBWC"),
-                (cfg.use_dts, "DTS"),
-                (cfg.use_lazy_smp, "Lazy SMP"),
-                (cfg.use_naive_parallel, "Naive Parallel"),
-            ]
-            enabled_algos = [name for enabled, name in parallel_algo_group if enabled]
+        # IID requires IDDFS + TT (Node M)
+        if cfg.use_iid and not (cfg.use_iddfs and cfg.use_transposition_table):
+            raise DependencyResolutionError(
+                "Internal Iterative Deepening (IID) requires both IDDFS and "
+                "transposition table"
+            )
 
-            if len(enabled_algos) > 1:
-                raise DependencyResolutionError(
-                    f"Parallel algorithms are mutually exclusive. Cannot enable "
-                    f"{', '.join(enabled_algos)} simultaneously."
-                )
-            if len(enabled_algos) == 0:
-                raise DependencyResolutionError(
-                    "Parallel Search is enabled, but no specific parallel algorithm "
-                    "(e.g., YBWC, Lazy SMP) is selected."
-                )
+        # Quiescence search extensions (Node N)
+        if cfg.use_delta_pruning and not cfg.use_quiescence_search:
+            raise DependencyResolutionError("Delta pruning requires quiescence search")
+
+        if cfg.use_see_pruning_in_qs and not cfg.use_quiescence_search:
+            raise DependencyResolutionError(
+                "SEE pruning in QS requires quiescence search"
+            )
+
+        # Check extensions require minimax (Node I)
+        if cfg.use_check_extensions and not cfg.use_minimax:
+            raise DependencyResolutionError("Check extensions require basic minimax")

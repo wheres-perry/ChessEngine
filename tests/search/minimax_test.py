@@ -9,30 +9,32 @@ zobrist_test.py by covering features not tested elsewhere.
 import logging
 import time
 
-import chess
 import pytest
 
+from engine._core import chess_engine_core as chess
 from src.engine.config import EngineConfig, SearchConfig
-from src.engine.evaluators.mock_eval import MockEval
+from src.engine.evaluators import MockEvaluator
 from src.engine.search.minimax import Minimax
 
 
 class TestConfigValidation:
     """Test validation of EngineConfig during Minimax initialization."""
 
-    def test_tt_aging_without_tt_raises(self):
-        """Test that enabling TT aging without TT enabled raises an error."""
-        # The validation happens in DependencyResolver.resolve(), not in EngineConfig
+    def test_tt_aging_without_zobrist_raises(self):
+        """Test that enabling TT aging without Zobrist hashing raises a ValueError."""
+        # The validation happens in EngineConfig.__post_init__, not in Minimax
+        # Since TT requires Zobrist, disabling Zobrist also requires disabling TT
 
-        from src.engine.module_dependency_resolver import (
-            DependencyResolutionError,
-            DependencyResolver,
-        )
-
-        config = EngineConfig(
-            search=SearchConfig(
-                use_transposition_table=False,
-                use_tt_aging=True,
+        with pytest.raises(
+            ValueError,
+            match="TT aging requires Zobrist hashing",
+        ):
+            EngineConfig(
+                minimax=SearchConfig(
+                    use_zobrist=False,
+                    use_transposition_table=False,
+                    use_tt_aging=True,
+                )
             )
         )
         resolver = DependencyResolver(config)
@@ -46,17 +48,16 @@ class TestPVSDependency:
 
     def test_pvs_validation_error(self):
         """Test that enabling PVS without alpha-beta pruning raises an error."""
-        from src.engine.module_dependency_resolver import (
-            DependencyResolutionError,
-            DependencyResolver,
-        )
-
-        config = EngineConfig(
-            search=SearchConfig(
-                use_alpha_beta=False,
-                use_move_ordering=False,  # Turn off move ordering since it requires alpha-beta
-                use_pvs=True,
-                use_lmr=False,  # Turn off LMR since it requires alpha-beta
+        with pytest.raises(
+            ValueError,
+            match=r"Principal Variation Search .* requires alpha-beta pruning",
+        ):
+            EngineConfig(
+                minimax=SearchConfig(
+                    use_alpha_beta=False,
+                    use_pvs=True,
+                    use_lmr=False,  # Turn off LMR since it requires alpha-beta
+                )
             )
         )
         resolver = DependencyResolver(config)
@@ -72,7 +73,7 @@ class TestPVSDependency:
                 use_pvs=True,
             )
         )
-        engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
+        engine = Minimax(chess.Board(), MockEvaluator(chess.Board()), cfg)
         assert engine.use_pvs is True
 
 
@@ -91,15 +92,20 @@ class TestIterativeDeepening:
 
         monkeypatch.setattr(Minimax, "_search_fixed_depth", fake_search)
 
+        # Disable TT and related features since we're disabling Zobrist
+        # (TT requires Zobrist)
         cfg = EngineConfig(
             search=SearchConfig(
                 use_iddfs=True,
                 use_zobrist=False,
+                use_transposition_table=False,
                 use_tt_aging=False,
+                use_hash_move_ordering=False,  # Requires TT
+                use_iid=False,  # Requires IDDFS + TT
                 max_time=None,
             )
         )
-        engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
+        engine = Minimax(chess.Board(), MockEvaluator(chess.Board()), cfg)
         score, move = engine.find_top_move(depth=4)
 
         assert called == [1, 2, 3, 4]
@@ -117,7 +123,7 @@ class TestTimeLimit:
                 max_time=0.01,
             )
         )
-        engine = Minimax(chess.Board(), MockEval(chess.Board()), cfg)
+        engine = Minimax(chess.Board(), MockEvaluator(chess.Board()), cfg)
         # Simulate search starting in the past
         engine.start_time = time.time() - 1.0
         assert engine._check_time_limit() is True
