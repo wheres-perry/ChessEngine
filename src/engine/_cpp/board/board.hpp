@@ -56,19 +56,21 @@ struct StateInfo {
   Move move{};
   PieceType moving_piece{PieceType::PAWN};
   Color mover{Color::WHITE};
-  bool was_capture{false};
   PieceType captured_piece{PieceType::PAWN};
   Color captured_color{Color::BLACK};
   uint8_t captured_square{64};
-  bool was_en_passant{false};
-  bool was_castling{false};
-  bool was_kingside_castle{false};
-  bool was_promotion{false};
   uint8_t previous_castling_rights{0};
   int8_t previous_en_passant_square{-1};
   uint8_t previous_halfmove_clock{0};
   uint16_t previous_fullmove_number{1};
-  bool previous_side_to_move{true};
+
+  // Bitfields packed into 1 byte
+  bool was_capture : 1 {false};
+  bool was_en_passant : 1 {false};
+  bool was_castling : 1 {false};
+  bool was_kingside_castle : 1 {false};
+  bool was_promotion : 1 {false};
+  bool previous_side_to_move : 1 {true};
 };
 
 // Helpers for square metadata
@@ -189,6 +191,9 @@ class Board {
   // Feature extraction (placeholder)
   [[nodiscard]] std::vector<float> to_half_kp_features() const;
 
+  // Cached access to attacked squares
+  [[nodiscard]] Bitboard get_attacked_squares(Color color) const;
+
   [[nodiscard]] std::string print_move(const Move& move) const;
 
  private:
@@ -209,6 +214,13 @@ class Board {
   uint8_t halfmove_clock = 0;     // For 50-move rule
   uint16_t fullmove_number = 1;   // Increments after Black's move
   std::vector<StateInfo> state_history;
+
+  // Cached attacked squares for performance
+  // Mutable to allow lazy update in const methods
+  mutable std::array<Bitboard, 2> cached_attacked_by_{0, 0};
+  mutable std::array<bool, 2> attacked_squares_valid_{false, false};
+
+  void update_attacked_squares(Color color) const;
 };
 
 // Helper functions for move formatting (made inline with definitions)
@@ -267,6 +279,8 @@ inline void Board::clear() noexcept {
   halfmove_clock = 0;
   fullmove_number = 1;
   state_history.clear();
+  attacked_squares_valid_[0] = false;
+  attacked_squares_valid_[1] = false;
 }
 
 inline Board Board::from_fen(const std::string& fen) noexcept {

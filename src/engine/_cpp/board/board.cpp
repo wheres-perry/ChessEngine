@@ -421,19 +421,33 @@ std::string Board::pretty() const {
 }
 
 void Board::push(const Move& move) {
-  StateInfo state{};
-  apply_move(move, &state);
-  state_history.push_back(state);
+  // Optimized push: construct state directly in history vector
+  state_history.emplace_back();
+  apply_move(move, &state_history.back());
 }
 
 Move Board::pop() {
   if (state_history.empty()) {
     throw std::runtime_error("Cannot pop from an empty move stack");
   }
-  StateInfo state = state_history.back();
+  // Optimized pop: undo using reference before removing
+  undo_move(state_history.back());
+  Move move = state_history.back().move;
   state_history.pop_back();
-  undo_move(state);
-  return state.move;
+  return move;
+}
+
+Bitboard Board::get_attacked_squares(Color color) const {
+  uint8_t idx = static_cast<uint8_t>(color);
+  if (!attacked_squares_valid_[idx]) {
+    cached_attacked_by_[idx] = ::compute_attacked_squares(*this, color);
+    attacked_squares_valid_[idx] = true;
+  }
+  return cached_attacked_by_[idx];
+}
+
+void Board::update_attacked_squares(Color color) const {
+  (void)get_attacked_squares(color); // Force update via getter
 }
 
 Move Board::push_san(const std::string& san) {
@@ -655,6 +669,8 @@ void Board::apply_move(const Move& move, StateInfo* state) noexcept {
   }
 
   side_to_move = !side_to_move;
+  attacked_squares_valid_[0] = false;
+  attacked_squares_valid_[1] = false;
 }
 
 void Board::undo_move(const StateInfo& state) noexcept {
@@ -675,6 +691,8 @@ void Board::undo_move(const StateInfo& state) noexcept {
   halfmove_clock = state.previous_halfmove_clock;
   fullmove_number = state.previous_fullmove_number;
   side_to_move = state.previous_side_to_move;
+  attacked_squares_valid_[0] = false;
+  attacked_squares_valid_[1] = false;
 
   // Remove moving piece from destination
   if (state.was_promotion) {

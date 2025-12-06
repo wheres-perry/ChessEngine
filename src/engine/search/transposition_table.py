@@ -100,11 +100,11 @@ class TranspositionTable:
             return None
 
         # Check if entry is too old if aging is enabled
-        if self.use_tt_aging and (
-            self.current_age < entry["age"]
-            or (entry["age"] < self.current_age - self.MAX_AGE_DIFF)
-        ):
-            return None
+        if self.use_tt_aging:
+            entry_age = entry["age"]
+            age_diff = self.current_age - entry_age
+            if age_diff < 0 or age_diff > self.MAX_AGE_DIFF:
+                return None
 
         return entry["best_move"]
 

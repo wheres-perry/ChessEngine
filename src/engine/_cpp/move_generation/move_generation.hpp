@@ -22,7 +22,7 @@ inline constexpr int popcount(Bitboard bb) noexcept {
                                        int num_dirs,
                                        Bitboard occupied) noexcept;
 
-[[nodiscard]] Bitboard get_attacked_squares(const Board& board,
+[[nodiscard]] Bitboard compute_attacked_squares(const Board& board,
                                             Color by_color) noexcept;
 
 [[nodiscard]] bool is_in_check(const Board& board, Color us) noexcept;

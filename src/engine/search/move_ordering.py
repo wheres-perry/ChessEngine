@@ -39,6 +39,10 @@ class MoveOrderer:
     KILLER_SCORE = 9000
     HISTORY_MAX_SCORE = 5000
 
+    # Fast lookup array for MVV-LVA (P=0, N=1, B=2, R=3, Q=4, K=5)
+    # Used to avoid dictionary lookups in the critical loop
+    PIECE_VALUES_FLAT = [1, 3, 3, 5, 9, 0]
+
     def __init__(
         self,
         board: chess.Board,
@@ -173,20 +177,32 @@ class MoveOrderer:
 
     def _score_mvv_lva(self, move: chess.Move) -> float:
         """Score capture using MVV-LVA heuristic."""
-        victim_value = self._get_piece_value(move.to_square)
-        aggressor_value = self._get_piece_value(move.from_square)
+        # Optimized implementation avoiding helper method overhead
+        victim = self.board.piece_at(move.to_square)
+        if not victim:
+            # En passant capture (victim not on to_square)
+            if self.board.is_en_passant(move):
+                victim_val = 1  # Pawn value
+            else:
+                return 8000.0  # Should not happen for is_capture=True
+        else:
+            victim_val = self.PIECE_VALUES_FLAT[int(victim.type)]
 
-        if victim_value and aggressor_value:
-            # Higher score for capturing valuable pieces with cheap pieces
-            return 8000.0 + self.MVV_LVA_MULTIPLIER * victim_value - aggressor_value
+        aggressor = self.board.piece_at(move.from_square)
+        if aggressor:
+            aggressor_val = self.PIECE_VALUES_FLAT[int(aggressor.type)]
+        else:
+            aggressor_val = 1  # Fallback (should not happen)
 
-        return 8000.0
+        return 8000.0 + self.MVV_LVA_MULTIPLIER * victim_val - aggressor_val
 
     def _get_history_score(self, move: chess.Move) -> float:
         """Get history heuristic score for move."""
-        history_count = self.history_table[move.from_square][move.to_square]
-        # Normalize to reasonable range
-        return float(min(history_count, self.HISTORY_MAX_SCORE))
+        score = self.history_table[move.from_square][move.to_square]
+        # Clamp without function call overhead
+        return float(
+            score if score <= self.HISTORY_MAX_SCORE else self.HISTORY_MAX_SCORE
+        )
 
     # =========================================================================
     # Killer Moves (Node E)
@@ -194,9 +210,8 @@ class MoveOrderer:
 
     def _is_killer(self, move: chess.Move, depth: int) -> bool:
         """Check if move is a killer move at this depth."""
-        if depth not in self.killer_moves:
-            return False
-        return move in self.killer_moves[depth]
+        killers = self.killer_moves.get(depth)
+        return killers is not None and move in killers
 
     def add_killer_move(self, move: chess.Move, depth: int) -> None:
         """Add a killer move at the given depth.
