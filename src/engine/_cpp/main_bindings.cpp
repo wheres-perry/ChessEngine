@@ -3,10 +3,10 @@
 namespace py = pybind11;
 
 // Forward declarations for each component's bindings
-void init_board_bindings(py::module_& m);
-void init_movegen_bindings(py::module_& m);
-void init_search_bindings(py::module_& m);
-void bind_halfkp(py::module_& m);
+void init_board_bindings(py::module_ &m);
+void init_movegen_bindings(py::module_ &m);
+void init_search_bindings(py::module_ &m);
+void bind_halfkp(py::module_ &m);
 
 PYBIND11_MODULE(chess_engine_core, m) {
   m.doc() = "High-performance C++ chess engine core components";

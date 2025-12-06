@@ -11,7 +11,7 @@ Supports multiple heuristics from Tree 1 (Move Exploration):
 - Countermove heuristic
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from engine._core import chess_engine_core as chess
 from src.engine.config import SearchConfig
@@ -41,7 +41,7 @@ class MoveOrderer:
 
     # Fast lookup array for MVV-LVA (P=0, N=1, B=2, R=3, Q=4, K=5)
     # Used to avoid dictionary lookups in the critical loop
-    PIECE_VALUES_FLAT = [1, 3, 3, 5, 9, 0]
+    PIECE_VALUES_FLAT: ClassVar[list[int]] = [1, 3, 3, 5, 9, 0]
 
     def __init__(
         self,
@@ -189,10 +189,7 @@ class MoveOrderer:
             victim_val = self.PIECE_VALUES_FLAT[int(victim.type)]
 
         aggressor = self.board.piece_at(move.from_square)
-        if aggressor:
-            aggressor_val = self.PIECE_VALUES_FLAT[int(aggressor.type)]
-        else:
-            aggressor_val = 1  # Fallback (should not happen)
+        aggressor_val = self.PIECE_VALUES_FLAT[int(aggressor.type)] if aggressor else 1
 
         return 8000.0 + self.MVV_LVA_MULTIPLIER * victim_val - aggressor_val
 

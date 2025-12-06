@@ -81,7 +81,6 @@ class TestRandomGameParity:
             cpp_board = core.Board()
             py_board = pychess.Board()
 
-            moves_made = 0
             game_over = False
 
             for move_num in range(MAX_MOVES_PER_GAME):
@@ -96,11 +95,13 @@ class TestRandomGameParity:
                     only_in_py = py_moves - cpp_moves
 
                     pytest.fail(
-                        f"Legal move mismatch in game {game_num + 1}, move {move_num + 1}!\n"
+                        f"Legal move mismatch in game {game_num + 1}, "
+                        f"move {move_num + 1}!\n"
                         f"FEN: {cpp_board.fen()}\n"
                         f"Only in C++: {sorted(only_in_cpp)}\n"
                         f"Only in python-chess: {sorted(only_in_py)}\n"
-                        f"C++ has {len(cpp_moves)} moves, python-chess has {len(py_moves)} moves"
+                        f"C++ has {len(cpp_moves)} moves, python-chess has "
+                        f"{len(py_moves)} moves"
                     )
 
                 total_positions_checked += 1
@@ -129,12 +130,11 @@ class TestRandomGameParity:
                     or cpp_fen_parts[2] != py_fen_parts[2]
                 ):  # Castling
                     pytest.fail(
-                        f"Board state mismatch after move {chosen_uci} in game {game_num + 1}!\n"
+                        f"Board state mismatch after move {chosen_uci} in "
+                        f"game {game_num + 1}!\n"
                         f"C++ FEN:  {cpp_board.fen()}\n"
                         f"Py FEN:   {py_board.fen()}"
                     )
-
-                moves_made += 1
 
             games_completed += 1
 
@@ -156,7 +156,7 @@ class TestRandomGameParity:
         """
         num_games = 20
 
-        for game_num in range(num_games):
+        for _game_num in range(num_games):
             cpp_board = core.Board()
             py_board = pychess.Board()
 
@@ -165,7 +165,7 @@ class TestRandomGameParity:
                 py_moves = get_pychess_legal_moves_uci(py_board)
 
                 assert cpp_moves == py_moves, (
-                    f"Move mismatch at game {game_num + 1}, move {move_num + 1}"
+                    f"Move mismatch at game {_game_num + 1}, move {move_num + 1}"
                 )
 
                 if not cpp_moves:
@@ -188,7 +188,7 @@ class TestRandomGameParity:
         num_games = 50
         checks_found = 0
 
-        for game_num in range(num_games):
+        for _game_num in range(num_games):
             cpp_board = core.Board()
             py_board = pychess.Board()
 
@@ -223,7 +223,7 @@ class TestRandomGameParity:
         num_games = 30
         captures_checked = 0
 
-        for game_num in range(num_games):
+        for _game_num in range(num_games):
             cpp_board = core.Board()
             py_board = pychess.Board()
 
@@ -263,7 +263,7 @@ class TestRandomGameParity:
         num_games = 50
         castling_moves_found = 0
 
-        for game_num in range(num_games):
+        for _game_num in range(num_games):
             cpp_board = core.Board()
             py_board = pychess.Board()
 
@@ -309,7 +309,8 @@ class TestSpecificPositionsParity:
         [
             # Complex middlegame positions
             "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
-            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",  # KiwiPete
+            # KiwiPete
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
             # Positions with en passant available
             "rnbqkbnr/pppp1ppp/8/4pP2/8/8/PPPPP1PP/RNBQKBNR w KQkq e6 0 3",
             # Positions with limited castling rights

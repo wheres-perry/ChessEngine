@@ -6,64 +6,68 @@
 #include <cstdint>
 #include <cstdlib>
 #include <optional>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 #include "../move_generation/move_generation.hpp"
 
 // Helper function to get the piece type at a square
-[[nodiscard]] inline PieceType get_piece_at(
-    const std::array<Bitboard, NUM_PIECE_TYPES>& piece_bbs,
-    Bitboard square_bb) noexcept {
+[[nodiscard]] inline PieceType
+get_piece_at(const std::array<Bitboard, NUM_PIECE_TYPES> &piece_bbs,
+             Bitboard square_bb) noexcept {
   // Use direct bit tests instead of loop for common pieces
-  if (piece_bbs[0] & square_bb) return PieceType::PAWN;
-  if (piece_bbs[1] & square_bb) return PieceType::KNIGHT;
-  if (piece_bbs[2] & square_bb) return PieceType::BISHOP;
-  if (piece_bbs[3] & square_bb) return PieceType::ROOK;
-  if (piece_bbs[4] & square_bb) return PieceType::QUEEN;
-  if (piece_bbs[5] & square_bb) return PieceType::KING;
+  if (piece_bbs[0] & square_bb)
+    return PieceType::PAWN;
+  if (piece_bbs[1] & square_bb)
+    return PieceType::KNIGHT;
+  if (piece_bbs[2] & square_bb)
+    return PieceType::BISHOP;
+  if (piece_bbs[3] & square_bb)
+    return PieceType::ROOK;
+  if (piece_bbs[4] & square_bb)
+    return PieceType::QUEEN;
+  if (piece_bbs[5] & square_bb)
+    return PieceType::KING;
 
-  return static_cast<PieceType>(NUM_PIECE_TYPES);  // Empty square
+  return static_cast<PieceType>(NUM_PIECE_TYPES); // Empty square
 }
 
 // Helper to get color at a square (assumes occupied)
-[[nodiscard]] inline Color get_color_at(
-    const std::array<Bitboard, NUM_COLORS>& color_bbs,
-    Bitboard square_bb) noexcept {
+[[nodiscard]] inline Color
+get_color_at(const std::array<Bitboard, NUM_COLORS> &color_bbs,
+             Bitboard square_bb) noexcept {
   return (color_bbs[0] & square_bb) ? Color::WHITE : Color::BLACK;
 }
 
 [[nodiscard]] inline PieceType piece_type_from_char(char c) {
   switch (std::tolower(static_cast<unsigned char>(c))) {
-    case 'n':
-      return PieceType::KNIGHT;
-    case 'b':
-      return PieceType::BISHOP;
-    case 'r':
-      return PieceType::ROOK;
-    case 'q':
-      return PieceType::QUEEN;
-    case 'k':
-      return PieceType::KING;
-    default:
-      return PieceType::PAWN;
+  case 'n':
+    return PieceType::KNIGHT;
+  case 'b':
+    return PieceType::BISHOP;
+  case 'r':
+    return PieceType::ROOK;
+  case 'q':
+    return PieceType::QUEEN;
+  case 'k':
+    return PieceType::KING;
+  default:
+    return PieceType::PAWN;
   }
 }
 
-[[nodiscard]] inline bool is_file_char(char c) {
-  return c >= 'a' && c <= 'h';
-}
+[[nodiscard]] inline bool is_file_char(char c) { return c >= 'a' && c <= 'h'; }
 
-[[nodiscard]] inline bool is_rank_char(char c) {
-  return c >= '1' && c <= '8';
-}
+[[nodiscard]] inline bool is_rank_char(char c) { return c >= '1' && c <= '8'; }
 
 char Piece::symbol() const noexcept {
-  if (!valid) return '.';
+  if (!valid)
+    return '.';
   static const char symbols[] = {'p', 'n', 'b', 'r', 'q', 'k'};
   char c = symbols[static_cast<uint8_t>(type)];
-  if (color == Color::WHITE) c = static_cast<char>(std::toupper(c));
+  if (color == Color::WHITE)
+    c = static_cast<char>(std::toupper(c));
   return c;
 }
 
@@ -77,8 +81,7 @@ std::optional<Piece> Board::piece_at(uint8_t square) const noexcept {
   return Piece{pt, color, true};
 }
 
-std::vector<uint8_t> Board::pieces(PieceType pt,
-                                   Color color) const noexcept {
+std::vector<uint8_t> Board::pieces(PieceType pt, Color color) const noexcept {
   Bitboard bb = get_piece_bb(pt, color);
   std::vector<uint8_t> squares;
   squares.reserve(popcount(bb));
@@ -91,7 +94,8 @@ std::vector<uint8_t> Board::pieces(PieceType pt,
 
 std::optional<uint8_t> Board::king(Color color) const noexcept {
   Bitboard king_bb = get_piece_bb(PieceType::KING, color);
-  if (!king_bb) return std::nullopt;
+  if (!king_bb)
+    return std::nullopt;
   return static_cast<uint8_t>(__builtin_ctzll(king_bb));
 }
 
@@ -106,39 +110,44 @@ bool Board::has_queenside_castling_rights(Color color) const noexcept {
 }
 
 std::optional<uint8_t> Board::ep_square() const noexcept {
-  if (en_passant_square == -1) return std::nullopt;
+  if (en_passant_square == -1)
+    return std::nullopt;
   return static_cast<uint8_t>(en_passant_square);
 }
 
-bool Board::is_en_passant(const Move& move) const noexcept {
-  if (en_passant_square == -1) return false;
-  if (move.to != static_cast<uint8_t>(en_passant_square)) return false;
+bool Board::is_en_passant(const Move &move) const noexcept {
+  if (en_passant_square == -1)
+    return false;
+  if (move.to != static_cast<uint8_t>(en_passant_square))
+    return false;
   auto piece = piece_at(move.from);
   return piece && piece->type == PieceType::PAWN &&
          !piece_at(move.to).has_value();
 }
 
-bool Board::is_capture(const Move& move) const noexcept {
+bool Board::is_capture(const Move &move) const noexcept {
   Bitboard to_bb = square_bitboard(move.to);
-  Color us =
-      (color_bitboards[0] & square_bitboard(move.from)) ? Color::WHITE : Color::BLACK;
-  uint8_t them_idx = static_cast<uint8_t>(us == Color::WHITE ? Color::BLACK
-                                                             : Color::WHITE);
-  if (color_bitboards[them_idx] & to_bb) return true;
+  Color us = (color_bitboards[0] & square_bitboard(move.from)) ? Color::WHITE
+                                                               : Color::BLACK;
+  uint8_t them_idx =
+      static_cast<uint8_t>(us == Color::WHITE ? Color::BLACK : Color::WHITE);
+  if (color_bitboards[them_idx] & to_bb)
+    return true;
   return is_en_passant(move);
 }
 
-bool Board::is_castling(const Move& move) const noexcept {
+bool Board::is_castling(const Move &move) const noexcept {
   auto piece = piece_at(move.from);
-  if (!piece || piece->type != PieceType::KING) return false;
+  if (!piece || piece->type != PieceType::KING)
+    return false;
   return std::abs(static_cast<int>(move.to) - static_cast<int>(move.from)) == 2;
 }
 
-bool Board::is_kingside_castling(const Move& move) const noexcept {
+bool Board::is_kingside_castling(const Move &move) const noexcept {
   return is_castling(move) && move.to > move.from;
 }
 
-bool Board::is_queenside_castling(const Move& move) const noexcept {
+bool Board::is_queenside_castling(const Move &move) const noexcept {
   return is_castling(move) && move.to < move.from;
 }
 
@@ -147,16 +156,16 @@ bool Board::is_check() const noexcept {
   return is_in_check(*this, us);
 }
 
-std::string Board::print_move(const Move& move) const {
+std::string Board::print_move(const Move &move) const {
   return move_to_string(move, *this);
 }
 
 // Load FEN string - optimized but still handles all cases
-void Board::load_fen(const std::string& fen) {
+void Board::load_fen(const std::string &fen) {
   clear();
 
   // Fast parsing using C-style approach
-  const char* ptr = fen.c_str();
+  const char *ptr = fen.c_str();
   int8_t rank = 7, file = 0;
 
   // Parse piece placement
@@ -174,28 +183,28 @@ void Board::load_fen(const std::string& fen) {
       PieceType pt;
 
       // Use fast switch with lowercase comparison
-      switch (c | 32)  // Convert to lowercase
+      switch (c | 32) // Convert to lowercase
       {
-        case 'p':
-          pt = PieceType::PAWN;
-          break;
-        case 'n':
-          pt = PieceType::KNIGHT;
-          break;
-        case 'b':
-          pt = PieceType::BISHOP;
-          break;
-        case 'r':
-          pt = PieceType::ROOK;
-          break;
-        case 'q':
-          pt = PieceType::QUEEN;
-          break;
-        case 'k':
-          pt = PieceType::KING;
-          break;
-        default:
-          continue;  // Skip invalid characters
+      case 'p':
+        pt = PieceType::PAWN;
+        break;
+      case 'n':
+        pt = PieceType::KNIGHT;
+        break;
+      case 'b':
+        pt = PieceType::BISHOP;
+        break;
+      case 'r':
+        pt = PieceType::ROOK;
+        break;
+      case 'q':
+        pt = PieceType::QUEEN;
+        break;
+      case 'k':
+        pt = PieceType::KING;
+        break;
+      default:
+        continue; // Skip invalid characters
       }
 
       piece_bitboards[static_cast<uint8_t>(pt)] |= (1ULL << square);
@@ -205,43 +214,44 @@ void Board::load_fen(const std::string& fen) {
   }
 
   // Skip space
-  if (*ptr == ' ') ptr++;
+  if (*ptr == ' ')
+    ptr++;
 
   // Active color
   side_to_move = (*ptr == 'w');
-  ptr += 2;  // Skip color and space
+  ptr += 2; // Skip color and space
 
   // Castling rights
   castling_rights = 0;
   while (*ptr && *ptr != ' ') {
     switch (*ptr++) {
-      case 'K':
-        castling_rights |= 1;
-        break;
-      case 'Q':
-        castling_rights |= 2;
-        break;
-      case 'k':
-        castling_rights |= 4;
-        break;
-      case 'q':
-        castling_rights |= 8;
-        break;
-      default:
-        break;  // Skip '-' or other chars
+    case 'K':
+      castling_rights |= 1;
+      break;
+    case 'Q':
+      castling_rights |= 2;
+      break;
+    case 'k':
+      castling_rights |= 4;
+      break;
+    case 'q':
+      castling_rights |= 8;
+      break;
+    default:
+      break; // Skip '-' or other chars
     }
   }
-  ptr++;  // Skip space
+  ptr++; // Skip space
 
   // En passant
   if (*ptr == '-') {
     en_passant_square = -1;
-    ptr += 2;  // Skip '-' and space
+    ptr += 2; // Skip '-' and space
   } else {
     int8_t ep_file = ptr[0] - 'a';
     int8_t ep_rank = ptr[1] - '1';
     en_passant_square = ep_rank * 8 + ep_file;
-    ptr += 3;  // Skip file, rank, space
+    ptr += 3; // Skip file, rank, space
   }
 
   // Halfmove clock
@@ -249,7 +259,7 @@ void Board::load_fen(const std::string& fen) {
   while (*ptr && *ptr != ' ') {
     halfmove_clock = halfmove_clock * 10 + (*ptr++ - '0');
   }
-  ptr++;  // Skip space
+  ptr++; // Skip space
 
   // Fullmove number
   fullmove_number = 0;
@@ -258,13 +268,14 @@ void Board::load_fen(const std::string& fen) {
   }
 
   // Ensure minimum valid value
-  if (fullmove_number == 0) fullmove_number = 1;
+  if (fullmove_number == 0)
+    fullmove_number = 1;
 }
 
 // Convert to FEN string - optimized
 std::string Board::to_fen() const {
   std::string result;
-  result.reserve(90);  // Preallocate for typical FEN length
+  result.reserve(90); // Preallocate for typical FEN length
 
   // Piece placement
   for (int8_t rank = 7; rank >= 0; --rank) {
@@ -288,28 +299,29 @@ std::string Board::to_fen() const {
         char piece_char = 0;
 
         switch (pt) {
-          case PieceType::PAWN:
-            piece_char = 'p';
-            break;
-          case PieceType::KNIGHT:
-            piece_char = 'n';
-            break;
-          case PieceType::BISHOP:
-            piece_char = 'b';
-            break;
-          case PieceType::ROOK:
-            piece_char = 'r';
-            break;
-          case PieceType::QUEEN:
-            piece_char = 'q';
-            break;
-          case PieceType::KING:
-            piece_char = 'k';
-            break;
+        case PieceType::PAWN:
+          piece_char = 'p';
+          break;
+        case PieceType::KNIGHT:
+          piece_char = 'n';
+          break;
+        case PieceType::BISHOP:
+          piece_char = 'b';
+          break;
+        case PieceType::ROOK:
+          piece_char = 'r';
+          break;
+        case PieceType::QUEEN:
+          piece_char = 'q';
+          break;
+        case PieceType::KING:
+          piece_char = 'k';
+          break;
         }
 
         // Convert to uppercase for white pieces
-        if (is_white) piece_char -= 32;  // ASCII uppercase conversion
+        if (is_white)
+          piece_char -= 32; // ASCII uppercase conversion
         result += piece_char;
       } else {
         empty_squares++;
@@ -348,7 +360,8 @@ std::string Board::to_fen() const {
     result += 'q';
     has_castling = true;
   }
-  if (!has_castling) result += '-';
+  if (!has_castling)
+    result += '-';
 
   // En passant
   result += ' ';
@@ -369,7 +382,7 @@ std::string Board::to_fen() const {
 // Pretty print board - optimized
 std::string Board::pretty() const {
   std::string result;
-  result.reserve(200);  // Preallocate for typical board size
+  result.reserve(200); // Preallocate for typical board size
 
   for (int8_t rank = 7; rank >= 0; --rank) {
     result += static_cast<char>('1' + rank);
@@ -389,24 +402,24 @@ std::string Board::pretty() const {
         char piece_char;
 
         switch (pt) {
-          case PieceType::PAWN:
-            piece_char = is_white ? 'P' : 'p';
-            break;
-          case PieceType::KNIGHT:
-            piece_char = is_white ? 'N' : 'n';
-            break;
-          case PieceType::BISHOP:
-            piece_char = is_white ? 'B' : 'b';
-            break;
-          case PieceType::ROOK:
-            piece_char = is_white ? 'R' : 'r';
-            break;
-          case PieceType::QUEEN:
-            piece_char = is_white ? 'Q' : 'q';
-            break;
-          case PieceType::KING:
-            piece_char = is_white ? 'K' : 'k';
-            break;
+        case PieceType::PAWN:
+          piece_char = is_white ? 'P' : 'p';
+          break;
+        case PieceType::KNIGHT:
+          piece_char = is_white ? 'N' : 'n';
+          break;
+        case PieceType::BISHOP:
+          piece_char = is_white ? 'B' : 'b';
+          break;
+        case PieceType::ROOK:
+          piece_char = is_white ? 'R' : 'r';
+          break;
+        case PieceType::QUEEN:
+          piece_char = is_white ? 'Q' : 'q';
+          break;
+        case PieceType::KING:
+          piece_char = is_white ? 'K' : 'k';
+          break;
         }
 
         result += piece_char;
@@ -420,7 +433,7 @@ std::string Board::pretty() const {
   return result;
 }
 
-void Board::push(const Move& move) {
+void Board::push(const Move &move) {
   // Optimized push: construct state directly in history vector
   state_history.emplace_back();
   apply_move(move, &state_history.back());
@@ -450,7 +463,7 @@ void Board::update_attacked_squares(Color color) const {
   (void)get_attacked_squares(color); // Force update via getter
 }
 
-Move Board::push_san(const std::string& san) {
+Move Board::push_san(const std::string &san) {
   Move move = parse_san(san);
   push(move);
   return move;
@@ -488,7 +501,8 @@ bool Board::has_insufficient_material() const noexcept {
   const int black_minors = black_knights + black_bishops;
 
   // King vs King - most common insufficient material case
-  if (white_minors == 0 && black_minors == 0) return true;
+  if (white_minors == 0 && black_minors == 0)
+    return true;
 
   // King + minor vs King
   if ((white_minors == 1 && black_minors == 0) ||
@@ -519,7 +533,7 @@ GameState Board::is_game_over() const noexcept {
   }
 
   // Check for 50-move rule next
-  if (halfmove_clock >= 100) {  // 50 moves = 100 half-moves
+  if (halfmove_clock >= 100) { // 50 moves = 100 half-moves
     return GameState::DRAW_BY_FIFTY_MOVE;
   }
 
@@ -532,7 +546,7 @@ GameState Board::is_game_over() const noexcept {
   return GameState::ONGOING;
 }
 
-void Board::apply_move(const Move& move, StateInfo* state) noexcept {
+void Board::apply_move(const Move &move, StateInfo *state) noexcept {
   const uint8_t from = move.from;
   const uint8_t to = move.to;
   const uint8_t promotion = move.promotion;
@@ -548,8 +562,7 @@ void Board::apply_move(const Move& move, StateInfo* state) noexcept {
     }
   }
 
-  const Color us =
-      (color_bitboards[0] & from_bb) ? Color::WHITE : Color::BLACK;
+  const Color us = (color_bitboards[0] & from_bb) ? Color::WHITE : Color::BLACK;
   const Color them = (us == Color::WHITE) ? Color::BLACK : Color::WHITE;
   const uint8_t us_idx = static_cast<uint8_t>(us);
   const uint8_t them_idx = static_cast<uint8_t>(them);
@@ -565,8 +578,8 @@ void Board::apply_move(const Move& move, StateInfo* state) noexcept {
       to == static_cast<uint8_t>(old_ep) && !capture) {
     capture = true;
     en_passant_capture = true;
-    capture_square = static_cast<uint8_t>(old_ep +
-                                          (us == Color::WHITE ? -8 : 8));
+    capture_square =
+        static_cast<uint8_t>(old_ep + (us == Color::WHITE ? -8 : 8));
   }
 
   if (capture) {
@@ -600,11 +613,13 @@ void Board::apply_move(const Move& move, StateInfo* state) noexcept {
   }
 
   // Reset halfmove clock if capture or pawn move
-  halfmove_clock =
-      (capture || moving_pt == PieceType::PAWN) ? 0 : static_cast<uint8_t>(halfmove_clock + 1);
+  halfmove_clock = (capture || moving_pt == PieceType::PAWN)
+                       ? 0
+                       : static_cast<uint8_t>(halfmove_clock + 1);
 
   // Update fullmove number if Black moved
-  if (us == Color::BLACK) ++fullmove_number;
+  if (us == Color::BLACK)
+    ++fullmove_number;
 
   en_passant_square = -1;
 
@@ -673,7 +688,7 @@ void Board::apply_move(const Move& move, StateInfo* state) noexcept {
   attacked_squares_valid_[1] = false;
 }
 
-void Board::undo_move(const StateInfo& state) noexcept {
+void Board::undo_move(const StateInfo &state) noexcept {
   const Move move = state.move;
   const uint8_t from = move.from;
   const uint8_t to = move.to;
@@ -726,7 +741,7 @@ void Board::undo_move(const StateInfo& state) noexcept {
   }
 }
 
-Move Board::parse_san(const std::string& san) const {
+Move Board::parse_san(const std::string &san) const {
   std::string work;
   work.reserve(san.size());
   for (char c : san) {
@@ -738,15 +753,14 @@ Move Board::parse_san(const std::string& san) const {
     throw std::runtime_error("Empty SAN string");
   }
 
-  while (!work.empty() &&
-         (work.back() == '+' || work.back() == '#' || work.back() == '!' ||
-          work.back() == '?')) {
+  while (!work.empty() && (work.back() == '+' || work.back() == '#' ||
+                           work.back() == '!' || work.back() == '?')) {
     work.pop_back();
   }
 
   const auto legal_moves = generate_legal_moves();
   auto match_castle = [&](bool kingside) -> Move {
-    for (const auto& mv : legal_moves) {
+    for (const auto &mv : legal_moves) {
       if (is_castling(mv) && (mv.to > mv.from) == kingside) {
         return mv;
       }
@@ -767,8 +781,7 @@ Move Board::parse_san(const std::string& san) const {
     if (eq_pos + 1 >= work.size()) {
       throw std::runtime_error("Invalid promotion SAN: " + san);
     }
-    promotion =
-        static_cast<uint8_t>(piece_type_from_char(work[eq_pos + 1]));
+    promotion = static_cast<uint8_t>(piece_type_from_char(work[eq_pos + 1]));
     work.erase(eq_pos);
   }
 
@@ -792,8 +805,7 @@ Move Board::parse_san(const std::string& san) const {
   }
 
   PieceType desired_piece = PieceType::PAWN;
-  if (!work.empty() &&
-      std::isupper(static_cast<unsigned char>(work.front()))) {
+  if (!work.empty() && std::isupper(static_cast<unsigned char>(work.front()))) {
     desired_piece = piece_type_from_char(work.front());
     work.erase(work.begin());
   }
@@ -801,31 +813,38 @@ Move Board::parse_san(const std::string& san) const {
   std::optional<char> disamb_file;
   std::optional<char> disamb_rank;
   for (char c : work) {
-    if (is_file_char(c)) disamb_file = c;
-    if (is_rank_char(c)) disamb_rank = c;
+    if (is_file_char(c))
+      disamb_file = c;
+    if (is_rank_char(c))
+      disamb_rank = c;
   }
 
   std::optional<Move> candidate;
-  for (const auto& mv : legal_moves) {
+  for (const auto &mv : legal_moves) {
     auto piece = piece_at(mv.from);
-    if (!piece || piece->type != desired_piece) continue;
-    if (mv.to != target_square) continue;
+    if (!piece || piece->type != desired_piece)
+      continue;
+    if (mv.to != target_square)
+      continue;
 
     if (promotion != 0) {
-      if (mv.promotion != promotion) continue;
+      if (mv.promotion != promotion)
+        continue;
     } else if (mv.promotion != 0) {
       continue;
     }
 
-    if (capture && !is_capture(mv)) continue;
-    if (!capture && is_capture(mv)) continue;
+    if (capture && !is_capture(mv))
+      continue;
+    if (!capture && is_capture(mv))
+      continue;
 
-    const char from_file_char =
-        static_cast<char>('a' + square_file(mv.from));
-    const char from_rank_char =
-        static_cast<char>('1' + square_rank(mv.from));
-    if (disamb_file && from_file_char != *disamb_file) continue;
-    if (disamb_rank && from_rank_char != *disamb_rank) continue;
+    const char from_file_char = static_cast<char>('a' + square_file(mv.from));
+    const char from_rank_char = static_cast<char>('1' + square_rank(mv.from));
+    if (disamb_file && from_file_char != *disamb_file)
+      continue;
+    if (disamb_rank && from_rank_char != *disamb_rank)
+      continue;
 
     if (candidate) {
       throw std::runtime_error("Ambiguous SAN: " + san);
@@ -839,7 +858,7 @@ Move Board::parse_san(const std::string& san) const {
   return *candidate;
 }
 
-Move move_from_uci(const std::string& uci) {
+Move move_from_uci(const std::string &uci) {
   if (uci.size() < 4) {
     throw std::runtime_error("Invalid UCI string: " + uci);
   }
@@ -861,7 +880,7 @@ Move move_from_uci(const std::string& uci) {
   return Move{from, to, promotion};
 }
 
-std::string move_to_uci(const Move& move) {
+std::string move_to_uci(const Move &move) {
   std::string uci;
   uci.reserve(5);
   uci.push_back('a' + square_file(move.from));

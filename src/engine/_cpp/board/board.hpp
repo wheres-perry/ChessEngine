@@ -12,7 +12,7 @@ using Bitboard = uint64_t;
 // Constants
 static constexpr uint8_t NUM_PIECE_TYPES = 6;
 static constexpr uint8_t NUM_COLORS = 2;
-static constexpr const char* STARTING_FEN =
+static constexpr const char *STARTING_FEN =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 // Enums
@@ -41,7 +41,7 @@ enum class GameState : uint8_t {
 struct Move {
   uint8_t from;
   uint8_t to;
-  uint8_t promotion;  // 0 if no promotion, otherwise PieceType value
+  uint8_t promotion; // 0 if no promotion, otherwise PieceType value
 };
 
 struct Piece {
@@ -82,7 +82,8 @@ constexpr Bitboard square_bitboard(uint8_t square) noexcept {
 
 constexpr std::array<uint8_t, 64> SQUARES = []() constexpr {
   std::array<uint8_t, 64> squares{};
-  for (uint8_t i = 0; i < 64; ++i) squares[i] = i;
+  for (uint8_t i = 0; i < 64; ++i)
+    squares[i] = i;
   return squares;
 }();
 
@@ -97,12 +98,12 @@ constexpr Bitboard BB_H8 = 1ULL << 63;
 
 // Board class
 class Board {
- public:
+public:
   // Constructors and basic operations
   inline Board();
   inline void clear() noexcept;
-  void load_fen(const std::string& fen);
-  static inline Board from_fen(const std::string& fen) noexcept;
+  void load_fen(const std::string &fen);
+  static inline Board from_fen(const std::string &fen) noexcept;
 
   // Copy method
   [[nodiscard]] inline Board copy() const noexcept;
@@ -126,8 +127,7 @@ class Board {
   }
 
   [[nodiscard]] constexpr Bitboard get_all_pieces_bb() const noexcept {
-    return color_bitboards[0] |
-           color_bitboards[1];  // Direct indexing for speed
+    return color_bitboards[0] | color_bitboards[1]; // Direct indexing for speed
   }
 
   [[nodiscard]] constexpr Color side_to_move_color() const noexcept {
@@ -162,16 +162,16 @@ class Board {
   [[nodiscard]] std::vector<Move> generate_legal_moves() const noexcept;
 
   // Moved make_move implementation from inline declaration to inline definition
-  inline void make_move(const Move& move) noexcept;
-  void push(const Move& move);
+  inline void make_move(const Move &move) noexcept;
+  void push(const Move &move);
   Move pop();
-  Move push_san(const std::string& san);
+  Move push_san(const std::string &san);
 
-  [[nodiscard]] bool is_capture(const Move& move) const noexcept;
-  [[nodiscard]] bool is_castling(const Move& move) const noexcept;
-  [[nodiscard]] bool is_kingside_castling(const Move& move) const noexcept;
-  [[nodiscard]] bool is_queenside_castling(const Move& move) const noexcept;
-  [[nodiscard]] bool is_en_passant(const Move& move) const noexcept;
+  [[nodiscard]] bool is_capture(const Move &move) const noexcept;
+  [[nodiscard]] bool is_castling(const Move &move) const noexcept;
+  [[nodiscard]] bool is_kingside_castling(const Move &move) const noexcept;
+  [[nodiscard]] bool is_queenside_castling(const Move &move) const noexcept;
+  [[nodiscard]] bool is_en_passant(const Move &move) const noexcept;
   [[nodiscard]] bool is_check() const noexcept;
 
   [[nodiscard]] std::optional<Piece> piece_at(uint8_t square) const noexcept;
@@ -185,7 +185,7 @@ class Board {
   [[nodiscard]] bool turn() const noexcept { return side_to_move; }
   [[nodiscard]] std::optional<uint8_t> ep_square() const noexcept;
 
-  void set_fen(const std::string& fen) { load_fen(fen); }
+  void set_fen(const std::string &fen) { load_fen(fen); }
   [[nodiscard]] std::string fen() const { return to_fen(); }
 
   // Feature extraction (placeholder)
@@ -194,25 +194,25 @@ class Board {
   // Cached access to attacked squares
   [[nodiscard]] Bitboard get_attacked_squares(Color color) const;
 
-  [[nodiscard]] std::string print_move(const Move& move) const;
+  [[nodiscard]] std::string print_move(const Move &move) const;
 
- private:
+private:
   // Helper method for insufficient material detection
   [[nodiscard]] bool has_insufficient_material() const noexcept;
-  void apply_move(const Move& move, StateInfo* state) noexcept;
-  void undo_move(const StateInfo& state) noexcept;
-  [[nodiscard]] Move parse_san(const std::string& san) const;
+  void apply_move(const Move &move, StateInfo *state) noexcept;
+  void undo_move(const StateInfo &state) noexcept;
+  [[nodiscard]] Move parse_san(const std::string &san) const;
 
   // Bitboard representation - aligned for better cache performance
   alignas(16) std::array<Bitboard, NUM_PIECE_TYPES> piece_bitboards{};
   alignas(16) std::array<Bitboard, NUM_COLORS> color_bitboards{};
 
   // Game state
-  bool side_to_move = true;       // true = WHITE, false = BLACK
-  uint8_t castling_rights = 0;    // Bitmask: 1=K, 2=Q, 4=k, 8=q
-  int8_t en_passant_square = -1;  // -1 if no en passant
-  uint8_t halfmove_clock = 0;     // For 50-move rule
-  uint16_t fullmove_number = 1;   // Increments after Black's move
+  bool side_to_move = true;      // true = WHITE, false = BLACK
+  uint8_t castling_rights = 0;   // Bitmask: 1=K, 2=Q, 4=k, 8=q
+  int8_t en_passant_square = -1; // -1 if no en passant
+  uint8_t halfmove_clock = 0;    // For 50-move rule
+  uint16_t fullmove_number = 1;  // Increments after Black's move
   std::vector<StateInfo> state_history;
 
   // Cached attacked squares for performance
@@ -224,14 +224,14 @@ class Board {
 };
 
 // Helper functions for move formatting (made inline with definitions)
-inline std::string move_to_string(const Move& move, const Board& board) {
+inline std::string move_to_string(const Move &move, const Board &board) {
   static const char files[] = "abcdefgh";
   static const char ranks[] = "12345678";
   static const char promo[] =
-      " nbrq";  // Index 0 is empty, 1-4 maps to Knight-Queen
+      " nbrq"; // Index 0 is empty, 1-4 maps to Knight-Queen
 
   std::string result;
-  result.reserve(5);  // "e2e4q" worst case
+  result.reserve(5); // "e2e4q" worst case
 
   result += files[move.from % 8];
   result += ranks[move.from / 8];
@@ -245,14 +245,14 @@ inline std::string move_to_string(const Move& move, const Board& board) {
   return result;
 }
 
-inline std::string move_debug_string(const Move& move, const Board& board) {
+inline std::string move_debug_string(const Move &move, const Board &board) {
   return move_to_string(move, board);
 }
 
-inline std::string moves_to_string(const std::vector<Move>& moves,
-                                   const Board& board) {
+inline std::string moves_to_string(const std::vector<Move> &moves,
+                                   const Board &board) {
   std::string result;
-  result.reserve(moves.size() * 10);  // Estimate size to avoid reallocations
+  result.reserve(moves.size() * 10); // Estimate size to avoid reallocations
 
   result = "Moves [" + std::to_string(moves.size()) + "]:\n";
 
@@ -264,16 +264,18 @@ inline std::string moves_to_string(const std::vector<Move>& moves,
   return result;
 }
 
-Move move_from_uci(const std::string& uci);
-std::string move_to_uci(const Move& move);
+Move move_from_uci(const std::string &uci);
+std::string move_to_uci(const Move &move);
 
 // Inline implementation of simple methods
 inline Board::Board() { load_fen(STARTING_FEN); }
 
 inline void Board::clear() noexcept {
-  for (auto& bb : piece_bitboards) bb = 0ULL;
-  for (auto& bb : color_bitboards) bb = 0ULL;
-  side_to_move = true;  // WHITE
+  for (auto &bb : piece_bitboards)
+    bb = 0ULL;
+  for (auto &bb : color_bitboards)
+    bb = 0ULL;
+  side_to_move = true; // WHITE
   castling_rights = 0;
   en_passant_square = -1;
   halfmove_clock = 0;
@@ -283,7 +285,7 @@ inline void Board::clear() noexcept {
   attacked_squares_valid_[1] = false;
 }
 
-inline Board Board::from_fen(const std::string& fen) noexcept {
+inline Board Board::from_fen(const std::string &fen) noexcept {
   Board board;
   board.load_fen(fen);
   return board;
@@ -291,10 +293,10 @@ inline Board Board::from_fen(const std::string& fen) noexcept {
 
 // Copy method implementation
 inline Board Board::copy() const noexcept {
-  return *this;  // Uses default copy constructor
+  return *this; // Uses default copy constructor
 }
 
 // Make move - inline implementation
-inline void Board::make_move(const Move& move) noexcept {
+inline void Board::make_move(const Move &move) noexcept {
   apply_move(move, nullptr);
 }

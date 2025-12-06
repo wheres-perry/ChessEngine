@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-void init_board_bindings(py::module_& m) {
+void init_board_bindings(py::module_ &m) {
   // Enums
   py::enum_<Color>(m, "Color")
       .value("WHITE", Color::WHITE)
@@ -33,15 +33,16 @@ void init_board_bindings(py::module_& m) {
 
   py::class_<Piece>(m, "Piece")
       .def_property_readonly("piece_type",
-                             [](const Piece& piece) { return piece.type; })
+                             [](const Piece &piece) { return piece.type; })
       .def_property_readonly("color",
-                             [](const Piece& piece) { return piece.color; })
+                             [](const Piece &piece) { return piece.color; })
       .def("symbol", &Piece::symbol)
-      .def("__repr__", [](const Piece& piece) {
-        return piece.valid ? std::string("Piece('") + piece.symbol() + "')"
-                           : std::string("Piece(None)");
-      })
-      .def("__bool__", [](const Piece& piece) { return piece.valid; });
+      .def("__repr__",
+           [](const Piece &piece) {
+             return piece.valid ? std::string("Piece('") + piece.symbol() + "')"
+                                : std::string("Piece(None)");
+           })
+      .def("__bool__", [](const Piece &piece) { return piece.valid; });
 
   // Move class
   py::class_<Move>(m, "Move")
@@ -52,25 +53,22 @@ void init_board_bindings(py::module_& m) {
       .def_readwrite("promotion", &Move::promotion)
       .def_static("from_uci", &move_from_uci, py::arg("uci"))
       .def("uci", &move_to_uci)
-      .def("__repr__", [](const Move& move) {
-        return "<Move " + move_to_uci(move) + ">";
-      })
-      .def(
-          "__hash__",
-          [](const Move& move) {
-            return (static_cast<int>(move.from) << 16) ^
-                   (static_cast<int>(move.to) << 8) ^ move.promotion;
-          })
+      .def("__repr__",
+           [](const Move &move) { return "<Move " + move_to_uci(move) + ">"; })
+      .def("__hash__",
+           [](const Move &move) {
+             return (static_cast<int>(move.from) << 16) ^
+                    (static_cast<int>(move.to) << 8) ^ move.promotion;
+           })
       .def("__eq__",
-           [](const Move& a, const Move& b) {
+           [](const Move &a, const Move &b) {
              return a.from == b.from && a.to == b.to &&
                     a.promotion == b.promotion;
            })
-      .def("__ne__",
-           [](const Move& a, const Move& b) {
-             return !(a.from == b.from && a.to == b.to &&
-                      a.promotion == b.promotion);
-           });
+      .def("__ne__", [](const Move &a, const Move &b) {
+        return !(a.from == b.from && a.to == b.to &&
+                 a.promotion == b.promotion);
+      });
 
   // Board class
   py::class_<Board>(m, "Board")
@@ -98,8 +96,8 @@ void init_board_bindings(py::module_& m) {
       .def("piece_at", &Board::piece_at, py::arg("square"))
       .def("pieces", &Board::pieces, py::arg("piece_type"), py::arg("color"))
       .def("king", &Board::king, py::arg("color"))
-      .def("has_kingside_castling_rights",
-           &Board::has_kingside_castling_rights, py::arg("color"))
+      .def("has_kingside_castling_rights", &Board::has_kingside_castling_rights,
+           py::arg("color"))
       .def("has_queenside_castling_rights",
            &Board::has_queenside_castling_rights, py::arg("color"))
       .def("is_capture", &Board::is_capture, py::arg("move"))
@@ -115,9 +113,9 @@ void init_board_bindings(py::module_& m) {
       .def("generate_legal_moves", &Board::generate_legal_moves)
       .def_property_readonly("turn", &Board::turn)
       .def_property_readonly("ep_square", &Board::ep_square)
-      .def_property_readonly(
-          "legal_moves",
-          [](const Board& board) { return board.generate_legal_moves(); });
+      .def_property_readonly("legal_moves", [](const Board &board) {
+        return board.generate_legal_moves();
+      });
 
   // Helper functions
   m.def("move_to_string", &move_to_string, py::arg("move"), py::arg("board"));
@@ -125,12 +123,12 @@ void init_board_bindings(py::module_& m) {
         py::arg("board"));
   m.def("moves_to_string", &moves_to_string, py::arg("moves"),
         py::arg("board"));
-  m.def("square_file",
-        [](uint8_t square) { return ::square_file(square); },
-        py::arg("square"));
-  m.def("square_rank",
-        [](uint8_t square) { return ::square_rank(square); },
-        py::arg("square"));
+  m.def(
+      "square_file", [](uint8_t square) { return ::square_file(square); },
+      py::arg("square"));
+  m.def(
+      "square_rank", [](uint8_t square) { return ::square_rank(square); },
+      py::arg("square"));
   m.def("move_to_uci", &move_to_uci, py::arg("move"));
 
   m.attr("SQUARES") = py::cast(SQUARES);

@@ -5,15 +5,16 @@
 
 namespace halfkp {
 
-std::vector<uint32_t> board_to_halfkp_indices(const Board& board,
-                                               bool is_white_pov) noexcept {
+std::vector<uint32_t> board_to_halfkp_indices(const Board &board,
+                                              bool is_white_pov) noexcept {
   std::vector<uint32_t> indices;
-  indices.reserve(32);  // Typical piece count
+  indices.reserve(32); // Typical piece count
 
   // Get king square for this perspective
   Color pov_color = is_white_pov ? Color::WHITE : Color::BLACK;
   auto king_sq_opt = board.king(pov_color);
-  if (!king_sq_opt) return indices;  // No king = invalid position
+  if (!king_sq_opt)
+    return indices; // No king = invalid position
   uint8_t king_square = *king_sq_opt;
 
   // Iterate over all piece types (excluding king)
@@ -26,8 +27,7 @@ std::vector<uint32_t> board_to_halfkp_indices(const Board& board,
       std::vector<uint8_t> squares = board.pieces(pt, color);
 
       for (uint8_t sq : squares) {
-        uint32_t idx =
-            halfkp_index(is_white_pov, king_square, sq, pt, color);
+        uint32_t idx = halfkp_index(is_white_pov, king_square, sq, pt, color);
         indices.push_back(idx);
       }
     }
@@ -36,14 +36,13 @@ std::vector<uint32_t> board_to_halfkp_indices(const Board& board,
   return indices;
 }
 
-std::vector<float> board_to_input_tensor(const Board& board) noexcept {
+std::vector<float> board_to_input_tensor(const Board &board) noexcept {
   // Allocate dense tensor: white POV + black POV + bias planes
   std::vector<float> tensor(TOTAL_FEATURES, 0.0f);
 
   // White perspective
   {
-    std::vector<uint32_t> white_indices =
-        board_to_halfkp_indices(board, true);
+    std::vector<uint32_t> white_indices = board_to_halfkp_indices(board, true);
     for (uint32_t idx : white_indices) {
       tensor[idx] = 1.0f;
     }
@@ -53,8 +52,7 @@ std::vector<float> board_to_input_tensor(const Board& board) noexcept {
 
   // Black perspective
   {
-    std::vector<uint32_t> black_indices =
-        board_to_halfkp_indices(board, false);
+    std::vector<uint32_t> black_indices = board_to_halfkp_indices(board, false);
     uint32_t offset = HALFKP_FEATURES_PER_SIDE;
     for (uint32_t idx : black_indices) {
       tensor[offset + idx] = 1.0f;
@@ -66,8 +64,8 @@ std::vector<float> board_to_input_tensor(const Board& board) noexcept {
   return tensor;
 }
 
-std::pair<AccumulatorUpdate, AccumulatorUpdate> create_accumulator_updates(
-    const Board& board, const Move& move) noexcept {
+std::pair<AccumulatorUpdate, AccumulatorUpdate>
+create_accumulator_updates(const Board &board, const Move &move) noexcept {
   AccumulatorUpdate white_update;
   AccumulatorUpdate black_update;
 
@@ -103,9 +101,9 @@ std::pair<AccumulatorUpdate, AccumulatorUpdate> create_accumulator_updates(
         halfkp_index(true, white_king, move.from, moving_piece, moving_color);
     white_update.removed_indices.push_back(removed_idx);
 
-    PieceType final_piece =
-        (move.promotion != 0) ? static_cast<PieceType>(move.promotion)
-                              : moving_piece;
+    PieceType final_piece = (move.promotion != 0)
+                                ? static_cast<PieceType>(move.promotion)
+                                : moving_piece;
     uint32_t added_idx =
         halfkp_index(true, white_king, move.to, final_piece, moving_color);
     white_update.added_indices.push_back(added_idx);
@@ -117,9 +115,9 @@ std::pair<AccumulatorUpdate, AccumulatorUpdate> create_accumulator_updates(
         halfkp_index(false, black_king, move.from, moving_piece, moving_color);
     black_update.removed_indices.push_back(removed_idx);
 
-    PieceType final_piece =
-        (move.promotion != 0) ? static_cast<PieceType>(move.promotion)
-                              : moving_piece;
+    PieceType final_piece = (move.promotion != 0)
+                                ? static_cast<PieceType>(move.promotion)
+                                : moving_piece;
     uint32_t added_idx =
         halfkp_index(false, black_king, move.to, final_piece, moving_color);
     black_update.added_indices.push_back(added_idx);
@@ -171,38 +169,38 @@ std::pair<AccumulatorUpdate, AccumulatorUpdate> create_accumulator_updates(
 
     if (moving_color == Color::WHITE) {
       if (is_kingside) {
-        rook_from = 7;   // h1
-        rook_to = 5;     // f1
+        rook_from = 7; // h1
+        rook_to = 5;   // f1
       } else {
-        rook_from = 0;   // a1
-        rook_to = 3;     // d1
+        rook_from = 0; // a1
+        rook_to = 3;   // d1
       }
     } else {
       if (is_kingside) {
-        rook_from = 63;  // h8
-        rook_to = 61;    // f8
+        rook_from = 63; // h8
+        rook_to = 61;   // f8
       } else {
-        rook_from = 56;  // a8
-        rook_to = 59;    // d8
+        rook_from = 56; // a8
+        rook_to = 59;   // d8
       }
     }
 
     // White perspective
     {
-      uint32_t rook_removed =
-          halfkp_index(true, white_king, rook_from, PieceType::ROOK, moving_color);
-      uint32_t rook_added =
-          halfkp_index(true, white_king, rook_to, PieceType::ROOK, moving_color);
+      uint32_t rook_removed = halfkp_index(true, white_king, rook_from,
+                                           PieceType::ROOK, moving_color);
+      uint32_t rook_added = halfkp_index(true, white_king, rook_to,
+                                         PieceType::ROOK, moving_color);
       white_update.removed_indices.push_back(rook_removed);
       white_update.added_indices.push_back(rook_added);
     }
 
     // Black perspective
     {
-      uint32_t rook_removed = halfkp_index(
-          false, black_king, rook_from, PieceType::ROOK, moving_color);
-      uint32_t rook_added =
-          halfkp_index(false, black_king, rook_to, PieceType::ROOK, moving_color);
+      uint32_t rook_removed = halfkp_index(false, black_king, rook_from,
+                                           PieceType::ROOK, moving_color);
+      uint32_t rook_added = halfkp_index(false, black_king, rook_to,
+                                         PieceType::ROOK, moving_color);
       black_update.removed_indices.push_back(rook_removed);
       black_update.added_indices.push_back(rook_added);
     }
@@ -211,5 +209,4 @@ std::pair<AccumulatorUpdate, AccumulatorUpdate> create_accumulator_updates(
   return {white_update, black_update};
 }
 
-}  // namespace halfkp
-
+} // namespace halfkp

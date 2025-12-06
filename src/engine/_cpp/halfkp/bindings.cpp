@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-void bind_halfkp(py::module_& m) {
+void bind_halfkp(py::module_ &m) {
   auto halfkp_module = m.def_submodule("halfkp", "HalfKP feature extraction");
 
   // Constants
@@ -19,10 +19,9 @@ void bind_halfkp(py::module_& m) {
   halfkp_module.attr("TOTAL_FEATURES") = halfkp::TOTAL_FEATURES;
 
   // Functions
-  halfkp_module.def(
-      "orient_square", &halfkp::orient_square,
-      py::arg("is_white_pov"), py::arg("square"),
-      "Orient square from perspective of given color");
+  halfkp_module.def("orient_square", &halfkp::orient_square,
+                    py::arg("is_white_pov"), py::arg("square"),
+                    "Orient square from perspective of given color");
 
   halfkp_module.def(
       "get_piece_index",
@@ -36,11 +35,11 @@ void bind_halfkp(py::module_& m) {
       "halfkp_index",
       [](bool is_white_pov, uint8_t king_square, uint8_t piece_square,
          PieceType pt, Color piece_color) {
-        return halfkp::halfkp_index(is_white_pov, king_square, piece_square,
-                                    pt, piece_color);
+        return halfkp::halfkp_index(is_white_pov, king_square, piece_square, pt,
+                                    piece_color);
       },
-      py::arg("is_white_pov"), py::arg("king_square"),
-      py::arg("piece_square"), py::arg("piece_type"), py::arg("piece_color"),
+      py::arg("is_white_pov"), py::arg("king_square"), py::arg("piece_square"),
+      py::arg("piece_type"), py::arg("piece_color"),
       "Compute HalfKP feature index for a single piece");
 
   halfkp_module.def(
@@ -49,15 +48,13 @@ void bind_halfkp(py::module_& m) {
       "Extract all active HalfKP feature indices for one perspective");
 
   halfkp_module.def(
-      "board_to_input_tensor", &halfkp::board_to_input_tensor,
-      py::arg("board"),
+      "board_to_input_tensor", &halfkp::board_to_input_tensor, py::arg("board"),
       "Convert board to dense float32 tensor (both perspectives concatenated)");
 
   // AccumulatorUpdate struct
   py::class_<halfkp::AccumulatorUpdate>(halfkp_module, "AccumulatorUpdate")
       .def(py::init<>())
-      .def_readwrite("added_indices",
-                     &halfkp::AccumulatorUpdate::added_indices)
+      .def_readwrite("added_indices", &halfkp::AccumulatorUpdate::added_indices)
       .def_readwrite("removed_indices",
                      &halfkp::AccumulatorUpdate::removed_indices);
 
@@ -66,4 +63,3 @@ void bind_halfkp(py::module_& m) {
       py::arg("board"), py::arg("move"),
       "Compute incremental updates for a move (both perspectives)");
 }
-

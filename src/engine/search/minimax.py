@@ -343,8 +343,7 @@ class Minimax:
                 # Late Move Reduction - optimized condition order
                 if (
                     self.use_lmr
-                    and i
-                    >= self.LMR_MIN_MOVES  # Check move index first (most likely to fail)
+                    and i >= self.LMR_MIN_MOVES  # Check move index first (likely fail)
                     and depth >= self.LMR_MIN_DEPTH
                     and not self.board.is_capture(m)  # Check capture status early
                     and not self.board.is_en_passant(m)

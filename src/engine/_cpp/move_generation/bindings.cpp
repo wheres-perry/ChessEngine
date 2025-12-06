@@ -6,8 +6,12 @@
 
 namespace py = pybind11;
 
-void init_movegen_bindings(py::module_& m) {
-  m.def("get_attacked_squares", &get_attacked_squares, py::arg("board"),
+void init_movegen_bindings(py::module_ &m) {
+  // Expose attacked squares; compatible alias name retained
+  m.def("get_attacked_squares", &compute_attacked_squares, py::arg("board"),
+        py::arg("by_color"),
+        "Returns a bitboard of all squares attacked by the given color");
+  m.def("compute_attacked_squares", &compute_attacked_squares, py::arg("board"),
         py::arg("by_color"),
         "Returns a bitboard of all squares attacked by the given color");
 

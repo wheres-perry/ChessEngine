@@ -3,6 +3,6 @@
 
 namespace py = pybind11;
 
-void init_search_bindings(py::module_& m) {
+void init_search_bindings(py::module_ &m) {
   // Empty placeholder
 }
