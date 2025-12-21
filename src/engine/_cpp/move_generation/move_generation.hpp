@@ -25,6 +25,12 @@ inline constexpr int popcount(Bitboard bb) noexcept {
 [[nodiscard]] Bitboard compute_attacked_squares(const Board &board,
                                                 Color by_color) noexcept;
 
+// Backwards-compatible alias; kept for older callers/bindings.
+[[nodiscard]] inline Bitboard get_attacked_squares(const Board &board,
+                                                   Color by_color) noexcept {
+  return compute_attacked_squares(board, by_color);
+}
+
 [[nodiscard]] bool is_in_check(const Board &board, Color us) noexcept;
 
 [[nodiscard]] bool is_castling_legal(const Board &board, Color us,
