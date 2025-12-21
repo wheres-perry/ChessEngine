@@ -5,18 +5,41 @@
 
 #include "../board/board.hpp"
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
 // Fast bit manipulation helpers - moved to top for earlier declaration
-inline constexpr uint8_t pop_lsb(Bitboard &bb) noexcept
+inline uint8_t ctz64(Bitboard bb) noexcept
 {
-  uint8_t sq = __builtin_ctzll(bb);
+#if defined(_MSC_VER)
+  unsigned long idx{};
+  _BitScanForward64(&idx, bb);
+  return static_cast<uint8_t>(idx);
+#else
+  return static_cast<uint8_t>(__builtin_ctzll(bb));
+#endif
+}
+
+inline int popcount64(Bitboard bb) noexcept
+{
+#if defined(_MSC_VER)
+  return static_cast<int>(__popcnt64(bb));
+#else
+  return __builtin_popcountll(bb);
+#endif
+}
+
+inline uint8_t pop_lsb(Bitboard &bb) noexcept
+{
+  const uint8_t sq = ctz64(bb);
   bb &= bb - 1;
   return sq;
 }
 
-// Fast popcount (count bits set)
-inline constexpr int popcount(Bitboard bb) noexcept
+inline int popcount(Bitboard bb) noexcept
 {
-  return __builtin_popcountll(bb);
+  return popcount64(bb);
 }
 
 // Forward declarations for move generation functions
