@@ -9,6 +9,54 @@
 // Type aliases for cleaner code
 using Bitboard = uint64_t;
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
+// Bit manipulation helpers
+inline uint8_t ctz64(Bitboard bb) noexcept
+{
+#if defined(_MSC_VER)
+  unsigned long idx{};
+  _BitScanForward64(&idx, bb);
+  return static_cast<uint8_t>(idx);
+#else
+  return static_cast<uint8_t>(__builtin_ctzll(bb));
+#endif
+}
+
+inline int popcount64(Bitboard bb) noexcept
+{
+#if defined(_MSC_VER)
+  return static_cast<int>(__popcnt64(bb));
+#else
+  return __builtin_popcountll(bb);
+#endif
+}
+
+inline uint8_t pop_lsb(Bitboard &bb) noexcept
+{
+  const uint8_t sq = ctz64(bb);
+  bb &= bb - 1;
+  return sq;
+}
+
+inline int popcount(Bitboard bb) noexcept
+{
+  return popcount64(bb);
+}
+
+inline uint8_t clz64(Bitboard bb) noexcept
+{
+#if defined(_MSC_VER)
+  unsigned long idx{};
+  _BitScanReverse64(&idx, bb);
+  return static_cast<uint8_t>(63 - idx);
+#else
+  return static_cast<uint8_t>(__builtin_clzll(bb));
+#endif
+}
+
 // Constants
 static constexpr uint8_t NUM_PIECE_TYPES = 6;
 static constexpr uint8_t NUM_COLORS = 2;
@@ -16,9 +64,14 @@ static constexpr const char *STARTING_FEN =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 // Enums
-enum class Color : uint8_t { WHITE = 0, BLACK = 1 };
+enum class Color : uint8_t
+{
+  WHITE = 0,
+  BLACK = 1
+};
 
-enum class PieceType : uint8_t {
+enum class PieceType : uint8_t
+{
   PAWN = 0,
   KNIGHT = 1,
   BISHOP = 2,
@@ -28,7 +81,8 @@ enum class PieceType : uint8_t {
 };
 
 // Game state enum for is_game_over()
-enum class GameState : uint8_t {
+enum class GameState : uint8_t
+{
   ONGOING = 0,
   CHECKMATE = 1,
   STALEMATE = 2,
@@ -38,13 +92,15 @@ enum class GameState : uint8_t {
 };
 
 // Move structure - packed for memory efficiency
-struct Move {
+struct Move
+{
   uint8_t from;
   uint8_t to;
   uint8_t promotion; // 0 if no promotion, otherwise PieceType value
 };
 
-struct Piece {
+struct Piece
+{
   PieceType type{PieceType::PAWN};
   Color color{Color::WHITE};
   bool valid{false};
@@ -52,7 +108,8 @@ struct Piece {
   [[nodiscard]] char symbol() const noexcept;
 };
 
-struct StateInfo {
+struct StateInfo
+{
   Move move{};
   PieceType moving_piece{PieceType::PAWN};
   Color mover{Color::WHITE};
@@ -76,11 +133,13 @@ struct StateInfo {
 // Helpers for square metadata
 constexpr uint8_t square_file(uint8_t square) noexcept { return square % 8; }
 constexpr uint8_t square_rank(uint8_t square) noexcept { return square / 8; }
-constexpr Bitboard square_bitboard(uint8_t square) noexcept {
+constexpr Bitboard square_bitboard(uint8_t square) noexcept
+{
   return 1ULL << square;
 }
 
-constexpr std::array<uint8_t, 64> SQUARES = []() constexpr {
+constexpr std::array<uint8_t, 64> SQUARES = []() constexpr
+{
   std::array<uint8_t, 64> squares{};
   for (uint8_t i = 0; i < 64; ++i)
     squares[i] = i;
@@ -89,7 +148,7 @@ constexpr std::array<uint8_t, 64> SQUARES = []() constexpr {
 
 constexpr std::array<PieceType, NUM_PIECE_TYPES> PIECE_TYPES_ARRAY = {
     PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP,
-    PieceType::ROOK, PieceType::QUEEN,  PieceType::KING};
+    PieceType::ROOK, PieceType::QUEEN, PieceType::KING};
 
 constexpr Bitboard BB_A1 = 1ULL << 0;
 constexpr Bitboard BB_H1 = 1ULL << 7;
@@ -97,7 +156,8 @@ constexpr Bitboard BB_A8 = 1ULL << 56;
 constexpr Bitboard BB_H8 = 1ULL << 63;
 
 // Board class
-class Board {
+class Board
+{
 public:
   // Constructors and basic operations
   inline Board();
@@ -113,44 +173,54 @@ public:
 
   // Accessors (all const and noexcept for performance)
   [[nodiscard]] constexpr Bitboard get_piece_bb(PieceType pt,
-                                                Color color) const noexcept {
+                                                Color color) const noexcept
+  {
     return piece_bitboards[static_cast<uint8_t>(pt)] &
            color_bitboards[static_cast<uint8_t>(color)];
   }
 
-  [[nodiscard]] constexpr Bitboard get_piece_bb(PieceType pt) const noexcept {
+  [[nodiscard]] constexpr Bitboard get_piece_bb(PieceType pt) const noexcept
+  {
     return piece_bitboards[static_cast<uint8_t>(pt)];
   }
 
-  [[nodiscard]] constexpr Bitboard get_color_bb(Color color) const noexcept {
+  [[nodiscard]] constexpr Bitboard get_color_bb(Color color) const noexcept
+  {
     return color_bitboards[static_cast<uint8_t>(color)];
   }
 
-  [[nodiscard]] constexpr Bitboard get_all_pieces_bb() const noexcept {
+  [[nodiscard]] constexpr Bitboard get_all_pieces_bb() const noexcept
+  {
     return color_bitboards[0] | color_bitboards[1]; // Direct indexing for speed
   }
 
-  [[nodiscard]] constexpr Color side_to_move_color() const noexcept {
+  [[nodiscard]] constexpr Color side_to_move_color() const noexcept
+  {
     return side_to_move ? Color::WHITE : Color::BLACK;
   }
 
-  [[nodiscard]] constexpr bool get_side_to_move() const noexcept {
+  [[nodiscard]] constexpr bool get_side_to_move() const noexcept
+  {
     return side_to_move;
   }
 
-  [[nodiscard]] constexpr uint8_t get_castling_rights() const noexcept {
+  [[nodiscard]] constexpr uint8_t get_castling_rights() const noexcept
+  {
     return castling_rights;
   }
 
-  [[nodiscard]] constexpr int8_t get_en_passant_square() const noexcept {
+  [[nodiscard]] constexpr int8_t get_en_passant_square() const noexcept
+  {
     return en_passant_square;
   }
 
-  [[nodiscard]] constexpr uint8_t get_halfmove_clock() const noexcept {
+  [[nodiscard]] constexpr uint8_t get_halfmove_clock() const noexcept
+  {
     return halfmove_clock;
   }
 
-  [[nodiscard]] constexpr uint16_t get_fullmove_number() const noexcept {
+  [[nodiscard]] constexpr uint16_t get_fullmove_number() const noexcept
+  {
     return fullmove_number;
   }
 
@@ -224,7 +294,8 @@ private:
 };
 
 // Helper functions for move formatting (made inline with definitions)
-inline std::string move_to_string(const Move &move, const Board &board) {
+inline std::string move_to_string(const Move &move, const Board &board)
+{
   static const char files[] = "abcdefgh";
   static const char ranks[] = "12345678";
   static const char promo[] =
@@ -238,25 +309,29 @@ inline std::string move_to_string(const Move &move, const Board &board) {
   result += files[move.to % 8];
   result += ranks[move.to / 8];
 
-  if (move.promotion != 0) {
+  if (move.promotion != 0)
+  {
     result += promo[move.promotion];
   }
 
   return result;
 }
 
-inline std::string move_debug_string(const Move &move, const Board &board) {
+inline std::string move_debug_string(const Move &move, const Board &board)
+{
   return move_to_string(move, board);
 }
 
 inline std::string moves_to_string(const std::vector<Move> &moves,
-                                   const Board &board) {
+                                   const Board &board)
+{
   std::string result;
   result.reserve(moves.size() * 10); // Estimate size to avoid reallocations
 
   result = "Moves [" + std::to_string(moves.size()) + "]:\n";
 
-  for (size_t i = 0; i < moves.size(); ++i) {
+  for (size_t i = 0; i < moves.size(); ++i)
+  {
     result += "  " + std::to_string(i) + ": " +
               move_to_string(moves[i], board) + "\n";
   }
@@ -270,7 +345,8 @@ std::string move_to_uci(const Move &move);
 // Inline implementation of simple methods
 inline Board::Board() { load_fen(STARTING_FEN); }
 
-inline void Board::clear() noexcept {
+inline void Board::clear() noexcept
+{
   for (auto &bb : piece_bitboards)
     bb = 0ULL;
   for (auto &bb : color_bitboards)
@@ -285,18 +361,21 @@ inline void Board::clear() noexcept {
   attacked_squares_valid_[1] = false;
 }
 
-inline Board Board::from_fen(const std::string &fen) noexcept {
+inline Board Board::from_fen(const std::string &fen) noexcept
+{
   Board board;
   board.load_fen(fen);
   return board;
 }
 
 // Copy method implementation
-inline Board Board::copy() const noexcept {
+inline Board Board::copy() const noexcept
+{
   return *this; // Uses default copy constructor
 }
 
 // Make move - inline implementation
-inline void Board::make_move(const Move &move) noexcept {
+inline void Board::make_move(const Move &move) noexcept
+{
   apply_move(move, nullptr);
 }
