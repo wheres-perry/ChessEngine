@@ -280,7 +280,7 @@ bool is_castling_legal(const Board &board, Color us, bool kingside) noexcept {
                                  ? 0x0000000000000060ULL  // f1, g1 (bits 5,6)
                                  : 0x6000000000000000ULL; // f8, g8 (bits 61,62)
     return (ks_path & occupied) == 0 &&
-           (ks_path & board.get_attacked_squares(them)) == 0;
+           (ks_path & compute_attacked_squares(board, them)) == 0;
   } else {
     // Queenside: b1/b8, c1/c8, d1/d8 must be empty; c1/c8, d1/d8 must not be
     // attacked
@@ -292,7 +292,7 @@ bool is_castling_legal(const Board &board, Color us, bool kingside) noexcept {
         (us == Color::WHITE) ? 0x000000000000000CULL  // c1, d1 (bits 2,3)
                              : 0x0C00000000000000ULL; // c8, d8 (bits 58,59)
     return (qs_path_empty & occupied) == 0 &&
-           (qs_path_safe & board.get_attacked_squares(them)) == 0;
+           (qs_path_safe & compute_attacked_squares(board, them)) == 0;
   }
 }
 
@@ -323,20 +323,29 @@ bool is_move_legal_fast(const Board &board, const Move &move, Color us,
   uint8_t from = move.from;
   uint8_t to = move.to;
 
-  // King moves: check if destination square is attacked
+  // King moves: must evaluate attacks AFTER the king moves.
+  // Checking attacked squares on the pre-move position is insufficient because
+  // the king itself can be the blocker (e.g., vacating a square can reveal a
+  // rook/queen attack onto the destination).
   if (from == king_sq) {
-    Bitboard attacked = get_attacked_squares(
-        board, (us == Color::WHITE) ? Color::BLACK : Color::WHITE);
-    return (attacked & (1ULL << to)) == 0;
+    Board temp = board;
+    temp.make_move(move);
+    return !is_in_check(temp, us);
   }
 
-  // If piece is pinned, move must stay on pin ray
+  // If piece is pinned, it may only move along the pin ray.
+  // NOTE: Even if the move stays on the ray, it can still be illegal (e.g. if
+  // the king is currently in check by another piece). So we *only* early-reject
+  // off-ray moves here, and still run the full post-move check below.
   if ((1ULL << from) & pinned) {
-    return (pin_rays[from] & (1ULL << to)) != 0;
+    if ((pin_rays[from] & (1ULL << to)) == 0) {
+      return false;
+    }
   }
 
   // For en passant captures, need special handling
-  if (board.en_passant_square != -1 && to == board.en_passant_square) {
+  if (board.get_en_passant_square() != -1 &&
+      to == board.get_en_passant_square()) {
     // Simplified check: if the move captures en passant, verify it doesn't
     // leave king in check This is a rare case so we can afford a bit more
     // computation
@@ -346,8 +355,11 @@ bool is_move_legal_fast(const Board &board, const Move &move, Color us,
   }
 
   // For all other moves: check if they don't leave king in check
-  // Use incremental check detection
-  return !does_move_leave_king_in_check(board, move, us, king_sq);
+  // Use incremental check detection (implemented below)
+  // For simplicity and correctness, use board copy for now
+  Board temp = board;
+  temp.make_move(move);
+  return !is_in_check(temp, us);
 }
 
 // Helper: Check if a move leaves king in check without full board copy
@@ -358,7 +370,7 @@ bool does_move_leave_king_in_check(const Board &board, const Move &move,
   Color them = (us == Color::WHITE) ? Color::BLACK : Color::WHITE;
 
   // Get attacked squares by enemy before move
-  Bitboard attacked_before = board.get_attacked_squares(them);
+  Bitboard attacked_before = compute_attacked_squares(board, them);
 
   // If king is attacked before move, move is illegal unless it's a king move
   // that escapes
@@ -523,7 +535,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept {
       Move test_move = {from, to, promotion};
 
       // Fast legality check: only test if move doesn't leave king in check
-      if (is_move_legal_fast(test_move, us, king_sq, pinned, pin_rays)) {
+      if (is_move_legal_fast(*this, test_move, us, king_sq, pinned, pin_rays)) {
         legal_moves.push_back(test_move);
       }
     }
@@ -629,7 +641,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept {
         Bitboard ks_path = (us == Color::WHITE) ? 0x0000000000000060ULL
                                                 : 0x6000000000000000ULL;
         if ((ks_path & occupied) == 0 &&
-            (ks_path & get_attacked_squares(*this, them)) == 0) {
+            (ks_path & compute_attacked_squares(*this, them)) == 0) {
           legal_moves.push_back(
               {king_home, static_cast<uint8_t>(king_home + 2), 0});
         }
@@ -650,7 +662,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept {
 
         // Path for king must be empty and not attacked, rook path must be empty
         if ((qs_path_all & occupied) == 0 &&
-            (qs_path_king & get_attacked_squares(*this, them)) == 0) {
+            (qs_path_king & compute_attacked_squares(*this, them)) == 0) {
           legal_moves.push_back(
               {king_home, static_cast<uint8_t>(king_home - 2), 0});
         }

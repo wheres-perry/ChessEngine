@@ -1,6 +1,8 @@
 """Setup script for chess engine C++ extensions."""
 
 import os
+import sys
+from pathlib import Path
 
 import pybind11
 from pybind11.setup_helpers import Pybind11Extension, build_ext
@@ -9,7 +11,23 @@ from setuptools import (  # pyright: ignore[reportMissingModuleSource]
     setup,
 )
 
-# Performance-optimized compiler flags
+# Get the directory where setup.py is located (project root)
+HERE = Path(__file__).parent.resolve()
+
+# Platform-specific compiler flags
+if sys.platform == "win32":
+    # MSVC compiler flags for Windows
+    extra_compile_args = [
+        "/O2",  # Maximum optimization
+        "/W3",  # Warning level 3
+        "/GL",  # Whole program optimization
+        "/DNDEBUG",  # Remove debug assertions
+    ]
+    extra_link_args = [
+        "/LTCG",  # Link-time code generation
+    ]
+else:
+    # GCC/Clang flags for Linux/Mac
 extra_compile_args = [
     "-O3",  # Maximum optimization
     "-march=native",  # Optimize for current CPU architecture
@@ -22,16 +40,14 @@ extra_compile_args = [
     "-Wall",  # Enable warnings
     "-Wextra",  # Extra warnings
 ]
-
-# Link-time optimization flags
 extra_link_args = [
     "-flto",  # Link-time optimization
     "-O3",  # Optimization at link time
 ]
 
-# Add these flags for PGO (requires two-step build process)
-pgo_generate = ["-fprofile-generate"]  # First build
-pgo_use = ["-fprofile-use"]  # Second build after profiling
+# PGO flags (commented out as they require two-step build)
+# pgo_generate = ["-fprofile-generate"]  # First build
+# pgo_use = ["-fprofile-use"]  # Second build after profiling
 
 ext_modules = [
     Pybind11Extension(
@@ -47,7 +63,15 @@ ext_modules = [
             "src/engine/_cpp/halfkp/bindings.cpp",
         ],
         cxx_std=20,
-        include_dirs=[pybind11.get_cmake_dir() + "/../include", "src/engine/_core"],
+        include_dirs=[
+            pybind11.get_cmake_dir() + "/../include",
+            str(HERE / "src/engine/_core"),
+            str(HERE / "src/engine/_cpp"),
+            str(HERE / "src/engine/_cpp/board"),
+            str(HERE / "src/engine/_cpp/move_generation"),
+            str(HERE / "src/engine/_cpp/search"),
+            str(HERE / "src/engine/_cpp/halfkp"),
+        ],
         define_macros=[
             ("VERSION_INFO", '"dev"'),
             ("NDEBUG", None),  # Remove debug code

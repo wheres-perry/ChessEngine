@@ -34,6 +34,9 @@ void init_board_bindings(py::module_ &m) {
   py::class_<Piece>(m, "Piece")
       .def_property_readonly("piece_type",
                              [](const Piece &piece) { return piece.type; })
+      // Alias to match python-chess-style attribute access in the Python code.
+      .def_property_readonly("type",
+                             [](const Piece &piece) { return piece.type; })
       .def_property_readonly("color",
                              [](const Piece &piece) { return piece.color; })
       .def("symbol", &Piece::symbol)

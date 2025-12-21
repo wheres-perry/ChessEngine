@@ -41,7 +41,7 @@ jobs:
             ${{ runner.os }}-uv-
 
       - name: Sync env (C++ build)
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Lint (ruff)
         run: uv run ruff check .
@@ -92,7 +92,7 @@ jobs:
             ${{ runner.os }}-uv-
 
       - name: Sync env (C++ build)
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run full test suite with coverage
         run: |
@@ -135,7 +135,7 @@ jobs:
         env:
           CXXFLAGS: "-fsanitize=address,undefined -fno-omit-frame-pointer"
           LDFLAGS: "-fsanitize=address,undefined"
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run core parity tests under sanitizers
         env:
@@ -172,7 +172,7 @@ jobs:
             ${{ runner.os }}-uv-
 
       - name: Sync env (Release build)
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run full performance suite
         run: |
