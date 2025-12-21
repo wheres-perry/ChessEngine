@@ -65,6 +65,7 @@ class BuildExt(build_ext):
 
         super().build_extensions()
 
+
 # PGO flags (commented out as they require two-step build)
 # pgo_generate = ["-fprofile-generate"]  # First build
 # pgo_use = ["-fprofile-use"]  # Second build after profiling

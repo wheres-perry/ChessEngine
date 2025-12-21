@@ -6,14 +6,16 @@
 #include "../board/board.hpp"
 
 // Fast bit manipulation helpers - moved to top for earlier declaration
-inline constexpr uint8_t pop_lsb(Bitboard &bb) noexcept {
+inline constexpr uint8_t pop_lsb(Bitboard &bb) noexcept
+{
   uint8_t sq = __builtin_ctzll(bb);
   bb &= bb - 1;
   return sq;
 }
 
 // Fast popcount (count bits set)
-inline constexpr int popcount(Bitboard bb) noexcept {
+inline constexpr int popcount(Bitboard bb) noexcept
+{
   return __builtin_popcountll(bb);
 }
 
@@ -27,7 +29,8 @@ inline constexpr int popcount(Bitboard bb) noexcept {
 
 // Backwards-compatible alias; kept for older callers/bindings.
 [[nodiscard]] inline Bitboard get_attacked_squares(const Board &board,
-                                                   Color by_color) noexcept {
+                                                   Color by_color) noexcept
+{
   return compute_attacked_squares(board, by_color);
 }
 
