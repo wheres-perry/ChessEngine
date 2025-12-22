@@ -10,11 +10,9 @@
 
 // Precomputed attack masks (compile-time generation for efficiency)
 // Knight moves from each square (bitboards of possible targets)
-const std::array<Bitboard, 64> KNIGHT_ATTACKS = []()
-{
+const std::array<Bitboard, 64> KNIGHT_ATTACKS = []() {
   std::array<Bitboard, 64> attacks{};
-  for (int sq = 0; sq < 64; ++sq)
-  {
+  for (int sq = 0; sq < 64; ++sq) {
     int r = sq / 8, f = sq % 8;
     // All 8 possible knight moves, clipped to board
     const std::array<std::pair<int, int>, 8> deltas = {{{2, 1},
@@ -25,11 +23,9 @@ const std::array<Bitboard, 64> KNIGHT_ATTACKS = []()
                                                         {1, -2},
                                                         {-1, 2},
                                                         {-1, -2}}};
-    for (const auto &[dr, df] : deltas)
-    {
+    for (const auto &[dr, df] : deltas) {
       int nr = r + dr, nf = f + df;
-      if (nr >= 0 && nr < 8 && nf >= 0 && nf < 8)
-      {
+      if (nr >= 0 && nr < 8 && nf >= 0 && nf < 8) {
         attacks[sq] |= (1ULL << (nr * 8 + nf));
       }
     }
@@ -38,23 +34,19 @@ const std::array<Bitboard, 64> KNIGHT_ATTACKS = []()
 }();
 
 // Pawn attacks (separate for white/black; captures only, not pushes)
-const std::array<std::array<Bitboard, 64>, 2> PAWN_ATTACKS = []()
-{
+const std::array<std::array<Bitboard, 64>, 2> PAWN_ATTACKS = []() {
   std::array<std::array<Bitboard, 64>, 2> attacks{};
-  for (int sq = 0; sq < 64; ++sq)
-  {
+  for (int sq = 0; sq < 64; ++sq) {
     int r = sq / 8, f = sq % 8;
     // White pawn attacks (forward-left/right)
-    if (r < 7)
-    {
+    if (r < 7) {
       if (f > 0)
         attacks[0][sq] |= (1ULL << ((r + 1) * 8 + (f - 1)));
       if (f < 7)
         attacks[0][sq] |= (1ULL << ((r + 1) * 8 + (f + 1)));
     }
     // Black pawn attacks (forward-left/right)
-    if (r > 0)
-    {
+    if (r > 0) {
       if (f > 0)
         attacks[1][sq] |= (1ULL << ((r - 1) * 8 + (f - 1)));
       if (f < 7)
@@ -65,19 +57,15 @@ const std::array<std::array<Bitboard, 64>, 2> PAWN_ATTACKS = []()
 }();
 
 // King attacks (precomputed for efficiency, similar to knights)
-const std::array<Bitboard, 64> KING_ATTACKS = []()
-{
+const std::array<Bitboard, 64> KING_ATTACKS = []() {
   std::array<Bitboard, 64> attacks{};
-  for (int sq = 0; sq < 64; ++sq)
-  {
+  for (int sq = 0; sq < 64; ++sq) {
     int r = sq / 8, f = sq % 8;
     const std::array<std::pair<int, int>, 8> deltas = {
         {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}}};
-    for (const auto &[dr, df] : deltas)
-    {
+    for (const auto &[dr, df] : deltas) {
       int nr = r + dr, nf = f + df;
-      if (nr >= 0 && nr < 8 && nf >= 0 && nf < 8)
-      {
+      if (nr >= 0 && nr < 8 && nf >= 0 && nf < 8) {
         attacks[sq] |= (1ULL << (nr * 8 + nf));
       }
     }
@@ -92,26 +80,22 @@ const int BISHOP_DIRECTIONS[4] = {4, 5, 6, 7};
 const int QUEEN_DIRECTIONS[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
 // Precomputed ray attacks [square][direction_index]
-const std::array<std::array<Bitboard, 8>, 64> RAY_ATTACKS = []()
-{
+const std::array<std::array<Bitboard, 8>, 64> RAY_ATTACKS = []() {
   std::array<std::array<Bitboard, 8>, 64> attacks{};
   // Offsets corresponding to indices 0-7
   const int offsets[8] = {8, -8, 1, -1, 9, -9, 7, -7};
 
-  for (int sq = 0; sq < 64; ++sq)
-  {
+  for (int sq = 0; sq < 64; ++sq) {
     int sq_r = sq / 8;
     int sq_f = sq % 8;
 
-    for (int d = 0; d < 8; ++d)
-    {
+    for (int d = 0; d < 8; ++d) {
       int offset = offsets[d];
       int target = sq;
       int current_r = sq_r;
       int current_f = sq_f;
 
-      while (true)
-      {
+      while (true) {
         target += offset;
         if (target < 0 || target >= 64)
           break;
@@ -123,8 +107,7 @@ const std::array<std::array<Bitboard, 8>, 64> RAY_ATTACKS = []()
         if ((offset == 1 && target_r != current_r) ||  // East wrap
             (offset == -1 && target_r != current_r) || // West wrap
             (std::abs(target_r - current_r) > 1) ||    // Vertical jump too far
-            (std::abs(target_f - current_f) > 1))
-        { // Horizontal jump too far
+            (std::abs(target_f - current_f) > 1)) { // Horizontal jump too far
           break;
         }
 
@@ -139,25 +122,19 @@ const std::array<std::array<Bitboard, 8>, 64> RAY_ATTACKS = []()
 
 inline int get_lsb_index(Bitboard bb) noexcept { return ctz64(bb); }
 
-inline int get_msb_index(Bitboard bb) noexcept
-{
-  return 63 - clz64(bb);
-}
+inline int get_msb_index(Bitboard bb) noexcept { return 63 - clz64(bb); }
 
 // Robust ray attack function - optimized using precomputed tables
 Bitboard get_ray_attacks(int sq, const int *directions, int num_dirs,
-                         Bitboard occupied) noexcept
-{
+                         Bitboard occupied) noexcept {
   Bitboard attacks = 0;
 
-  for (int i = 0; i < num_dirs; ++i)
-  {
+  for (int i = 0; i < num_dirs; ++i) {
     int dir = directions[i];
     Bitboard ray = RAY_ATTACKS[sq][dir];
     Bitboard blockers = ray & occupied;
 
-    if (blockers)
-    {
+    if (blockers) {
       // Even indices are positive directions (lsb), odd are negative (msb)
       int blocker_sq =
           (dir % 2 == 0) ? get_lsb_index(blockers) : get_msb_index(blockers);
@@ -173,9 +150,7 @@ Bitboard get_ray_attacks(int sq, const int *directions, int num_dirs,
       // So ray ^ (RAY_ATTACKS[blocker] & ray) ?
       // Since RAY_ATTACKS[blocker] is subset of ray (mostly), XOR works nicely.
       attacks |= (ray ^ RAY_ATTACKS[blocker_sq][dir]);
-    }
-    else
-    {
+    } else {
       attacks |= ray;
     }
   }
@@ -183,56 +158,49 @@ Bitboard get_ray_attacks(int sq, const int *directions, int num_dirs,
 }
 
 // Get all squares attacked by opponent (for check detection and castling)
-Bitboard compute_attacked_squares(const Board &board, Color by_color) noexcept
-{
+Bitboard compute_attacked_squares(const Board &board, Color by_color) noexcept {
   Bitboard attacked = 0;
   Bitboard occupied = board.get_all_pieces_bb();
   uint8_t color_idx = static_cast<uint8_t>(by_color);
 
   // Pawn attacks - optimized to directly use the lookup table
   Bitboard pawns = board.get_piece_bb(PieceType::PAWN, by_color);
-  while (pawns)
-  {
+  while (pawns) {
     uint8_t sq = pop_lsb(pawns);
     attacked |= PAWN_ATTACKS[color_idx][sq];
   }
 
   // Knight attacks - directly use the lookup table
   Bitboard knights = board.get_piece_bb(PieceType::KNIGHT, by_color);
-  while (knights)
-  {
+  while (knights) {
     uint8_t sq = pop_lsb(knights);
     attacked |= KNIGHT_ATTACKS[sq];
   }
 
   // Bishop attacks
   Bitboard bishops = board.get_piece_bb(PieceType::BISHOP, by_color);
-  while (bishops)
-  {
+  while (bishops) {
     uint8_t sq = pop_lsb(bishops);
     attacked |= get_ray_attacks(sq, BISHOP_DIRECTIONS, 4, occupied);
   }
 
   // Rook attacks
   Bitboard rooks = board.get_piece_bb(PieceType::ROOK, by_color);
-  while (rooks)
-  {
+  while (rooks) {
     uint8_t sq = pop_lsb(rooks);
     attacked |= get_ray_attacks(sq, ROOK_DIRECTIONS, 4, occupied);
   }
 
   // Queen attacks (rook + bishop)
   Bitboard queens = board.get_piece_bb(PieceType::QUEEN, by_color);
-  while (queens)
-  {
+  while (queens) {
     uint8_t sq = pop_lsb(queens);
     attacked |= get_ray_attacks(sq, QUEEN_DIRECTIONS, 8, occupied);
   }
 
   // King attacks - directly use the lookup table
   Bitboard king = board.get_piece_bb(PieceType::KING, by_color);
-  if (king)
-  {
+  if (king) {
     uint8_t sq = ctz64(king);
     attacked |= KING_ATTACKS[sq];
   }
@@ -241,8 +209,7 @@ Bitboard compute_attacked_squares(const Board &board, Color by_color) noexcept
 }
 
 // Complete check detection implementation - optimized
-bool is_in_check(const Board &board, Color us) noexcept
-{
+bool is_in_check(const Board &board, Color us) noexcept {
   // Find king's square
   Bitboard king_bb = board.get_piece_bb(PieceType::KING, us);
   if (!king_bb)
@@ -267,12 +234,10 @@ bool is_in_check(const Board &board, Color us) noexcept
   // Bishop/Queen diagonal attacks
   Bitboard enemy_bishops = board.get_piece_bb(PieceType::BISHOP, them) |
                            board.get_piece_bb(PieceType::QUEEN, them);
-  while (enemy_bishops)
-  {
+  while (enemy_bishops) {
     uint8_t bishop_sq = pop_lsb(enemy_bishops);
     if (get_ray_attacks(bishop_sq, BISHOP_DIRECTIONS, 4, occupied) &
-        king_square_bb)
-    {
+        king_square_bb) {
       return true;
     }
   }
@@ -280,21 +245,17 @@ bool is_in_check(const Board &board, Color us) noexcept
   // Rook/Queen horizontal/vertical attacks
   Bitboard enemy_rooks = board.get_piece_bb(PieceType::ROOK, them) |
                          board.get_piece_bb(PieceType::QUEEN, them);
-  while (enemy_rooks)
-  {
+  while (enemy_rooks) {
     uint8_t rook_sq = pop_lsb(enemy_rooks);
     if (get_ray_attacks(rook_sq, ROOK_DIRECTIONS, 4, occupied) &
-        king_square_bb)
-    {
+        king_square_bb) {
       return true;
     }
   }
 
   // Check for king attacks - using lookup table
   Bitboard enemy_king = board.get_piece_bb(PieceType::KING, them);
-  if (enemy_king &&
-      (KING_ATTACKS[ctz64(enemy_king)] & king_square_bb))
-  {
+  if (enemy_king && (KING_ATTACKS[ctz64(enemy_king)] & king_square_bb)) {
     return true;
   }
 
@@ -302,8 +263,7 @@ bool is_in_check(const Board &board, Color us) noexcept
 }
 
 // Castling legality - optimized
-bool is_castling_legal(const Board &board, Color us, bool kingside) noexcept
-{
+bool is_castling_legal(const Board &board, Color us, bool kingside) noexcept {
   // Fast check for in-check first
   if (is_in_check(board, us))
     return false;
@@ -311,17 +271,14 @@ bool is_castling_legal(const Board &board, Color us, bool kingside) noexcept
   Color them = (us == Color::WHITE) ? Color::BLACK : Color::WHITE;
   Bitboard occupied = board.get_all_pieces_bb();
 
-  if (kingside)
-  {
+  if (kingside) {
     // Kingside: f1/f8 and g1/g8 must be empty and not attacked
     const Bitboard ks_path = (us == Color::WHITE)
                                  ? 0x0000000000000060ULL  // f1, g1 (bits 5,6)
                                  : 0x6000000000000000ULL; // f8, g8 (bits 61,62)
     return (ks_path & occupied) == 0 &&
            (ks_path & compute_attacked_squares(board, them)) == 0;
-  }
-  else
-  {
+  } else {
     // Queenside: b1/b8, c1/c8, d1/d8 must be empty; c1/c8, d1/d8 must not be
     // attacked
     const Bitboard qs_path_empty =
@@ -337,8 +294,7 @@ bool is_castling_legal(const Board &board, Color us, bool kingside) noexcept
 }
 
 // Helper function to check if two squares are on the same ray - optimized
-bool squares_on_same_ray(uint8_t sq1, uint8_t sq2) noexcept
-{
+bool squares_on_same_ray(uint8_t sq1, uint8_t sq2) noexcept {
   int r1 = sq1 / 8, f1 = sq1 % 8;
   int r2 = sq2 / 8, f2 = sq2 % 8;
 
@@ -360,8 +316,7 @@ bool squares_on_same_ray(uint8_t sq1, uint8_t sq2) noexcept
 // Fast move legality checking without board copies
 bool is_move_legal_fast(const Board &board, const Move &move, Color us,
                         uint8_t king_sq, Bitboard pinned,
-                        const std::array<Bitboard, 64> &pin_rays) noexcept
-{
+                        const std::array<Bitboard, 64> &pin_rays) noexcept {
   uint8_t from = move.from;
   uint8_t to = move.to;
 
@@ -369,8 +324,7 @@ bool is_move_legal_fast(const Board &board, const Move &move, Color us,
   // Checking attacked squares on the pre-move position is insufficient because
   // the king itself can be the blocker (e.g., vacating a square can reveal a
   // rook/queen attack onto the destination).
-  if (from == king_sq)
-  {
+  if (from == king_sq) {
     Board temp = board;
     temp.make_move(move);
     return !is_in_check(temp, us);
@@ -380,18 +334,15 @@ bool is_move_legal_fast(const Board &board, const Move &move, Color us,
   // NOTE: Even if the move stays on the ray, it can still be illegal (e.g. if
   // the king is currently in check by another piece). So we *only* early-reject
   // off-ray moves here, and still run the full post-move check below.
-  if ((1ULL << from) & pinned)
-  {
-    if ((pin_rays[from] & (1ULL << to)) == 0)
-    {
+  if ((1ULL << from) & pinned) {
+    if ((pin_rays[from] & (1ULL << to)) == 0) {
       return false;
     }
   }
 
   // For en passant captures, need special handling
   if (board.get_en_passant_square() != -1 &&
-      to == board.get_en_passant_square())
-  {
+      to == board.get_en_passant_square()) {
     // Simplified check: if the move captures en passant, verify it doesn't
     // leave king in check This is a rare case so we can afford a bit more
     // computation
@@ -410,8 +361,7 @@ bool is_move_legal_fast(const Board &board, const Move &move, Color us,
 
 // Helper: Check if a move leaves king in check without full board copy
 bool does_move_leave_king_in_check(const Board &board, const Move &move,
-                                   Color us, uint8_t king_sq) noexcept
-{
+                                   Color us, uint8_t king_sq) noexcept {
   // For now, use optimized approach: pre-compute attacked squares and check
   // incrementally This is still a performance optimization over full board copy
   Color them = (us == Color::WHITE) ? Color::BLACK : Color::WHITE;
@@ -421,8 +371,7 @@ bool does_move_leave_king_in_check(const Board &board, const Move &move,
 
   // If king is attacked before move, move is illegal unless it's a king move
   // that escapes
-  if (attacked_before & (1ULL << king_sq))
-  {
+  if (attacked_before & (1ULL << king_sq)) {
     // King is in check - only king moves can possibly escape
     if (move.from != king_sq)
       return true;
@@ -441,8 +390,7 @@ bool does_move_leave_king_in_check(const Board &board, const Move &move,
 }
 
 std::pair<Bitboard, std::array<Bitboard, 64>>
-compute_pinned_pieces(const Board &board, Color us) noexcept
-{
+compute_pinned_pieces(const Board &board, Color us) noexcept {
   Bitboard pinned = 0;
   std::array<Bitboard, 64> pin_rays = {0};
 
@@ -458,8 +406,7 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
   // Check rook/queen pins
   Bitboard potential_pinners = board.get_piece_bb(PieceType::ROOK, them) |
                                board.get_piece_bb(PieceType::QUEEN, them);
-  while (potential_pinners)
-  {
+  while (potential_pinners) {
     uint8_t pinner_sq = pop_lsb(potential_pinners);
 
     // Check if pinner and king are aligned horizontally or vertically
@@ -472,13 +419,12 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
 
     // Determine step direction
     int step = (pinner_r == king_r) ? ((pinner_f < king_f) ? 1 : -1)
-                                    :              // Same rank: move horizontally
+                                    : // Same rank: move horizontally
                    ((pinner_r < king_r) ? 8 : -8); // Same file: move vertically
 
     // Create mask for squares between pinner and king
     Bitboard between_mask = 0;
-    for (uint8_t sq = pinner_sq + step; sq != king_sq; sq += step)
-    {
+    for (uint8_t sq = pinner_sq + step; sq != king_sq; sq += step) {
       between_mask |= (1ULL << sq);
     }
 
@@ -490,8 +436,7 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
     // 1. There's exactly one of OUR pieces between pinner and king
     // 2. That piece is the ONLY piece between them (no enemy pieces blocking)
     if (popcount(our_pieces_between) == 1 &&
-        popcount(all_pieces_between) == 1)
-    {
+        popcount(all_pieces_between) == 1) {
       uint8_t pinned_sq = ctz64(our_pieces_between);
       pinned |= (1ULL << pinned_sq);
 
@@ -508,8 +453,7 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
   // Check bishop/queen pins - optimized
   potential_pinners = board.get_piece_bb(PieceType::BISHOP, them) |
                       board.get_piece_bb(PieceType::QUEEN, them);
-  while (potential_pinners)
-  {
+  while (potential_pinners) {
     uint8_t pinner_sq = pop_lsb(potential_pinners);
 
     // Check if on same diagonal
@@ -530,8 +474,7 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
 
     // Create mask for squares between pinner and king
     Bitboard between_mask = 0;
-    for (uint8_t sq = pinner_sq + step; sq != king_sq; sq += step)
-    {
+    for (uint8_t sq = pinner_sq + step; sq != king_sq; sq += step) {
       between_mask |= (1ULL << sq);
     }
 
@@ -543,8 +486,7 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
     // 1. There's exactly one of OUR pieces between pinner and king
     // 2. That piece is the ONLY piece between them (no enemy pieces blocking)
     if (popcount(our_pieces_between) == 1 &&
-        popcount(all_pieces_between) == 1)
-    {
+        popcount(all_pieces_between) == 1) {
       uint8_t pinned_sq = ctz64(our_pieces_between);
       pinned |= (1ULL << pinned_sq);
 
@@ -563,8 +505,7 @@ compute_pinned_pieces(const Board &board, Color us) noexcept
 
 // Main generate_legal_moves implementation - now with fixed pin handling and
 // optimized
-std::vector<Move> Board::generate_legal_moves() const noexcept
-{
+std::vector<Move> Board::generate_legal_moves() const noexcept {
   // Pre-allocate with exact size for common case (avg ~38 moves)
   std::vector<Move> legal_moves;
   legal_moves.reserve(48);
@@ -585,16 +526,13 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
   // Helper lambda to add moves from a source square, with legality checking
   auto add_legal_moves = [&](uint8_t from, Bitboard targets,
-                             uint8_t promotion = 0)
-  {
-    while (targets)
-    {
+                             uint8_t promotion = 0) {
+    while (targets) {
       uint8_t to = pop_lsb(targets);
       Move test_move = {from, to, promotion};
 
       // Fast legality check: only test if move doesn't leave king in check
-      if (is_move_legal_fast(*this, test_move, us, king_sq, pinned, pin_rays))
-      {
+      if (is_move_legal_fast(*this, test_move, us, king_sq, pinned, pin_rays)) {
         legal_moves.push_back(test_move);
       }
     }
@@ -606,8 +544,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
   int start_rank = (us == Color::WHITE) ? 1 : 6;
   uint8_t us_idx = static_cast<uint8_t>(us);
 
-  while (pawns)
-  {
+  while (pawns) {
     uint8_t from = pop_lsb(pawns);
     int from_rank = from / 8;
 
@@ -615,31 +552,23 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
     // Single push
     uint8_t to = from + direction;
-    if (to < 64 && ((1ULL << to) & empty))
-    {
+    if (to < 64 && ((1ULL << to) & empty)) {
       Bitboard single_push = (1ULL << to) & allowed_targets;
 
-      if (single_push)
-      {
+      if (single_push) {
         if (from_rank ==
-            (us == Color::WHITE ? 6 : 1))
-        { // 7th/2nd rank (promotion next)
+            (us == Color::WHITE ? 6 : 1)) { // 7th/2nd rank (promotion next)
           // Promotion - add all four promotion types
-          for (uint8_t pt = 1; pt <= 4; pt++)
-          { // KNIGHT through QUEEN
+          for (uint8_t pt = 1; pt <= 4; pt++) { // KNIGHT through QUEEN
             add_legal_moves(from, single_push, pt);
           }
-        }
-        else
-        {
+        } else {
           add_legal_moves(from, single_push);
 
           // Double push from start rank (more efficient check)
-          if (from_rank == start_rank)
-          {
+          if (from_rank == start_rank) {
             uint8_t double_to = to + direction;
-            if ((1ULL << double_to) & empty & allowed_targets)
-            {
+            if ((1ULL << double_to) & empty & allowed_targets) {
               add_legal_moves(from, 1ULL << double_to);
             }
           }
@@ -652,29 +581,23 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
         PAWN_ATTACKS[us_idx][from] & their_pieces & allowed_targets;
 
     if (from_rank ==
-        (us == Color::WHITE ? 6 : 1))
-    { // 7th/2nd rank (promotion next)
+        (us == Color::WHITE ? 6 : 1)) { // 7th/2nd rank (promotion next)
       // Promotion captures - optimized to avoid unnecessary loops
-      while (captures)
-      {
+      while (captures) {
         uint8_t cap_to = pop_lsb(captures);
         Bitboard cap_bb = 1ULL << cap_to;
 
         // Add all promotion types in one loop
-        for (uint8_t pt = 1; pt <= 4; pt++)
-        { // KNIGHT through QUEEN
+        for (uint8_t pt = 1; pt <= 4; pt++) { // KNIGHT through QUEEN
           add_legal_moves(from, cap_bb, pt);
         }
       }
-    }
-    else if (captures)
-    {
+    } else if (captures) {
       add_legal_moves(from, captures);
     }
 
     // En passant - fast check
-    if (en_passant_square != -1)
-    {
+    if (en_passant_square != -1) {
       Bitboard ep_attacks = PAWN_ATTACKS[us_idx][from] &
                             (1ULL << en_passant_square) & allowed_targets;
       if (ep_attacks)
@@ -684,8 +607,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
   // Knight moves - using lookup table
   Bitboard knights = get_piece_bb(PieceType::KNIGHT, us);
-  while (knights)
-  {
+  while (knights) {
     uint8_t from = pop_lsb(knights);
 
     // Knights can't move along pin ray, so just check if pinned
@@ -697,8 +619,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
   }
 
   // King moves (non-castling, using precomputed table)
-  if (king_bb)
-  {
+  if (king_bb) {
     uint8_t from = ctz64(king_bb);
     Bitboard targets = KING_ATTACKS[from] & ~our_pieces;
 
@@ -708,20 +629,16 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
   // Castling - complete implementation with all legality checks
   if (king_bb &&
-      !is_in_check(*this, us))
-  { // Quick check if castling is even possible
+      !is_in_check(*this, us)) { // Quick check if castling is even possible
     uint8_t king_home = (us == Color::WHITE) ? 4 : 60;
-    if (king_sq == king_home)
-    { // King on home square
+    if (king_sq == king_home) { // King on home square
       // Kingside castling
       uint8_t rights_mask_ks = (us == Color::WHITE) ? 1 : 4;
-      if (castling_rights & rights_mask_ks)
-      {
+      if (castling_rights & rights_mask_ks) {
         Bitboard ks_path = (us == Color::WHITE) ? 0x0000000000000060ULL
                                                 : 0x6000000000000000ULL;
         if ((ks_path & occupied) == 0 &&
-            (ks_path & compute_attacked_squares(*this, them)) == 0)
-        {
+            (ks_path & compute_attacked_squares(*this, them)) == 0) {
           legal_moves.push_back(
               {king_home, static_cast<uint8_t>(king_home + 2), 0});
         }
@@ -729,8 +646,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
       // Queenside castling
       uint8_t rights_mask_qs = (us == Color::WHITE) ? 2 : 8;
-      if (castling_rights & rights_mask_qs)
-      {
+      if (castling_rights & rights_mask_qs) {
         // King passes through d1/d8 and lands on c1/c8 (must not be attacked)
         Bitboard qs_path_king =
             (us == Color::WHITE) ? 0x000000000000000CULL  // c1, d1 (bits 2,3)
@@ -743,8 +659,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
         // Path for king must be empty and not attacked, rook path must be empty
         if ((qs_path_all & occupied) == 0 &&
-            (qs_path_king & compute_attacked_squares(*this, them)) == 0)
-        {
+            (qs_path_king & compute_attacked_squares(*this, them)) == 0) {
           legal_moves.push_back(
               {king_home, static_cast<uint8_t>(king_home - 2), 0});
         }
@@ -755,8 +670,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
   // Sliding pieces (rooks, bishops, queens)
   // Rooks
   Bitboard rooks = get_piece_bb(PieceType::ROOK, us);
-  while (rooks)
-  {
+  while (rooks) {
     uint8_t from = pop_lsb(rooks);
     Bitboard allowed_targets = (1ULL << from) & pinned ? pin_rays[from] : ~0ULL;
     Bitboard attacks = get_ray_attacks(from, ROOK_DIRECTIONS, 4, occupied);
@@ -766,8 +680,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
   // Bishops
   Bitboard bishops = get_piece_bb(PieceType::BISHOP, us);
-  while (bishops)
-  {
+  while (bishops) {
     uint8_t from = pop_lsb(bishops);
     Bitboard allowed_targets = (1ULL << from) & pinned ? pin_rays[from] : ~0ULL;
     Bitboard attacks = get_ray_attacks(from, BISHOP_DIRECTIONS, 4, occupied);
@@ -777,8 +690,7 @@ std::vector<Move> Board::generate_legal_moves() const noexcept
 
   // Queens (combine rook + bishop rays)
   Bitboard queens = get_piece_bb(PieceType::QUEEN, us);
-  while (queens)
-  {
+  while (queens) {
     uint8_t from = pop_lsb(queens);
     Bitboard allowed_targets = (1ULL << from) & pinned ? pin_rays[from] : ~0ULL;
     Bitboard attacks = get_ray_attacks(from, QUEEN_DIRECTIONS, 8, occupied);

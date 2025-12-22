@@ -17,8 +17,7 @@
 
 // Backwards-compatible alias; kept for older callers/bindings.
 [[nodiscard]] inline Bitboard get_attacked_squares(const Board &board,
-                                                   Color by_color) noexcept
-{
+                                                   Color by_color) noexcept {
   return compute_attacked_squares(board, by_color);
 }
 
