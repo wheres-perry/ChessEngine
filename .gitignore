@@ -5,9 +5,16 @@
 *.h5
 *processing_ledger.json
 .docker-cache
+.copilot/
 validation/
 *.DS_Store
 
+# Nox automation
+.nox/
+
+# UV package manager
+.uv/
+.uv-cache/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
