@@ -6,8 +6,9 @@ authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.11"
 # Core dependencies required for the engine to run
 dependencies = [
-    # CPU-only build to keep CI runners (no GPU) lightweight
-    "torch==2.3.1+cpu",
+    # PyTorch - version without +cpu suffix for cross-platform compatibility
+    # CI uses pytorch-cpu index, local dev uses regular PyPI
+    "torch>=2.3.0",
     "numpy>=1.24.0",
     "chess>=1.9.0",
 ]
@@ -185,4 +186,23 @@ exclude = [
 addopts = "--cov=src/engine --cov-report=term-missing"
 testpaths = [
     "tests",
+]
+
+[tool.uv]
+# Ensure resolution works for both ARM64 (local dev) and x86_64 (CI)
+environments = ["sys_platform == 'linux'", "sys_platform == 'darwin'", "sys_platform == 'win32'"]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[tool.uv.sources]
+# Use PyTorch CPU index on x86_64 Linux (CI), regular PyPI elsewhere
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { index = "pypi", marker = "sys_platform != 'linux' or platform_machine != 'x86_64'" },
 ]
