@@ -7,7 +7,28 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  fast-checks:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+  tests:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
@@ -18,31 +39,20 @@ jobs:
           python-version: "3.11"
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v5
 
-      - name: Add uv to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies and build
-        run: |
-          uv sync --extra dev
-          uv run pip install -e .
-
-      - name: Lint
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
+      - name: Install dependencies
+        run: uv sync --extra dev
 
       - name: Test
         run: uv run pytest tests/ -q --tb=short
 
-  build:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+  sanitizers:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-13, windows-2022]
+        sanitizer: [address, undefined]
     steps:
       - uses: actions/checkout@v4
 
@@ -50,23 +60,58 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install uv (Unix)
-        if: runner.os != 'Windows'
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
-      - name: Install uv (Windows)
-        if: runner.os == 'Windows'
-        run: irm https://astral.sh/uv/install.ps1 | iex
-        shell: pwsh
+      - name: Install dependencies
+        # Install with strict options, then force rebuild extensions with sanitizer flags
+        run: uv sync --extra dev
 
-      - name: Add uv to PATH (Unix)
-        if: runner.os != 'Windows'
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Run Sanitizer (${{ matrix.sanitizer }})
+        env:
+          CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -g -O1 -fno-omit-frame-pointer"
+          CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -g -O1 -fno-omit-frame-pointer"
+          LDFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
+        run: |
+           # Force reinstall of the project to apply CFLAGS to the C++ extension build
+           uv sync --reinstall --extra dev
+           uv run pytest tests/core/
 
-      - name: Add uv to PATH (Windows)
-        if: runner.os == 'Windows'
-        run: echo "$env:USERPROFILE\.local\bin" >> $env:GITHUB_PATH
-        shell: pwsh
+  performance:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run Benchmarks
+        run: uv run pytest tests/core/test_performance.py --benchmark-only
+
+  wheels:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Build wheel
         run: uv build
