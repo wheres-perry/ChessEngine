@@ -7,7 +7,11 @@
     },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-    // Removed the "features" block for docker-outside-of-docker
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "moby": false
+        }
+    },
     "forwardPorts": [
         8000,
         8888,
@@ -30,7 +34,8 @@
                 "aaron-bond.better-comments",
                 "ms-azuretools.vscode-docker",
                 "charliermarsh.ruff",
-                "astral.uv"
+                "astral.uv",
+                "github.vscode-github-actions"
             ],
             "settings": {
                 "python.terminal.activateEnvironment": false,

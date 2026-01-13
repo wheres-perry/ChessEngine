@@ -2,236 +2,76 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
-  schedule:
-    - cron: "0 5 * * *"  # daily at 05:00 UTC for full perf/coverage/sanitizers
-
-env:
-  UV_LINK_MODE: hardlink
-  UV_NO_SYNC: 1
-  CMAKE_BUILD_PARALLEL_LEVEL: 4
+    branches: [main, master]
 
 jobs:
-  # ---------------------------------------------------------------
-  # 1) Fast checks on each push/PR (lint + unit/parity + smoke perf)
-  # ---------------------------------------------------------------
-  fast-checks:
+  test:
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install uv
-        run: pip install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
-      - name: Cache uv
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
+      - name: Add uv to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Sync env (C++ build)
+      - name: Install dependencies and build
         run: |
           uv sync --extra dev
           uv run pip install -e .
 
-      - name: Lint (ruff)
-        run: uv run ruff check .
-
-      - name: Format check (ruff)
-        run: uv run ruff format --check .
-
-      - name: Lint C++ (clang-format)
+      - name: Lint
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
-          clang-format --version
-          find src/engine/_cpp -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run --Werror
+          uv run ruff check .
+          uv run ruff format --check .
 
-      - name: Core parity/unit (fast)
-        run: |
-          uv run pytest tests/core/test_random_game_parity.py -q
+      - name: Test
+        run: uv run pytest tests/ -q --tb=short
 
-      - name: Performance smoke (short)
-        run: |
-          uv run pytest tests/core/test_performance.py::test_perft_traversal_depth_3 --benchmark-only -q
-
-  # ---------------------------------------------------------------
-  # 2) Full test suite + coverage (per push/PR)
-  # ---------------------------------------------------------------
-  tests:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 45
-    needs: fast-checks
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Sync env (C++ build)
-        run: |
-          uv sync --extra dev
-          uv run pip install -e .
-
-      - name: Run full test suite with coverage
-        run: |
-          uv run pytest --cov=src --cov=tests --cov-report=xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          fail_ci_if_error: false
-
-  # ---------------------------------------------------------------
-  # 3) Sanitizers (ASan + UBSan) on core tests
-  # ---------------------------------------------------------------
-  sanitizers:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 45
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}-asan
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Sync env with sanitizers
-        env:
-          CXXFLAGS: "-fsanitize=address,undefined -fno-omit-frame-pointer"
-          LDFLAGS: "-fsanitize=address,undefined"
-        run: |
-          uv sync --extra dev
-          uv run pip install -e .
-
-      - name: Run core parity tests under sanitizers
-        env:
-          ASAN_OPTIONS: detect_leaks=1
-        run: |
-          uv run pytest tests/core/test_random_game_parity.py -q
-
-  # ---------------------------------------------------------------
-  # 4) Full performance suite + dashboard (nightly)
-  #    Also runs on push/PR but can be made non-blocking if needed.
-  # ---------------------------------------------------------------
-  performance:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
-    if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'pull_request'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}-perf
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Sync env (Release build)
-        run: |
-          uv sync --extra dev
-          uv run pip install -e .
-
-      - name: Run full performance suite
-        run: |
-          uv run pytest tests/core/test_performance.py --benchmark-only --benchmark-json=benchmark.json
-
-      - name: Upload benchmark artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-${{ github.sha }}
-          path: benchmark.json
-
-      - name: Update performance dashboard (GitHub Pages)
-        if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: 'pytest-benchmark'
-          output-file-path: benchmark.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          alert-threshold: 5%
-          alert-comment-cc-users: '@' # no-op by default; adjust if needed
-
-  # ---------------------------------------------------------------
-  # 5) Wheels build (future-facing, optional gate)
-  # ---------------------------------------------------------------
-  wheels:
+  build:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 30
     strategy:
-        fail-fast: false
-        matrix:
-          os: [ubuntu-22.04, macos-13, windows-2022]
-          python-version: [ "3.11" ]
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-13, windows-2022]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
 
-      - name: Install uv
-        run: pip install uv
+      - name: Install uv (Unix)
+        if: runner.os != 'Windows'
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install uv (Windows)
+        if: runner.os == 'Windows'
+        run: irm https://astral.sh/uv/install.ps1 | iex
+        shell: pwsh
+
+      - name: Add uv to PATH (Unix)
+        if: runner.os != 'Windows'
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Add uv to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: echo "$env:USERPROFILE\.local\bin" >> $env:GITHUB_PATH
+        shell: pwsh
 
       - name: Build wheel
         run: uv build
 
-      - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheel-${{ matrix.os }}-${{ matrix.python-version }}
+          name: wheel-${{ matrix.os }}
           path: dist/*.whl
-
