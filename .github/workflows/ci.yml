@@ -74,7 +74,7 @@ jobs:
           LDFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
         run: |
            # Force reinstall of the project to apply CFLAGS to the C++ extension build
-           uv sync --reinstall --extra dev
+           uv sync --reinstall-package chessengine --extra dev
            uv run pytest tests/core/
 
   performance:
