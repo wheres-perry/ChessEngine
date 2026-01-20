@@ -59,14 +59,21 @@ class BuildExt(build_ext):
 
         # If sanitizer flags are present, use them instead of optimization flags
         # This allows for address/undefined sanitizer builds in CI
+        all_flags = (
+            cflags.split() if cflags else []
+        ) + (
+            cxxflags.split() if cxxflags else []
+        ) + (
+            ldflags.split() if ldflags else []
+        )
         has_sanitizer = any(
-            flag in cflags or flag in cxxflags or flag in ldflags
-            for flag in ["-fsanitize=", "/fsanitize:"]
+            flag.startswith("-fsanitize=") or flag.startswith("/fsanitize:")
+            for flag in all_flags
         )
 
         if has_sanitizer:
             # Use environment variable flags for sanitizer builds
-            compile_args = cxxflags.split() if cxxflags else cflags.split()
+            compile_args = cxxflags.split() if cxxflags else (cflags.split() if cflags else [])
             link_args = ldflags.split() if ldflags else []
         elif compiler_type == "msvc":
             compile_args = MSVC_COMPILE_ARGS
