@@ -52,7 +52,23 @@ class BuildExt(build_ext):
     def build_extensions(self) -> None:
         compiler_type = self.compiler.compiler_type
 
-        if compiler_type == "msvc":
+        # Check for sanitizer or custom flags in environment variables
+        cflags = os.environ.get("CFLAGS", "")
+        cxxflags = os.environ.get("CXXFLAGS", "")
+        ldflags = os.environ.get("LDFLAGS", "")
+
+        # If sanitizer flags are present, use them instead of optimization flags
+        # This allows for address/undefined sanitizer builds in CI
+        has_sanitizer = any(
+            flag in cflags or flag in cxxflags or flag in ldflags
+            for flag in ["-fsanitize=", "/fsanitize:"]
+        )
+
+        if has_sanitizer:
+            # Use environment variable flags for sanitizer builds
+            compile_args = cxxflags.split() if cxxflags else cflags.split()
+            link_args = ldflags.split() if ldflags else []
+        elif compiler_type == "msvc":
             compile_args = MSVC_COMPILE_ARGS
             link_args = MSVC_LINK_ARGS
         else:
