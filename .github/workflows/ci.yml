@@ -2,13 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:  # Allows manual triggering from any branch
+    branches: ['**']
+  workflow_dispatch:
 
 jobs:
   fast-checks:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -30,6 +29,7 @@ jobs:
           uv run ruff format --check .
 
   tests:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
@@ -49,6 +49,7 @@ jobs:
         run: uv run pytest tests/ -q --tb=short
 
   sanitizers:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     strategy:
@@ -65,7 +66,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        # Install with strict options, then force rebuild extensions with sanitizer flags
         run: uv sync --extra dev
 
       - name: Run Sanitizer (${{ matrix.sanitizer }})
@@ -74,16 +74,25 @@ jobs:
           CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -g -O1 -fno-omit-frame-pointer"
           LDFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
         run: |
-           # Force reinstall of the project to apply CFLAGS to the C++ extension build
-           uv sync --reinstall --extra dev
+          # Force reinstall of the project to apply CFLAGS to the C++ extension build
+          uv sync --reinstall --extra dev
 
-                     # For AddressSanitizer, we need to preload the runtime library because
-                     # the Python executable itself is not built with ASan.
-                     if [ "${{ matrix.sanitizer }}" = "address" ]; then
-                       ASAN_LIB=$(gcc -print-file-name=libasan.so)
-                       echo "Preloading ASan: $ASAN_LIB"
-                       export LD_PRELOAD=$ASAN_LIB
-                     fi
+          # For AddressSanitizer, we need to preload the runtime library because
+          # the Python executable itself is not built with ASan.
+          if [ "${{ matrix.sanitizer }}" = "address" ]; then
+            ASAN_LIB=$(gcc -print-file-name=libasan.so)
+            echo "Preloading ASan: $ASAN_LIB"
+            export LD_PRELOAD=$ASAN_LIB
+          fi
+
+          uv run pytest tests/core/
+
+  performance:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -99,6 +108,7 @@ jobs:
         run: uv run pytest tests/core/test_performance.py --benchmark-only
 
   wheels:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
