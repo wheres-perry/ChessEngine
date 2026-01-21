@@ -59,9 +59,14 @@ class BuildExt(build_ext):
             compile_args = UNIX_COMPILE_ARGS
             link_args = UNIX_LINK_ARGS
 
+        # Check for sanitizer flags in environment variables
+        env_cxxflags = os.environ.get("CXXFLAGS", "").split()
+        env_ldflags = os.environ.get("LDFLAGS", "").split()
+
         for ext in self.extensions:
-            ext.extra_compile_args = compile_args
-            ext.extra_link_args = link_args
+            # Start with base compile args, then add any env flags
+            ext.extra_compile_args = list(compile_args) + env_cxxflags
+            ext.extra_link_args = list(link_args) + env_ldflags
 
         super().build_extensions()
 
