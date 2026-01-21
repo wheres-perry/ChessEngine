@@ -76,13 +76,14 @@ jobs:
         run: |
            # Force reinstall of the project to apply CFLAGS to the C++ extension build
            uv sync --reinstall --extra dev
-           uv run pytest tests/core/
 
-  performance:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
+                     # For AddressSanitizer, we need to preload the runtime library because
+                     # the Python executable itself is not built with ASan.
+                     if [ "${{ matrix.sanitizer }}" = "address" ]; then
+                       ASAN_LIB=$(gcc -print-file-name=libasan.so)
+                       echo "Preloading ASan: $ASAN_LIB"
+                       export LD_PRELOAD=$ASAN_LIB
+                     fi
 
       - uses: actions/setup-python@v5
         with:
