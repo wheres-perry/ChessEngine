@@ -1,181 +1,107 @@
-"""Transposition table implementation leveraging incremental Zobrist hashing."""
+"""Transposition table implementation used by negamax search."""
 
-from typing import Literal, TypedDict
+from __future__ import annotations
 
-from engine._core import chess_engine_core as chess
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from engine._core import chess_engine_core as chess
+    from engine.config import SearchConfig
+
+BoundType = Literal["exact", "lower", "upper"]
 
 
-class TTEntry(TypedDict):
+@dataclass(slots=True)
+class TTEntry:
+    """Single transposition table entry."""
+
+    key: int
     depth: int
     score: float
-    type: Literal["upper", "lower", "exact"]
+    best_move: chess.Move | None
+    bound: BoundType
     age: int
-    best_move: chess.Move | None  # FIXED: Added best move field
-
-
-# pylint: disable=too-many-positional-arguments
 
 
 class TranspositionTable:
-    """
-    Transposition table for storing previously evaluated positions.
-    Uses Zobrist hashing to store position evaluations with depth and bound information
-    to avoid re-evaluating identical positions during search.
-    """
+    """In-memory transposition table with lightweight aging and replacement."""
 
-    DEFAULT_SIZE = 1000000
-    MAX_AGE_DIFF = 4  # Maximum age difference to consider entry valid
+    ESTIMATED_ENTRY_SIZE_BYTES = 32
 
-    def __init__(self, max_entries: int = DEFAULT_SIZE, use_tt_aging: bool = True):
-        """
-        Initialize the transposition table.
-
-        Args:
-            max_entries: Maximum number of entries to store
-            use_tt_aging: Whether to use transposition table aging
-        """
+    def __init__(self, config: SearchConfig):
+        self.config = config
+        estimated_capacity = (
+            config.tt_size_mb * 1024 * 1024 // self.ESTIMATED_ENTRY_SIZE_BYTES
+        )
+        self.max_entries = max(1024, int(estimated_capacity))
         self.table: dict[int, TTEntry] = {}
-        self.max_entries = max_entries
         self.current_age = 0
-        self.use_tt_aging = use_tt_aging
 
     def increment_age(self) -> None:
-        """Increment the current age, typically called at the start of a new search."""
-        if self.use_tt_aging:
+        """Increment search age once before each new top-level search."""
+        if self.config.use_tt_aging:
             self.current_age += 1
 
-    def lookup(
-        self, hash_val: int, depth: int, alpha: float, beta: float
-    ) -> None | float:
-        """
-        Look up a position in the transposition table.
+    def clear(self) -> None:
+        self.table.clear()
 
-        Args:
-            hash_val: Zobrist hash of the position
-            depth: Current search depth
-            alpha: Current alpha value
-            beta: Current beta value
+    def size(self) -> int:
+        return len(self.table)
 
-        Returns:
-            Stored score if usable, None otherwise
-        """
-        entry = self.table.get(hash_val)
-
-        # Return None if entry doesn't exist or is too shallow
-        if not entry or entry["depth"] < depth:
+    def probe(self, key: int) -> TTEntry | None:
+        """Probe table and optionally refresh entry age on hit."""
+        entry = self.table.get(key)
+        if entry is None:
             return None
+        if self.config.use_tt_aging:
+            entry.age = self.current_age
+        return entry
 
-        # Check if entry is too old if aging is enabled
-        # Handle both normal aging and the case when age was reset
-        if self.use_tt_aging and (
-            self.current_age < entry["age"]
-            or (entry["age"] < self.current_age - self.MAX_AGE_DIFF)
-        ):
+    def try_get_score(
+        self,
+        entry: TTEntry,
+        depth: int,
+        alpha: float,
+        beta: float,
+    ) -> float | None:
+        """Return a usable score from an entry if it can cut off at this node."""
+        if entry.depth < depth:
             return None
-
-        entry_type = entry["type"]
-        score = entry["score"]
-
-        if entry_type == "exact":
-            return score
-        if entry_type == "lower" and score >= beta:
-            return beta
-        if entry_type == "upper" and score <= alpha:
-            return alpha
-
+        if entry.bound == "exact":
+            return entry.score
+        if entry.bound == "lower" and entry.score >= beta:
+            return entry.score
+        if entry.bound == "upper" and entry.score <= alpha:
+            return entry.score
         return None
-
-    def get_best_move(self, hash_val: int) -> chess.Move | None:
-        """
-        Get the best move for a position if available.
-
-        Args:
-            hash_val: Zobrist hash of the position
-
-        Returns:
-            Best move if available and not too old, None otherwise
-        """
-        entry = self.table.get(hash_val)
-        if not entry:
-            return None
-
-        # Check if entry is too old if aging is enabled
-        if self.use_tt_aging:
-            entry_age = entry["age"]
-            age_diff = self.current_age - entry_age
-            if age_diff < 0 or age_diff > self.MAX_AGE_DIFF:
-                return None
-
-        return entry["best_move"]
 
     def store(
         self,
-        hash_val: int,
+        key: int,
         depth: int,
         score: float,
-        beta: float,
-        original_alpha: float,
-        best_move: chess.Move | None = None,  # FIXED: Added best move parameter
+        best_move: chess.Move | None,
+        bound: BoundType,
     ) -> None:
-        """
-        Store a position evaluation in the transposition table.
+        """Store a search result using depth-preferred replacement."""
+        existing = self.table.get(key)
+        if existing is not None:
+            if self.config.use_tt_aging:
+                if existing.age == self.current_age and existing.depth > depth:
+                    return
+            elif existing.depth > depth:
+                return
 
-        Args:
-            hash_val: Zobrist hash of the position
-            depth: Search depth for this entry
-            score: Evaluation score
-            beta: Current beta value
-            original_alpha: Alpha value at start of search
-            best_move: Best move found for this position
-        """
-        # Determine entry type based on alpha-beta bounds
-        if score <= original_alpha:
-            entry_type: Literal["upper", "lower", "exact"] = (
-                "upper"  # Upper bound (fail-low)
-            )
-        elif score >= beta:
-            entry_type = "lower"  # Lower bound (fail-high)
-        else:
-            entry_type = "exact"  # Exact value
+        if key not in self.table and len(self.table) >= self.max_entries:
+            oldest_key = min(self.table, key=lambda hash_key: self.table[hash_key].age)
+            del self.table[oldest_key]
 
-        # Eviction: If the table is full and we're adding a new entry, remove one.
-        if len(self.table) >= self.max_entries and hash_val not in self.table:
-            # Simple FIFO eviction for Python 3.7+
-            key_to_evict = next(iter(self.table))
-            del self.table[key_to_evict]
-
-        existing_entry = self.table.get(hash_val)
-
-        # Now store the new entry if it's better than existing or no existing entry
-        if (
-            not existing_entry
-            or existing_entry["depth"] <= depth
-            or (
-                self.use_tt_aging
-                and self.current_age - existing_entry["age"] > self.MAX_AGE_DIFF
-            )
-        ):
-            self.table[hash_val] = {
-                "depth": depth,
-                "score": score,
-                "type": entry_type,
-                "age": self.current_age,
-                "best_move": best_move,  # FIXED: Store the best move
-            }
-
-    def clear(self) -> None:
-        """Clear all entries from the transposition table."""
-        self.table.clear()
-
-    def reset_age(self) -> None:
-        """
-        Invalidate all existing entries by clearing the table
-        and reset age counter to zero.
-        """
-        self.current_age = 0
-        if self.use_tt_aging:
-            self.table.clear()
-
-    def size(self) -> int:
-        """Get the current number of entries in the table."""
-        return len(self.table)
+        self.table[key] = TTEntry(
+            key=key,
+            depth=depth,
+            score=score,
+            best_move=best_move,
+            bound=bound,
+            age=self.current_age,
+        )

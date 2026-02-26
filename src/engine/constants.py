@@ -1,5 +1,7 @@
 """Fundamental constants shared by search and evaluation components."""
 
+import os
+from pathlib import Path
 from typing import Final
 
 from engine._core import chess_engine_core as chess
@@ -7,6 +9,11 @@ from engine._core import chess_engine_core as chess
 DEFAULT_TIMEOUT: Final[float] = 250.0
 
 DEFAULT_DEPTH: Final[int] = 6
+
+# Syzygy endgame tablebases  -  resolved via $SYZYGY_PATH or project default.
+DEFAULT_SYZYGY_PATH: Final[str] = os.environ.get(
+    "SYZYGY_PATH", str(Path("data/syzygy"))
+)
 
 PIECE_VALUES: Final[dict[int, float]] = {
     chess.PAWN: 1,

@@ -1,3 +1,0 @@
-recursive-include src/engine/_cpp *.cpp *.hpp
-include LICENSE.md
-include README.md

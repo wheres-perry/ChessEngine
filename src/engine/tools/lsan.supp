@@ -1,0 +1,19 @@
+# Ignore pybind11 binding metadata allocations retained for process lifetime.
+leak:pybind11::cpp_function::strdup_guard::operator()
+leak:pybind11::cpp_function::initialize_generic
+leak:pybind11::detail::append_self_arg_if_needed
+leak:pybind11::detail::process_attribute
+leak:pybind11::detail::process_attributes
+leak:pybind11::detail::enum_base::init
+leak:pybind11::cpp_function::make_function_record
+leak:pybind11::cpp_function::initialize
+leak:_PyMem_RawMalloc
+leak:PyMem_RawMalloc
+leak:_PyObject_Malloc
+leak:PyObject_Malloc
+leak:_PyBytes_Resize
+leak:resize_compact
+leak:_PyUnicodeWriter_Finish
+leak:DataStack_grow
+leak:list_resize
+leak:PyThread_allocate_lock

@@ -34,7 +34,6 @@ void init_board_bindings(py::module_ &m) {
   py::class_<Piece>(m, "Piece")
       .def_property_readonly("piece_type",
                              [](const Piece &piece) { return piece.type; })
-      // Alias to match python-chess-style attribute access in the Python code.
       .def_property_readonly("type",
                              [](const Piece &piece) { return piece.type; })
       .def_property_readonly("color",
@@ -79,6 +78,7 @@ void init_board_bindings(py::module_ &m) {
       .def_static("from_fen", &Board::from_fen, py::arg("fen"))
       .def("make_move", &Board::make_move, py::arg("move"))
       .def("push", &Board::push, py::arg("move"))
+      .def("push_null", &Board::push_null)
       .def("pop", &Board::pop)
       .def("push_san", &Board::push_san, py::arg("san"))
       .def("to_fen", &Board::to_fen)
@@ -114,11 +114,9 @@ void init_board_bindings(py::module_ &m) {
       .def("copy", &Board::copy)
       .def("is_game_over", &Board::is_game_over)
       .def("generate_legal_moves", &Board::generate_legal_moves)
-      .def_property_readonly("turn", &Board::turn)
-      .def_property_readonly("ep_square", &Board::ep_square)
-      .def_property_readonly("legal_moves", [](const Board &board) {
-        return board.generate_legal_moves();
-      });
+      .def_property_readonly("legal_moves", &Board::generate_legal_moves)
+      .def_property_readonly("turn", &Board::get_side_to_move)
+      .def("perft", &Board::perft, py::arg("depth"));
 
   // Helper functions
   m.def("move_to_string", &move_to_string, py::arg("move"), py::arg("board"));
@@ -134,10 +132,6 @@ void init_board_bindings(py::module_ &m) {
       py::arg("square"));
   m.def("move_to_uci", &move_to_uci, py::arg("move"));
 
-  m.attr("SQUARES") = py::cast(SQUARES);
-  m.attr("PIECE_TYPES") = py::cast(PIECE_TYPES_ARRAY);
-  m.attr("BB_A1") = py::int_(BB_A1);
-  m.attr("BB_H1") = py::int_(BB_H1);
-  m.attr("BB_A8") = py::int_(BB_A8);
-  m.attr("BB_H8") = py::int_(BB_H8);
+  // Expose SQUARES constant (0..63)
+  m.attr("SQUARES") = std::vector<uint8_t>(SQUARES.begin(), SQUARES.end());
 }

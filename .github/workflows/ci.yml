@@ -1,134 +1,146 @@
+# ──────────────────────────────────────────────────────────────────────
+# Chess Engine CI/CD Pipeline
+#
+# Branching model:
+#   feature/*  →  dev  →  main (prod)
+#
+# Gate tiers:
+#   1. feature/*  — lint + types + fast tests       (every push)
+#   2. PR/dev/main — full tests                       (PRs + pushes to dev/main)
+#   3. dev push    — benchmark persistence + dashboard
+#   4. main PR     — benchmark regression compare
+#   5. main PR     — sanitizers
+# ──────────────────────────────────────────────────────────────────────
 name: CI
 
 on:
   push:
-    branches: ['**']
-  workflow_dispatch:
+    branches: [main, dev, "feature/**"]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  fast-checks:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  # ── Gate 1: Fast checks (every push, every PR) ──────────────────────
+  lint-and-types:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: wntrblm/nox@main
+      - run: nox -s lint types
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Lint
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
-
-  tests:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+  tests-fast:
+    needs: lint-and-types
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: wntrblm/nox@main
+      - run: nox -s tests_fast
 
-      - uses: actions/setup-python@v5
+  # ── Gate 2: Full tests (PRs into dev/main, pushes to dev/main) ─────
+  tests-all:
+    needs: tests-fast
+    if: >-
+      github.event_name == 'pull_request'
+      || github.ref == 'refs/heads/dev'
+      || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: wntrblm/nox@main
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      # Cache Syzygy tablebases across CI runs (~1 GB, rarely changes)
+      - name: Cache Syzygy tables
+        id: cache-syzygy
+        uses: actions/cache@v4
         with:
-          python-version: "3.11"
+          path: data/syzygy
+          key: syzygy-3-4-5-v1
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Download Syzygy tables
+        if: steps.cache-syzygy.outputs.cache-hit != 'true'
+        run: python scripts/download_syzygy.py
 
-      - name: Install dependencies
-        run: uv sync --extra dev
+      - run: nox -s tests_all
 
-      - name: Test
-        run: uv run pytest tests/ -q --tb=short
+  # ── Gate 3: Benchmarks (dev branch — persist baselines) ────────────
+  benchmarks:
+    needs: tests-all
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: wntrblm/nox@main
+      - name: Run benchmarks and save baseline
+        run: nox -s benchmarks
 
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ github.sha }}
+          path: output.json
+          retention-days: 90
+
+      - name: Publish to GitHub Pages dashboard
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: pytest
+          output-file-path: output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: "120%"
+          fail-on-alert: false
+          comment-on-alert: true
+
+  # ── Gate 4: Benchmark comparison (PRs into main) ───────────────────
+  benchmark-compare:
+    needs: tests-all
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: wntrblm/nox@main
+      - name: Run benchmarks
+        run: nox -s benchmarks
+
+      - name: Compare against baseline
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: pytest
+          output-file-path: output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          alert-threshold: "115%"
+          fail-on-alert: true
+          comment-on-alert: true
+
+  # ── Gate 5: Sanitizers (PRs into main only) ────────────────────────
   sanitizers:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: tests-all
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
-    strategy:
-      matrix:
-        sanitizer: [address, undefined]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Run Sanitizer (${{ matrix.sanitizer }})
-        env:
-          CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -g -O1 -fno-omit-frame-pointer"
-          CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -g -O1 -fno-omit-frame-pointer"
-          LDFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
+      - uses: astral-sh/setup-uv@v5
+      - uses: wntrblm/nox@main
+      - name: Install build tools + ASan
         run: |
-          # Force reinstall of the project to apply CFLAGS to the C++ extension build
-          uv sync --reinstall --extra dev
-
-          # For AddressSanitizer, we need to preload the runtime library because
-          # the Python executable itself is not built with ASan.
-          if [ "${{ matrix.sanitizer }}" = "address" ]; then
-            ASAN_LIB=$(gcc -print-file-name=libasan.so)
-            echo "Preloading ASan: $ASAN_LIB"
-            export LD_PRELOAD=$ASAN_LIB
-          fi
-
-          uv run pytest tests/core/
-
-  performance:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Run Benchmarks
-        run: uv run pytest tests/core/test_performance.py --benchmark-only
-
-  wheels:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, windows-2022]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Build wheel
-        run: uv build
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheel-${{ matrix.os }}
-          path: dist/*.whl
+          sudo apt-get update
+          sudo apt-get install -y build-essential libasan6
+      - run: nox -s sanitizers

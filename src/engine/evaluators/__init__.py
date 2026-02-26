@@ -1,27 +1,33 @@
+"""Chess position evaluators.
+
+Public API
+----------
+- ``Evaluator``          - protocol every evaluator satisfies
+- ``EvalComponent``      - ABC for composable heuristic components
+- ``CompositeEvaluator`` - sums a list of components
+- ``EvaluatorFactory``   - builds an ``Evaluator`` from ``EvaluationConfig``
+- ``MockEvaluator``      - always-zero evaluator for testing
+- ``SimpleEvaluator``    - material-only evaluator for testing
+
+Individual components (``MaterialComponent``, ``PSTComponent``, etc.) are
+importable from ``engine.evaluators.components`` when needed for fine-grained
+testing.
 """
-Chess position evaluators.
 
-Modular evaluation system supporting multiple evaluation strategies:
-- Base evaluator with shared utilities
-- Handcoded evaluator with traditional chess heuristics
-- Neural network evaluator for ML-based evaluation
-- Simple/Mock evaluators for testing
-
-All evaluators follow Tree 2 (State Evaluation Optimizations) dependency structure.
-"""
-
-from src.engine.evaluators.base_evaluator import (
-    BaseEvaluator,
+from engine.evaluators.base import EvalComponent, Evaluator, compute_game_phase
+from engine.evaluators.factory import (
+    CompositeEvaluator,
+    EvaluatorFactory,
     MockEvaluator,
     SimpleEvaluator,
 )
-from src.engine.evaluators.handcoded_eval import HandcodedEvaluator
-from src.engine.evaluators.nn_eval import NeuralNetworkEvaluator
 
 __all__ = [
-    "BaseEvaluator",
-    "HandcodedEvaluator",
+    "CompositeEvaluator",
+    "EvalComponent",
+    "Evaluator",
+    "EvaluatorFactory",
     "MockEvaluator",
-    "NeuralNetworkEvaluator",
     "SimpleEvaluator",
+    "compute_game_phase",
 ]

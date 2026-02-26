@@ -1,0 +1,64 @@
+cmake_minimum_required(VERSION 3.15)
+project(chessengine LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ── pybind11 (header-only, fetched automatically) ────────────────────
+find_package(pybind11 CONFIG REQUIRED)
+
+# ── Extension module ─────────────────────────────────────────────────
+pybind11_add_module(chess_engine_core
+    src/engine/_cpp/main_bindings.cpp
+    src/engine/_cpp/board/board.cpp
+    src/engine/_cpp/board/bindings.cpp
+    src/engine/_cpp/move_generation/move_generation.cpp
+    src/engine/_cpp/move_generation/bindings.cpp
+    src/engine/_cpp/search/search.cpp
+    src/engine/_cpp/search/zobrist.cpp
+    src/engine/_cpp/search/bindings.cpp
+)
+
+target_include_directories(chess_engine_core PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/_core
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/board
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/move_generation
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/search
+)
+
+target_compile_definitions(chess_engine_core PRIVATE
+    VERSION_INFO="dev"
+    NDEBUG
+)
+
+# Release-mode flags (scikit-build-core sets CMAKE_BUILD_TYPE=Release)
+if(NOT MSVC)
+    target_compile_options(chess_engine_core PRIVATE
+        -O3
+        -march=native
+        -mtune=native
+        -ffast-math
+        -funroll-loops
+        -finline-functions
+        -flto
+        -Wall
+        -Wextra
+    )
+    target_link_options(chess_engine_core PRIVATE -flto -O3)
+else()
+    target_compile_options(chess_engine_core PRIVATE /O2 /W3 /GL)
+    target_link_options(chess_engine_core PRIVATE /LTCG)
+endif()
+
+# ── Place .so directly in source tree (needed for editable installs) ──
+# Editable (inplace) builds don't run cmake --install, so we force the
+# output directory so the .so lands where Python can find it.
+set_target_properties(chess_engine_core PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/src/engine/_core"
+)
+
+# For wheel builds (non-editable), scikit-build-core uses cmake --install.
+install(TARGETS chess_engine_core
+    DESTINATION engine/_core
+)
