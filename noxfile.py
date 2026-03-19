@@ -16,6 +16,7 @@ from __future__ import annotations
 import glob
 import os
 import shutil
+import sys
 from typing import TYPE_CHECKING
 
 import nox
@@ -141,9 +142,6 @@ def benchmarks(session: Session) -> None:
 @nox.session(tags=["heavy"])
 def sanitizers(session: Session) -> None:
     """Recompile C++ extensions with ASAN/UBSAN and run checks."""
-    import os
-    import sys
-
     _install(session)
 
     # Patch z3-solver dylib to work under ASAN on macOS
@@ -151,8 +149,10 @@ def sanitizers(session: Session) -> None:
         patch_script = (
             "import os, importlib.util;"
             "spec=importlib.util.find_spec('z3');"
-            "p=os.path.join(spec.submodule_search_locations[0], 'lib', 'libz3.dylib') if spec else '';"
-            "os.system(f'install_name_tool -id @rpath/libz3.dylib {p}') if p and os.path.exists(p) else None"
+            "p=os.path.join(spec.submodule_search_locations[0], 'lib', "
+            "'libz3.dylib') if spec else '';"
+            "os.system(f'install_name_tool -id @rpath/libz3.dylib {p}') "
+            "if p and os.path.exists(p) else None"
         )
         session.run("python", "-c", patch_script, external=False)
 
@@ -181,7 +181,8 @@ def sanitizers(session: Session) -> None:
             session.log(f"Found macOS ASAN dylib: {libasan_paths[0]}")
         else:
             session.log("Could not find ASAN dylib - ASAN may fail to load.")
-        # Note: macOS ASAN also does not support LSAN reliably (detect_leaks=1 usually fails).
+        # Note: macOS ASAN also does not support LSAN reliably
+        # (detect_leaks=1 usually fails).
         run_env["ASAN_OPTIONS"] = "detect_leaks=0"
     else:
         libasan_paths = sorted(glob.glob("/usr/lib/x86_64-linux-gnu/libasan.so*"))
@@ -191,7 +192,7 @@ def sanitizers(session: Session) -> None:
         else:
             session.log("Could not find libasan.so - ASan may fail to load.")
 
-    def clean_artifacts():
+    def clean_artifacts() -> None:
         session.log("Cleaning build artifacts...")
         shutil.rmtree("build", ignore_errors=True)
         for root, _, files in os.walk("."):

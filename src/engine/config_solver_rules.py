@@ -1,5 +1,7 @@
 """Z3 symbolic rules for chess engine configuration validation."""
 
+from typing import Any
+
 from z3 import And, Bool, Implies, Int  # type: ignore
 
 
@@ -15,7 +17,7 @@ class ConfigSolverRules:
         # ==================================================================
         # Evaluation variables
         # ==================================================================
-        self.eval_vars: dict = {
+        self.eval_vars: dict[str, Any] = {
             "use_pst": Bool("use_pst"),
             "use_pawn_structure": Bool("use_pawn_structure"),
             "use_mobility": Bool("use_mobility"),
@@ -35,7 +37,7 @@ class ConfigSolverRules:
         # ==================================================================
         # Search boolean variables
         # ==================================================================
-        self.search_bool_vars: dict = {
+        self.search_bool_vars: dict[str, Any] = {
             "use_move_ordering": Bool("use_move_ordering"),
             "use_mvv_lva": Bool("use_mvv_lva"),
             "use_history_heuristic": Bool("use_history_heuristic"),
@@ -63,7 +65,7 @@ class ConfigSolverRules:
         # ==================================================================
         # Search integer variables
         # ==================================================================
-        self.search_int_vars: dict = {
+        self.search_int_vars: dict[str, Any] = {
             "history_max_score": Int("history_max_score"),
             "killer_slots_per_ply": Int("killer_slots_per_ply"),
             "qs_max_depth": Int("qs_max_depth"),
