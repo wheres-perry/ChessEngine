@@ -26,12 +26,12 @@ def test_engine_config_save_load_json(tmp_path: Path):
     config.search.use_null_move_pruning = False
     config.search.use_iid = False
     config.evaluation.use_mobility = False
-    
+
     file_path = tmp_path / "config.json"
     config.save_to_json(file_path)
-    
+
     assert file_path.exists()
-    
+
     loaded_config = EngineConfig.load_from_json(file_path)
     assert loaded_config.search_depth == 15
     assert loaded_config.search.use_alpha_beta is False
@@ -42,7 +42,7 @@ def test_engine_config_from_dict():
     data = {
         "search_depth": 7,
         "search": {"use_pvs": False, "use_alpha_beta": True},
-        "evaluation": {"use_pst": True, "use_pawn_structure": True}
+        "evaluation": {"use_pst": True, "use_pawn_structure": True},
     }
     config = EngineConfig.from_dict(data)
     assert config.search_depth == 7
@@ -57,7 +57,7 @@ def test_engine_config_str_formatting():
     config = EngineConfig(search_depth=5)
     config.search.use_alpha_beta = False
     assert "Search: [Base Minimax]" in str(config)
-    
+
     # Advanced search features
     config.search = SearchConfig(
         use_alpha_beta=True,
@@ -70,7 +70,7 @@ def test_engine_config_str_formatting():
         use_lmr=True,
         use_null_move_pruning=True,
         use_futility_pruning=True,
-        use_quiescence_search=True
+        use_quiescence_search=True,
     )
     s = str(config)
     assert "Depth: 5" in s
@@ -85,24 +85,24 @@ def test_engine_config_str_formatting():
     assert "NMP" in s
     assert "Futility" in s
     assert "QS" in s
-    
+
     # Eval flags disabled
     config.evaluation = EvaluationConfig(
         use_pst=False,
         use_pawn_structure=False,
         use_mobility=False,
         use_king_safety=False,
-        game_stage_conscious=False
+        game_stage_conscious=False,
     )
     assert "Eval: [Material]" in str(config)
-    
+
     # Eval flags enabled
     config.evaluation = EvaluationConfig(
         use_pst=True,
         use_pawn_structure=True,
         use_mobility=True,
         use_king_safety=True,
-        game_stage_conscious=True
+        game_stage_conscious=True,
     )
     s = str(config)
     assert "PST" in s

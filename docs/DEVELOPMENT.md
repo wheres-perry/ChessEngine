@@ -30,10 +30,10 @@ pytest tests/search -v
 
 The C++ extension is built with **scikit-build-core** + **CMake** (replaced the legacy `setup.py`).
 
-| File | Role |
-|------|------|
-| `pyproject.toml` `[build-system]` | Declares `scikit-build-core` + `pybind11` as build deps |
-| `CMakeLists.txt` | Compiles `chess_engine_core` pybind11 module from `src/engine/_cpp/` |
+| File                              | Role                                                                 |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `pyproject.toml` `[build-system]` | Declares `scikit-build-core` + `pybind11` as build deps              |
+| `CMakeLists.txt`                  | Compiles `chess_engine_core` pybind11 module from `src/engine/_cpp/` |
 
 ### How it works
 
@@ -55,17 +55,17 @@ All imports use `engine.*` (not `src.engine.*`). The `src/` is a layout director
 
 ### Via Nox (recommended — mirrors CI)
 
-| Command | What it runs |
-|---------|-------------|
-| `uv run nox` | Default: `lint` + `types` + `tests_fast` |
-| `uv run nox -t safe` | All fast sessions |
-| `uv run nox -t heavy` | Full tests + benchmarks + sanitizers |
-| `uv run nox -s tests_fast` | unit + smoke + search + evaluators |
-| `uv run nox -s tests_full` | parity + chess puzzles |
-| `uv run nox -s tests_all` | Everything |
-| `uv run nox -s syzygy` | Download 3-4-5 piece Syzygy tablebases |
-| `uv run nox -s benchmarks` | Full benchmarks with JSON + autosave |
-| `uv run nox -s sanitizers` | Recompile C++ with ASAN, run tests |
+| Command                    | What it runs                             |
+| -------------------------- | ---------------------------------------- |
+| `uv run nox`               | Default: `lint` + `types` + `tests_fast` |
+| `uv run nox -t safe`       | All fast sessions                        |
+| `uv run nox -t heavy`      | Full tests + benchmarks + sanitizers     |
+| `uv run nox -s tests_fast` | unit + smoke + search + evaluators       |
+| `uv run nox -s tests_full` | parity + chess puzzles                   |
+| `uv run nox -s tests_all`  | Everything                               |
+| `uv run nox -s syzygy`     | Download 3-4-5 piece Syzygy tablebases   |
+| `uv run nox -s benchmarks` | Full benchmarks with JSON + autosave     |
+| `uv run nox -s sanitizers` | Recompile C++ with ASAN, run tests       |
 
 ### Via pytest directly
 
@@ -81,12 +81,12 @@ pytest tests/benchmarks --benchmark-only   # benchmarks only
 
 Tests are auto-tagged by directory (see `tests/conftest.py`). Registered markers:
 
-| Marker | Applied to | Purpose |
-|--------|-----------|---------|
-| `slow` | `tests/smoke/` | Longer-running smoke tests |
-| `benchmark` | `tests/benchmarks/` | pytest-benchmark tests |
-| `parity` | `tests/parity/` | C++ vs python-chess correctness |
-| `chess` | `tests/chess/` | Puzzle / tactic correctness |
+| Marker      | Applied to          | Purpose                         |
+| ----------- | ------------------- | ------------------------------- |
+| `slow`      | `tests/smoke/`      | Longer-running smoke tests      |
+| `benchmark` | `tests/benchmarks/` | pytest-benchmark tests          |
+| `parity`    | `tests/parity/`     | C++ vs python-chess correctness |
+| `chess`     | `tests/chess/`      | Puzzle / tactic correctness     |
 
 Use `-m` to filter: `pytest -m "not slow and not benchmark"`.
 
@@ -157,6 +157,7 @@ uv run nox -s benchmarks
 ```
 
 In CI:
+
 - **Merges to `dev`** — benchmarks run, results are uploaded as artifacts (90-day retention) and published to a GitHub Pages dashboard.
 - **PRs into `main`** — benchmarks run and are compared against the `dev` baseline. The PR **fails if any benchmark regresses >15%**.
 
@@ -172,13 +173,13 @@ PR into main       →  Gate 4: + benchmark regression check (fail >15%)
                       Gate 5: + ASAN/UBSAN sanitizers
 ```
 
-| Gate | Trigger | Jobs |
-|------|---------|------|
-| 1 | Every push / PR | `lint-and-types` → `tests-fast` |
-| 2 | PRs into dev/main, pushes to dev/main | `tests-full` |
-| 3 | Pushes to `dev` only | `benchmarks` (autosave + dashboard) |
-| 4 | PRs into `main` only | `benchmark-compare` (fail on regression) |
-| 5 | PRs into `main` only | `sanitizers` (ASAN/UBSAN) |
+| Gate | Trigger                               | Jobs                                     |
+| ---- | ------------------------------------- | ---------------------------------------- |
+| 1    | Every push / PR                       | `lint-and-types` → `tests-fast`          |
+| 2    | PRs into dev/main, pushes to dev/main | `tests-full`                             |
+| 3    | Pushes to `dev` only                  | `benchmarks` (autosave + dashboard)      |
+| 4    | PRs into `main` only                  | `benchmark-compare` (fail on regression) |
+| 5    | PRs into `main` only                  | `sanitizers` (ASAN/UBSAN)                |
 
 Duplicate runs on the same ref are cancelled automatically via `concurrency`.
 
@@ -210,11 +211,11 @@ python scripts/download_syzygy.py --verify-only
 
 ### How It Works
 
-| Component | What it does |
-|-----------|-------------|
-| `scripts/download_syzygy.py` | Scrapes the Lichess mirror, downloads missing files with parallel workers, validates sizes |
-| `SYZYGY_PATH` env var | Overrides the default `data/syzygy/` path used by the script and `constants.DEFAULT_SYZYGY_PATH` |
-| `.gitignore` entry | `data/syzygy/` is excluded from version control |
+| Component                    | What it does                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| `scripts/download_syzygy.py` | Scrapes the Lichess mirror, downloads missing files with parallel workers, validates sizes       |
+| `SYZYGY_PATH` env var        | Overrides the default `data/syzygy/` path used by the script and `constants.DEFAULT_SYZYGY_PATH` |
+| `.gitignore` entry           | `data/syzygy/` is excluded from version control                                                  |
 
 ### Path Resolution Order
 
@@ -233,17 +234,17 @@ if you ever change the file set.
 
 All sessions use `uv` as the venv backend. The shared `_install()` helper runs `uv sync --frozen --group dev`.
 
-| Session | Tag | Description |
-|---------|-----|-------------|
-| `lint` | safe | ruff check + format, clang-format on C++ |
-| `types` | safe | mypy on `src/`, `noxfile.py` |
-| `tests_fast` | safe | unit, smoke, search, evaluators |
-| `benchmarks_smoke` | safe | Single benchmark file, 1 round |
-| `tests_full` | heavy | parity, chess |
-| `tests_all` | heavy | Entire `tests/` directory |
-| `syzygy` | heavy | Download 3-4-5 piece Syzygy endgame tablebases |
-| `benchmarks` | heavy | All benchmarks, JSON output, autosave |
-| `sanitizers` | heavy | Rebuild C++ with ASAN, run unit+smoke+search |
+| Session            | Tag   | Description                                    |
+| ------------------ | ----- | ---------------------------------------------- |
+| `lint`             | safe  | ruff check + format, clang-format on C++       |
+| `types`            | safe  | mypy on `src/`, `noxfile.py`                   |
+| `tests_fast`       | safe  | unit, smoke, search, evaluators                |
+| `benchmarks_smoke` | safe  | Single benchmark file, 1 round                 |
+| `tests_full`       | heavy | parity, chess                                  |
+| `tests_all`        | heavy | Entire `tests/` directory                      |
+| `syzygy`           | heavy | Download 3-4-5 piece Syzygy endgame tablebases |
+| `benchmarks`       | heavy | All benchmarks, JSON output, autosave          |
+| `sanitizers`       | heavy | Rebuild C++ with ASAN, run unit+smoke+search   |
 
 ## Zobrist Hashing
 
@@ -271,36 +272,36 @@ uv run python scripts/bench_zobrist.py
 - **Minimax and IDDFS are always on** — no toggle flags.
 - **Zobrist hashing + transposition table** are combined under `use_transposition_table`.
 - Config validates dependencies on construction (`__post_init__`). For example, `use_pvs=True` requires `use_alpha_beta=True`, `use_killer_moves=True` requires `use_move_ordering=True`, etc.
-- `DependencyResolver` performs a comprehensive validation pass (15+ checks) before the engine is constructed, raising `DependencyResolutionError` on violations.
+- `ConfigSolver` performs a comprehensive validation pass (driven by `ConfigSolverRules`) before the engine is constructed, raising `ConfigSolverError` on violations.
 
 ### Supported Feature Matrix
 
 Only the following feature surfaces are supported and should be used in configs/tests.
 
-| Feature | Config key(s) |
-|--------|----------------|
-| Piece-Square Tables | `evaluation.use_pst` |
-| Pawn Structure Tables | `evaluation.use_pawn_structure` (requires PST) |
-| Mobility Heuristics | `evaluation.use_mobility` |
-| King Safety Heuristics | `evaluation.use_king_safety` |
-| Game Stage Conscious (GSC) | `evaluation.game_stage_conscious` |
-| Hash Move Ordering | `search.use_hash_move_ordering` |
-| MVV-LVA | `search.use_mvv_lva` |
-| Static Exchange Evaluation (SEE) Ordering | `search.use_see_ordering` |
-| Killer Heuristic | `search.use_killer_moves` |
-| History / Countermove Heuristics | `search.use_history_heuristic`, `search.use_countermove_heuristic` |
-| Principal Variation Search (PVS) | `search.use_pvs` |
-| Aspiration Windows | `search.use_aspiration_windows` |
-| Internal Iterative Deepening (IID) | `search.use_iid` |
-| Late Move Reductions (LMR) | `search.use_lmr` |
-| Check Extensions | `search.use_check_extensions` |
-| Null Move Pruning (NMP) | `search.use_null_move_pruning` |
-| Futility Pruning (Standard) | `search.use_futility_pruning` |
-| Futility Pruning (Extended) | `search.use_extended_futility_pruning` |
-| Futility Pruning (Reverse) | `search.use_reverse_futility_pruning` |
-| Delta Pruning | `search.use_delta_pruning` |
-| SEE in Quiescence Search | `search.use_see_pruning_in_qs` |
-| TT Aging / Eviction | `search.use_tt_aging` |
+| Feature                                   | Config key(s)                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| Piece-Square Tables                       | `evaluation.use_pst`                                               |
+| Pawn Structure Tables                     | `evaluation.use_pawn_structure` (requires PST)                     |
+| Mobility Heuristics                       | `evaluation.use_mobility`                                          |
+| King Safety Heuristics                    | `evaluation.use_king_safety`                                       |
+| Game Stage Conscious (GSC)                | `evaluation.game_stage_conscious`                                  |
+| Hash Move Ordering                        | `search.use_hash_move_ordering`                                    |
+| MVV-LVA                                   | `search.use_mvv_lva`                                               |
+| Static Exchange Evaluation (SEE) Ordering | `search.use_see_ordering`                                          |
+| Killer Heuristic                          | `search.use_killer_moves`                                          |
+| History / Countermove Heuristics          | `search.use_history_heuristic`, `search.use_countermove_heuristic` |
+| Principal Variation Search (PVS)          | `search.use_pvs`                                                   |
+| Aspiration Windows                        | `search.use_aspiration_windows`                                    |
+| Internal Iterative Deepening (IID)        | `search.use_iid`                                                   |
+| Late Move Reductions (LMR)                | `search.use_lmr`                                                   |
+| Check Extensions                          | `search.use_check_extensions`                                      |
+| Null Move Pruning (NMP)                   | `search.use_null_move_pruning`                                     |
+| Futility Pruning (Standard)               | `search.use_futility_pruning`                                      |
+| Futility Pruning (Extended)               | `search.use_extended_futility_pruning`                             |
+| Futility Pruning (Reverse)                | `search.use_reverse_futility_pruning`                              |
+| Delta Pruning                             | `search.use_delta_pruning`                                         |
+| SEE in Quiescence Search                  | `search.use_see_pruning_in_qs`                                     |
+| TT Aging / Eviction                       | `search.use_tt_aging`                                              |
 
 Note: foundational toggles such as `search.use_alpha_beta`, `search.use_move_ordering`, `search.use_transposition_table`, and `search.use_quiescence_search` remain first-class because they are dependencies for multiple listed features.
 
@@ -308,15 +309,15 @@ Note: foundational toggles such as `search.use_alpha_beta`, `search.use_move_ord
 
 The C++ board (`engine._core.chess_engine_core`) differs from python-chess in a few ways:
 
-| python-chess | C++ Board | Notes |
-|-------------|-----------|-------|
-| `chess.Board("fen")` | `chess.Board.from_fen("fen")` | Constructor doesn't accept FEN |
-| `board.turn == chess.WHITE` | `bool(board.turn)` | `turn` is `bool` (True=white), not a Color enum |
-| `chess.D4` | `27` (int) | No named square constants |
-| `board.legal_moves` (generator) | `board.legal_moves` (list) | Already a list, don't call it |
-| `str(move)` → `"e2e4"` | `move.uci()` → `"e2e4"` | `str()` gives `<Move e2e4>` |
-| `board.pieces(PAWN, WHITE)` | `board.pieces(PAWN, WHITE)` | Returns list of square ints |
-| `chess.square(file, rank)` | `rank * 8 + file` | No `square()` helper |
+| python-chess                    | C++ Board                     | Notes                                           |
+| ------------------------------- | ----------------------------- | ----------------------------------------------- |
+| `chess.Board("fen")`            | `chess.Board.from_fen("fen")` | Constructor doesn't accept FEN                  |
+| `board.turn == chess.WHITE`     | `bool(board.turn)`            | `turn` is `bool` (True=white), not a Color enum |
+| `chess.D4`                      | `27` (int)                    | No named square constants                       |
+| `board.legal_moves` (generator) | `board.legal_moves` (list)    | Already a list, don't call it                   |
+| `str(move)` → `"e2e4"`          | `move.uci()` → `"e2e4"`       | `str()` gives `<Move e2e4>`                     |
+| `board.pieces(PAWN, WHITE)`     | `board.pieces(PAWN, WHITE)`   | Returns list of square ints                     |
+| `chess.square(file, rank)`      | `rank * 8 + file`             | No `square()` helper                            |
 
 ## Tool Configuration
 
@@ -332,6 +333,7 @@ Dev dependencies use PEP 735 dependency groups: `[dependency-groups] dev = [...]
 ## Pre-commit
 
 `.pre-commit-config.yaml` runs:
+
 - `ruff` (check + format)
 - `clang-format` (C++ files)
 - `pre-commit-hooks` (trailing whitespace, EOF fixer, YAML check, large file check)

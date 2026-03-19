@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import asdict, dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,10 @@ class SearchConfig:
     # ========================================================================
     max_time: float | None = DEFAULT_TIMEOUT
     max_depth: int | None = None  # Useful for depth-limited searches
+
+    class TTPolicy(Enum):
+        NONE = 0
+        AGING = 1
 
     def __post_init__(self) -> None:
         """Fast-fail on clearly broken dependency pairs."""

@@ -141,11 +141,9 @@ def benchmarks(session: Session) -> None:
 @nox.session(tags=["heavy"])
 def sanitizers(session: Session) -> None:
     """Recompile C++ extensions with ASAN/UBSAN and run checks."""
-    import glob
     import os
-    import shutil
     import sys
-    
+
     _install(session)
 
     # Patch z3-solver dylib to work under ASAN on macOS
@@ -173,7 +171,11 @@ def sanitizers(session: Session) -> None:
     }
 
     if sys.platform == "darwin":
-        libasan_paths = sorted(glob.glob("/Library/Developer/CommandLineTools/usr/lib/clang/*/lib/darwin/libclang_rt.asan_osx_dynamic.dylib"))
+        libasan_paths = sorted(
+            glob.glob(
+                "/Library/Developer/CommandLineTools/usr/lib/clang/*/lib/darwin/libclang_rt.asan_osx_dynamic.dylib"
+            )
+        )
         if libasan_paths:
             run_env["DYLD_INSERT_LIBRARIES"] = libasan_paths[0]
             session.log(f"Found macOS ASAN dylib: {libasan_paths[0]}")

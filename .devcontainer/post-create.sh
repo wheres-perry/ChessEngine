@@ -37,4 +37,3 @@ echo "🔨 Compiling C++ extensions..."
 python compile.py --no-tests
 
 echo "✅ Dev container setup complete!"
-

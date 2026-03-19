@@ -1,0 +1,3 @@
+- Hot swappable architecture
+- NNUE from stockfish directly as one of the implementable architecture
+- Potential pure NLP from chess board notation

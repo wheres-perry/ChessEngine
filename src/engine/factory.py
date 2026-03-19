@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from engine._core import chess_engine_core as core
-from engine.config_dependency_resolver import DependencyResolver
+from engine.config_solver import ConfigSolver
 from engine.evaluators import EvaluatorFactory
 from engine.search.minimax import Minimax
 
@@ -160,7 +160,7 @@ def create_core_adapter(config: EngineConfig, fen: str | None = None) -> CoreAda
 
 def create_engine(config: EngineConfig, fen: str | None = None) -> Engine:
     """Construct the primary `Engine` object."""
-    DependencyResolver(config).resolve()
+    ConfigSolver(config).solve()
 
     board = core.Board.from_fen(fen) if fen else core.Board.from_fen(STARTING_FEN)
     evaluator = EvaluatorFactory.create(config.evaluation)
@@ -172,7 +172,7 @@ def create_search_adapter(
     config: EngineConfig, core_adapter: CoreAdapter
 ) -> SearchAdapter:
     """Build a Python search adapter from the given config and board adapter."""
-    DependencyResolver(config).resolve()
+    ConfigSolver(config).solve()
 
     if not isinstance(core_adapter, CoreBoardAdapter):
         raise ValueError("Search requires Core backend board.")
