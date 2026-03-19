@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 # --- Global options ---
 nox.options.default_venv_backend = "uv"
+nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = ["lint", "types", "tests_fast"]
 
 
@@ -140,15 +141,22 @@ def benchmarks(session: Session) -> None:
 @nox.session(tags=["heavy"])
 def sanitizers(session: Session) -> None:
     """Recompile C++ extensions with ASAN/UBSAN and run checks."""
+    import glob
+    import os
+    import shutil
+    import sys
+    
     _install(session)
 
-    # Locate libasan
-    libasan_paths = sorted(glob.glob("/usr/lib/x86_64-linux-gnu/libasan.so*"))
-    ld_preload = libasan_paths[0] if libasan_paths else ""
-    if ld_preload:
-        session.log(f"Found libasan: {ld_preload}")
-    else:
-        session.log("Could not find libasan.so  -  ASan may fail to load.")
+    # Patch z3-solver dylib to work under ASAN on macOS
+    if sys.platform == "darwin":
+        patch_script = (
+            "import os, importlib.util;"
+            "spec=importlib.util.find_spec('z3');"
+            "p=os.path.join(spec.submodule_search_locations[0], 'lib', 'libz3.dylib') if spec else '';"
+            "os.system(f'install_name_tool -id @rpath/libz3.dylib {p}') if p and os.path.exists(p) else None"
+        )
+        session.run("python", "-c", patch_script, external=False)
 
     # Compiler flags
     build_env = {
@@ -158,41 +166,76 @@ def sanitizers(session: Session) -> None:
     }
 
     # Runtime flags
-    run_env = {
+    run_env: dict[str, str] = {
         **build_env,
         "ASAN_OPTIONS": "detect_leaks=1",
         "LSAN_OPTIONS": "suppressions=tools/lsan.supp",
-        **({"LD_PRELOAD": ld_preload} if ld_preload else {}),
     }
 
-    # 1. Clean build artifacts
-    session.log("Cleaning build artifacts for sanitizer run...")
-    shutil.rmtree("build", ignore_errors=True)
-    for root, _, files in os.walk("."):
-        for f in files:
-            if f.endswith((".so", ".pyd")):
-                os.remove(os.path.join(root, f))
+    if sys.platform == "darwin":
+        libasan_paths = sorted(glob.glob("/Library/Developer/CommandLineTools/usr/lib/clang/*/lib/darwin/libclang_rt.asan_osx_dynamic.dylib"))
+        if libasan_paths:
+            run_env["DYLD_INSERT_LIBRARIES"] = libasan_paths[0]
+            session.log(f"Found macOS ASAN dylib: {libasan_paths[0]}")
+        else:
+            session.log("Could not find ASAN dylib - ASAN may fail to load.")
+        # Note: macOS ASAN also does not support LSAN reliably (detect_leaks=1 usually fails).
+        run_env["ASAN_OPTIONS"] = "detect_leaks=0"
+    else:
+        libasan_paths = sorted(glob.glob("/usr/lib/x86_64-linux-gnu/libasan.so*"))
+        if libasan_paths:
+            run_env["LD_PRELOAD"] = libasan_paths[0]
+            session.log(f"Found libasan: {libasan_paths[0]}")
+        else:
+            session.log("Could not find libasan.so - ASan may fail to load.")
 
-    # 2. Recompile with sanitizer flags
-    session.log("Recompiling C++ extensions with ASAN...")
-    session.run_install(
-        "uv",
-        "sync",
-        "--frozen",
-        "--reinstall-package",
-        "chessengine",
-        "--group",
-        "dev",
-        env=build_env,
-    )
+    def clean_artifacts():
+        session.log("Cleaning build artifacts...")
+        shutil.rmtree("build", ignore_errors=True)
+        for root, _, files in os.walk("."):
+            if ".nox" in root or ".venv" in root:
+                continue
+            for f in files:
+                if f.endswith((".so", ".pyd", ".dylib")):
+                    os.remove(os.path.join(root, f))
 
-    # 3. Run tests under sanitizers
-    session.log("Running tests with ASAN active...")
-    session.run(
-        "pytest",
-        "tests/unit",
-        "tests/smoke",
-        "tests/search",
-        "-v",
-        env=run_env,
-    )
+    clean_artifacts()
+
+    try:
+        # 2. Recompile with sanitizer flags
+        session.log("Recompiling C++ extensions with ASAN...")
+        session.run_install(
+            "uv",
+            "sync",
+            "--active",
+            "--frozen",
+            "--reinstall-package",
+            "chessengine",
+            "--group",
+            "dev",
+            env=build_env,
+        )
+
+        # 3. Run tests under sanitizers
+        session.log("Running tests with ASAN active...")
+        session.run(
+            "pytest",
+            "tests/unit",
+            "tests/smoke",
+            "tests/search",
+            "-v",
+            env=run_env,
+        )
+    finally:
+        session.log("Restoring clean environment (no ASAN)...")
+        clean_artifacts()
+        session.run_install(
+            "uv",
+            "sync",
+            "--active",
+            "--frozen",
+            "--reinstall-package",
+            "chessengine",
+            "--group",
+            "dev",
+        )
