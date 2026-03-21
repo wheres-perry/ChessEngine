@@ -1,6 +1,7 @@
 """Tests for game state detection."""
 
 import pytest
+
 from engine._core import chess_engine_core as core  # type: ignore
 
 
@@ -19,7 +20,7 @@ def verify_game_state(
 
 
 @pytest.mark.parametrize(
-    "fen,expected_state,description",
+    ("fen", "expected_state", "description"),
     [
         # Checkmate
         (
@@ -96,7 +97,7 @@ def verify_game_state(
             core.GameState.ONGOING,
             "Starting position",
         ),
-    ]
+    ],
 )
 def test_game_states(fen, expected_state, description):
     """Test game state for various scenarios."""

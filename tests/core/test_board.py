@@ -1,4 +1,4 @@
-"""Tests for general board functionality like copying and complete state preservation."""
+"""Tests for general board functionality like copying and state preservation."""
 
 from engine._core import chess_engine_core as core  # type: ignore
 

@@ -4,6 +4,7 @@ These tests target specific bugs and edge cases that commonly break chess engine
 """
 
 import pytest
+
 from engine._core import chess_engine_core as core  # type: ignore
 
 
@@ -44,7 +45,7 @@ def verify_legal_moves(
 
 
 @pytest.mark.parametrize(
-    "fen,expected_count,expected_moves,description",
+    ("fen", "expected_count", "expected_moves", "description"),
     [
         # Castling Edge Cases
         (
@@ -174,9 +175,18 @@ def verify_legal_moves(
             "1q1q3k/2P5/8/8/8/6q1/8/7K w - - 0 1",
             12,
             [
-                (50, 57, 4), (50, 57, 3), (50, 57, 2), (50, 57, 1),
-                (50, 58, 4), (50, 58, 3), (50, 58, 2), (50, 58, 1),
-                (50, 59, 4), (50, 59, 3), (50, 59, 2), (50, 59, 1),
+                (50, 57, 4),
+                (50, 57, 3),
+                (50, 57, 2),
+                (50, 57, 1),
+                (50, 58, 4),
+                (50, 58, 3),
+                (50, 58, 2),
+                (50, 58, 1),
+                (50, 59, 4),
+                (50, 59, 3),
+                (50, 59, 2),
+                (50, 59, 1),
             ],
             "Triple possible promotion",
         ),
@@ -196,20 +206,37 @@ def verify_legal_moves(
         (
             "5q2/1k1K1P2/3P1P2/3PQP2/3P1P2/8/4n3/8 w - - 0 1",
             7,
-            [(36, 60, 0), (36, 52, 0), (36, 44, 0), (36, 28, 0), (36, 20, 0), (36, 12, 0), (51, 44, 0)],
+            [
+                (36, 60, 0),
+                (36, 52, 0),
+                (36, 44, 0),
+                (36, 28, 0),
+                (36, 20, 0),
+                (36, 12, 0),
+                (51, 44, 0),
+            ],
             "Queen orthogonal move and capture",
         ),
         (
             "5q2/1k1K1P2/3P1P2/3PRP2/3P1P2/8/4n3/8 w - - 0 1",
             7,
-            [(36, 60, 0), (36, 52, 0), (36, 44, 0), (36, 28, 0), (36, 20, 0), (36, 12, 0), (51, 44, 0)],
+            [
+                (36, 60, 0),
+                (36, 52, 0),
+                (36, 44, 0),
+                (36, 28, 0),
+                (36, 20, 0),
+                (36, 12, 0),
+                (51, 44, 0),
+            ],
             "Rook orthogonal move and capture",
         ),
-    ]
+    ],
 )
 def test_move_generation_edge_cases(fen, expected_count, expected_moves, description):
     """Test various move generation edge cases using parameterization."""
     verify_legal_moves(fen, expected_count, expected_moves, description)
+
 
 def test_lost_castle_rights_state():
     """Specific test to ensure state is correctly updated after lost castle rights."""
