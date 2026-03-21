@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774077258174,
+  "lastUpdate": 1774086387941,
   "repoUrl": "https://github.com/wheres-perry/ChessEngine",
   "entries": {
     "Benchmark": [
@@ -216,6 +216,114 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00023688270375431857",
             "extra": "mean: 33.50608160000471 msec\nrounds: 30"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86326912+wheres-perry@users.noreply.github.com",
+            "name": "Ethan Perry",
+            "username": "wheres-perry"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b4824a339fe953c559de7e0103056d05fd1ff430",
+          "message": "Feat/ml extractors and pgn (#6)\n\n* feat: add C++ ML feature extractors and high-performance PGN parser\n\n- Implement zero-copy C++ extractors for CNN, NNUE (HalfKP), and GNN formats\n\n- Add fast, memory-efficient PGN stream parser\n\n- Expose extractors and PGN parser to Python via PyBind11\n\n- Add comprehensive test suites for extractors and PGN parser\n\n- Include rigorous PGN parity tests against `python-chess`\n\n* test: refactor test suite structure, parameterize core tests, and expand uci coverage\n\n- Break monolithic test_core_engine.py into parameterized core tests\n\n- Move tests from unit dumping ground to domain-specific directories\n\n- Add stdin/stdout mock tests to UCI handler covering missing branches\n\n- Remove empty conftest.py files\n\n* style: fix ruff linting and formatting issues in test suite\n\n* Update src/engine/_cpp/extractors/bindings.cpp\n\nCo-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>\n\n* style: fix C++ code formatting to pass clang-format CI check\n\n* style: fix include order in extractors/bindings.cpp\n\n* ci: fix noxfile test paths after directory restructure\n\n* docs: add comprehensive style and naming guides\n\n---------\n\nCo-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+          "timestamp": "2026-03-21T03:39:50-06:00",
+          "tree_id": "a8db626698439f439182c9caeb75f6b9077913c6",
+          "url": "https://github.com/wheres-perry/ChessEngine/commit/b4824a339fe953c559de7e0103056d05fd1ff430"
+        },
+        "date": 1774086387285,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/test_performance.py::test_full_game_cycle_300_ply",
+            "value": 2682.5266518288313,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000097193988486751",
+            "extra": "mean: 372.78287591970167 usec\nrounds: 2450"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_3",
+            "value": 8.70194211928179,
+            "unit": "iter/sec",
+            "range": "stddev: 0.011855205375120371",
+            "extra": "mean: 114.91687560001083 msec\nrounds: 5"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_5",
+            "value": 0.17872875774137625,
+            "unit": "iter/sec",
+            "range": "stddev: 0.013730558775151844",
+            "extra": "mean: 5.59507050033335 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_search_node_expansion_loop",
+            "value": 82.83754287324493,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0019450459325810613",
+            "extra": "mean: 12.071821124996001 msec\nrounds: 88"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_promotion_heavy_movegen",
+            "value": 120456.99456448622,
+            "unit": "iter/sec",
+            "range": "stddev: 6.447071908726987e-7",
+            "extra": "mean: 8.301717999984248 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_castling_and_ep_movegen",
+            "value": 73063.01187936706,
+            "unit": "iter/sec",
+            "range": "stddev: 2.843844916416917e-7",
+            "extra": "mean: 13.686816000017643 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_push_pop_precomputed",
+            "value": 68719.64309659223,
+            "unit": "iter/sec",
+            "range": "stddev: 3.728567235627073e-7",
+            "extra": "mean: 14.551880000226447 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_instantiation_1000",
+            "value": 728.0288795383251,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000047767763698514786",
+            "extra": "mean: 1.373571884447968 msec\nrounds: 701"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_single_move_toggle_50k",
+            "value": 27.474815602774065,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000903166097002389",
+            "extra": "mean: 36.396968571429916 msec\nrounds: 28"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_copy_chain_stress",
+            "value": 1633.656724779455,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000615724321292324",
+            "extra": "mean: 612.1237006721842 usec\nrounds: 1490"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_batch_legal_generation",
+            "value": 164.11032797432833,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00004900633405883705",
+            "extra": "mean: 6.093461711662835 msec\nrounds: 163"
+          },
+          {
+            "name": "tests/benchmarks/test_search_metrics.py::test_search_metrics_full_suite",
+            "value": 30.680256577670928,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00016689119370425127",
+            "extra": "mean: 32.5942515333395 msec\nrounds: 30"
           }
         ]
       }
