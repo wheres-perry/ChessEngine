@@ -2,17 +2,12 @@
     "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
     "name": "Chess Engine Dev Env",
     "build": {
-        "dockerfile": "Dockerfile",
+        "dockerfile": "../Dockerfile",
         "target": "development",
         "context": ".."
     },
-    "workspaceFolder": "/workspace",
-    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {
-            "moby": false
-        }
-    },
+    "workspaceFolder": "/app",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
     "forwardPorts": [
         8000,
         8888,
@@ -136,9 +131,8 @@
             }
         }
     },
-    "postCreateCommand": "bash .devcontainer/post-create.sh",
     "remoteUser": "vscode",
     "containerEnv": {
-        "PYTHONPATH": "/workspace"
+        "PYTHONPATH": "/app"
     }
 }

@@ -1,0 +1,99 @@
+# ── Project-specific ─────────────────────────────────────────────────
+*.zip
+*.pt
+*.pth
+*.h5
+*lichess_db_eval.jsonl
+*processing_ledger.json
+data/syzygy/
+data/interim/
+data/models/
+.docker-cache
+validation/
+
+# ── CMake / scikit-build-core (in-place editable build artifacts) ────
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeInit.txt
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+.cmake/
+.skbuild-info.json
+
+# ── Python bytecode / C extensions ───────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ── Packaging / distribution ────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+MANIFEST
+
+# ── Testing & coverage ──────────────────────────────────────────────
+.nox/
+.tox/
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+.benchmarks/
+
+# ── Tooling caches ──────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+.pytype/
+.pyre/
+
+# ── UV / venv ────────────────────────────────────────────────────────
+.uv/
+.uv-cache/
+.env
+.venv
+env/
+venv/
+
+# ── IDE & editor ────────────────────────────────────────────────────
+*.code-workspace
+.idea/
+*.DS_Store
+.vscode/c_cpp_properties.json
+
+# ── Jupyter ──────────────────────────────────────────────────────────
+.ipynb_checkpoints
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+pip-log.txt
+
+# ── Large / generated assets ────────────────────────────────────────
+*.drawio.svg
+
+# ── Dev container / AI assistants ───────────────────────────────────
+.devcontainer/.devcontainer.json.history
+.devcontainer/.last_build_state
+.copilot/
+.gemini/
+.specstory/
+.cursorindexingignore
+.cursorignore
+bin/
+
+output.json
+
+.git
+.github
+.devcontainer
