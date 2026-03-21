@@ -75,11 +75,15 @@ def types(session: Session) -> None:
 
 @nox.session(tags=["safe"])
 def tests_fast(session: Session) -> None:
-    """Unit + smoke + search + evaluator tests (fast feedback loop)."""
+    """Core + config + extractors + pgn + uci + smoke + search + evaluator tests."""
     _install(session)
     session.run(
         "pytest",
-        "tests/unit",
+        "tests/core",
+        "tests/config",
+        "tests/extractors",
+        "tests/pgn",
+        "tests/uci",
         "tests/smoke",
         "tests/search",
         "tests/evaluators",
@@ -223,7 +227,9 @@ def sanitizers(session: Session) -> None:
         session.log("Running tests with ASAN active...")
         session.run(
             "pytest",
-            "tests/unit",
+            "tests/core",
+            "tests/extractors",
+            "tests/pgn",
             "tests/smoke",
             "tests/search",
             "-v",

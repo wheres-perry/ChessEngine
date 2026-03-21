@@ -1,0 +1,22 @@
+[Event "FIDE World Cup 2017"]
+[Site "Tbilisi GEO"]
+[Date "2017.09.09"]
+[Round "4.1"]
+[White "Carlsen,M"]
+[Black "Bu Xiangzhi"]
+[Result "1-0"]
+[WhiteElo "2827"]
+[BlackElo "2710"]
+[EventDate "2017.09.03"]
+[ECO "C77"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. d3 b5 6. Bb3 Bc5 7. Nc3 d6 8.
+Nd5 { This is a comment } 8... Na5 (8... h6 9. Nxf6+ (9. c3)) 9. Nxf6+ gxf6
+10. O-O Nxb3 11. axb3 Rg8 $1 12. Kh1 f5 13. Nh4 f4 14. Nf5 Qg5 15. Qf3 Be6
+16. d4 Bb6 17. c3 Kd7 18. b4 a5 19. bxa5 Rxa5 20. Bd2 Rxa1 21. Rxa1 h5
+22. h3 Qg6 23. Rg1 f6 24. Qd3 c6 25. Qxb5 1-0
+
+[Event "Short Game"]
+[Result "0-1"]
+
+1. f3 e5 2. g4 Qh4# 0-1

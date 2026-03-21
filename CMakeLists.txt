@@ -17,6 +17,10 @@ pybind11_add_module(chess_engine_core
     src/engine/_cpp/search/search.cpp
     src/engine/_cpp/search/zobrist.cpp
     src/engine/_cpp/search/bindings.cpp
+    src/engine/_cpp/extractors/extractors.cpp
+    src/engine/_cpp/extractors/bindings.cpp
+    src/engine/_cpp/pgn/pgn.cpp
+    src/engine/_cpp/pgn/bindings.cpp
 )
 
 target_include_directories(chess_engine_core PRIVATE
@@ -25,6 +29,8 @@ target_include_directories(chess_engine_core PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/board
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/move_generation
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/search
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/extractors
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/pgn
 )
 
 target_compile_definitions(chess_engine_core PRIVATE
