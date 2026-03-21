@@ -91,3 +91,5 @@ pip-log.txt
 .cursorindexingignore
 .cursorignore
 bin/
+
+output.json
