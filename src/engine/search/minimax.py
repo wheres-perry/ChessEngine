@@ -152,6 +152,14 @@ class Minimax:
         """Run negamax with optional aspiration window.
 
         Widens the window up to 6 times on fail-high or fail-low.
+
+        Args:
+            depth: The current search depth.
+            alpha: The lower bound of the search window.
+            beta: The upper bound of the search window.
+
+        Returns:
+            The best score found for the current position.
         """
         if (
             not (
@@ -210,7 +218,19 @@ class Minimax:
         previous_move: chess.Move | None,
         extensions_left: int,
     ) -> float:
-        """Core negamax with TT, RFP, NMP, IID, futility, LMR, PVS, check extensions."""
+        """Run core negamax search with TT, RFP, NMP, IID, futility, LMR, PVS, check extensions.
+
+        Args:
+            depth: The remaining search depth.
+            alpha: The lower bound of the search window.
+            beta: The upper bound of the search window.
+            ply: The current ply (distance from root).
+            previous_move: The move that led to this position.
+            extensions_left: The number of check extensions still available.
+
+        Returns:
+            The best score for the current position from the side to move's perspective.
+        """
         self.stats.nodes += 1
         self.stats.seldepth = max(self.stats.seldepth, ply)
 
@@ -420,7 +440,23 @@ class Minimax:
         is_tactical: bool,
         extensions_left: int,
     ) -> float:
-        """Dispatch to plain negamax, PVS null-window, or LMR reduced search."""
+        """Dispatch to plain negamax, PVS null-window, or LMR reduced search.
+
+        Args:
+            index: The move index in the move list.
+            next_depth: The reduced or extended depth for the child search.
+            alpha: The lower bound of the search window.
+            beta: The upper bound of the search window.
+            ply: The current ply (distance from root).
+            move: The move being searched.
+            in_check: Whether the current side is in check.
+            gives_check: Whether the move gives check to the opponent.
+            is_tactical: Whether the move is a capture or promotion.
+            extensions_left: The number of check extensions still available.
+
+        Returns:
+            The score for the child position.
+        """
         if not self.search_cfg.use_alpha_beta:
             return -self._negamax(
                 depth=next_depth,
@@ -490,7 +526,17 @@ class Minimax:
         ply: int,
         qs_depth: int,
     ) -> float:
-        """Search captures and promotions until a quiet position is reached."""
+        """Search captures and promotions until a quiet position is reached.
+
+        Args:
+            alpha: The lower bound of the search window.
+            beta: The upper bound of the search window.
+            ply: The current ply (distance from root).
+            qs_depth: The current quiescence search depth.
+
+        Returns:
+            The best score for the quiet position.
+        """
         self.stats.qsearch_nodes += 1
         self.stats.seldepth = max(self.stats.seldepth, ply)
 
@@ -558,12 +604,21 @@ class Minimax:
         ply: int,
         extensions_left: int,
     ) -> float:
-        """Perform a null-move search with O(1) incremental Zobrist hash update."""
+        """Perform a null-move search with O(1) incremental Zobrist hash update.
+
+        Args:
+            depth: The current search depth.
+            beta: The upper bound of the search window.
+            ply: The current ply (distance from root).
+            extensions_left: The number of check extensions still available.
+
+        Returns:
+            The score from the null-move search.
+        """
         saved_hash = (
             self.zobrist.get_current_hash() if self.zobrist is not None else None
         )
 
-        # O(1) incremental null-move hash (toggle side + remove EP)
         null_hash: int | None = None
         if self.zobrist is not None and saved_hash is not None:
             null_hash = self.zobrist.make_null_move_hash(self.board)
@@ -593,6 +648,11 @@ class Minimax:
         return score
 
     def _check_time_limit(self) -> bool:
+        """Check if the search has exceeded the configured time limit.
+
+        Returns:
+            True if the time limit has been exceeded, False otherwise.
+        """
         max_time = self.search_cfg.max_time
         if max_time is None or self.start_time is None:
             return False
@@ -602,23 +662,47 @@ class Minimax:
         return False
 
     def _relative_eval(self) -> float:
+        """Evaluate the current position from the side to move's perspective.
+
+        Returns:
+            The evaluation score from the side to move's perspective.
+        """
         white_perspective = float(self.evaluator.go(self.board))
         return white_perspective if bool(self.board.turn) else -white_perspective
 
     def _terminal_score(self, game_state: chess.GameState, ply: int) -> float:
+        """Calculate the score for a terminal game state.
+
+        Args:
+            game_state: The terminal game state (checkmate or draw).
+            ply: The current ply (distance from root).
+
+        Returns:
+            The score for the terminal position (mate score adjusted by ply for
+            checkmate, or 0.0 for draw).
+        """
         if game_state == chess.GameState.CHECKMATE:
             return -self.MATE_SCORE + ply
         return 0.0
 
     def _current_hash(self) -> int | None:
+        """Get the current Zobrist hash of the board position.
+
+        Returns:
+            The current Zobrist hash, or None if transposition tables are disabled.
+        """
         if self.zobrist is None:
             return None
         return self.zobrist.get_current_hash()
 
     def _push_move_with_hash(self, move: chess.Move) -> int | None:
-        """Push *move* onto the board and update the Zobrist hash.
+        """Push a move onto the board and update the Zobrist hash.
 
-        Returns the saved hash before the move (used by _pop_move_with_hash).
+        Args:
+            move: The move to apply to the board.
+
+        Returns:
+            The saved hash before the move was applied, or None if TT is disabled.
         """
         saved_hash = self._current_hash()
         next_hash: int | None = None
@@ -636,12 +720,24 @@ class Minimax:
         return saved_hash
 
     def _pop_move_with_hash(self, saved_hash: int | None) -> None:
+        """Pop the last move from the board and restore the Zobrist hash.
+
+        Args:
+            saved_hash: The hash to restore after popping the move.
+        """
         self.board.pop()
         if self.zobrist is not None and saved_hash is not None:
             self.zobrist.set_current_hash(saved_hash)
 
     def _capture_gain(self, move: chess.Move) -> int:
-        """Return the centipawn value of the piece captured by *move* (0 if none)."""
+        """Return the centipawn value of the piece captured by a move.
+
+        Args:
+            move: The move to evaluate.
+
+        Returns:
+            The centipawn value of the captured piece, or 0 if no capture.
+        """
         piece = self.board.piece_at(move.to_square)
         if piece is None and self.board.is_en_passant(move):
             return int(MoveSorter.PIECE_VALUES_CP[chess.PAWN])
@@ -650,6 +746,11 @@ class Minimax:
         return int(MoveSorter.PIECE_VALUES_CP.get(piece.piece_type, 0))
 
     def _has_non_pawn_material(self) -> bool:
+        """Check if the side to move has any non-pawn material.
+
+        Returns:
+            True if the side to move has knights, bishops, rooks, or queens.
+        """
         color = chess.WHITE if bool(self.board.turn) else chess.BLACK
         return any(
             len(self.board.pieces(piece_type, color)) > 0
@@ -657,6 +758,14 @@ class Minimax:
         )
 
     def _is_tactical_move(self, move: chess.Move) -> bool:
+        """Determine if a move is tactical (capture or promotion).
+
+        Args:
+            move: The move to evaluate.
+
+        Returns:
+            True if the move is a capture or promotion.
+        """
         return bool(self.board.is_capture(move) or int(move.promotion) != 0)
 
     def _can_apply_futility(
@@ -667,7 +776,18 @@ class Minimax:
         in_check: bool,
         is_tactical: bool,
     ) -> bool:
-        """Return True if futility or extended-futility pruning skips this node."""
+        """Check if futility or extended-futility pruning can skip this node.
+
+        Args:
+            depth: The current search depth.
+            static_eval: The static evaluation of the position.
+            alpha: The lower bound of the search window.
+            in_check: Whether the side to move is in check.
+            is_tactical: Whether the move is a capture or promotion.
+
+        Returns:
+            True if the node should be pruned by futility pruning.
+        """
         if not self.search_cfg.use_alpha_beta:
             return False
         if in_check or is_tactical:
@@ -694,7 +814,18 @@ class Minimax:
         gives_check: bool,
         is_tactical: bool,
     ) -> bool:
-        """Return True if Late Move Reduction is safe to apply to this move."""
+        """Check if Late Move Reduction is safe to apply to a move.
+
+        Args:
+            move_index: The index of the move in the move list.
+            depth: The current search depth.
+            in_check: Whether the side to move is in check.
+            gives_check: Whether the move gives check to the opponent.
+            is_tactical: Whether the move is a capture or promotion.
+
+        Returns:
+            True if LMR can be applied to this move.
+        """
         if not self.search_cfg.use_lmr:
             return False
         if in_check or gives_check or is_tactical:
@@ -708,6 +839,13 @@ class Minimax:
         """Compute LMR depth reduction.
 
         Formula: 0.75 * ln(depth) * ln(move_idx+1), capped to [1, 3].
+
+        Args:
+            depth: The current search depth.
+            move_index: The index of the move in the move list.
+
+        Returns:
+            The depth reduction amount (1-3).
         """
         base = 0.75 * math.log(max(2, depth)) * math.log(max(2, move_index + 1))
         return max(1, min(3, int(base)))
@@ -718,7 +856,16 @@ class Minimax:
         original_alpha: float,
         beta: float,
     ) -> BoundType:
-        """Classify the TT entry bound type based on score vs alpha/beta."""
+        """Classify the TT entry bound type based on score vs alpha/beta.
+
+        Args:
+            best_score: The best score found in the search.
+            original_alpha: The original alpha value at the start of the search.
+            beta: The upper bound of the search window.
+
+        Returns:
+            The bound type: "exact", "upper", or "lower".
+        """
         if not self.search_cfg.use_alpha_beta:
             return "exact"
         if best_score <= original_alpha:

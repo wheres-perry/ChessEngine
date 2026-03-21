@@ -321,6 +321,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Download and verify Syzygy endgame tablebases.
+
+    Parses command line arguments, discovers remote files, verifies
+    existing tables, and downloads missing ones.
+    """
     args = _build_parser().parse_args()
 
     dest = Path(args.path or os.environ.get("SYZYGY_PATH") or str(DEFAULT_SYZYGY_DIR))

@@ -68,7 +68,7 @@ def lint(session: Session) -> None:
 
 @nox.session(tags=["safe"])
 def types(session: Session) -> None:
-    """Static type checking with mypy."""
+    """Run static type checking with mypy."""
     _install(session)
     session.run("mypy", "src", "noxfile.py")
 

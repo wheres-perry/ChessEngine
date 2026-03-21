@@ -1,3 +1,9 @@
+"""Tests for the engine configuration system.
+
+This module tests the EngineConfig, SearchConfig, and EvaluationConfig classes,
+including serialization, deserialization, string formatting, and solver bounds validation.
+"""
+
 import json
 import os
 from pathlib import Path
@@ -9,6 +15,7 @@ from engine.config_solver import ConfigSolver, ConfigSolverError
 
 
 def test_engine_config_to_dict():
+    """Verifies EngineConfig correctly converts to a dictionary."""
     config = EngineConfig(search_depth=10)
     config_dict = config.to_dict()
     assert config_dict["search_depth"] == 10
@@ -17,6 +24,7 @@ def test_engine_config_to_dict():
 
 
 def test_engine_config_save_load_json(tmp_path: Path):
+    """Verifies EngineConfig can be saved to and loaded from JSON."""
     config = EngineConfig(search_depth=15)
     # Give a valid config. If alpha beta is false, pvs must be false, etc
     config.search.use_alpha_beta = False
@@ -39,6 +47,7 @@ def test_engine_config_save_load_json(tmp_path: Path):
 
 
 def test_engine_config_from_dict():
+    """Verifies EngineConfig correctly constructs from a dictionary."""
     data = {
         "search_depth": 7,
         "search": {"use_pvs": False, "use_alpha_beta": True},
@@ -53,12 +62,11 @@ def test_engine_config_from_dict():
 
 
 def test_engine_config_str_formatting():
-    # Base configuration
+    """Verifies EngineConfig string representation includes all feature flags."""
     config = EngineConfig(search_depth=5)
     config.search.use_alpha_beta = False
     assert "Search: [Base Minimax]" in str(config)
 
-    # Advanced search features
     config.search = SearchConfig(
         use_alpha_beta=True,
         use_pvs=True,
@@ -86,7 +94,6 @@ def test_engine_config_str_formatting():
     assert "Futility" in s
     assert "QS" in s
 
-    # Eval flags disabled
     config.evaluation = EvaluationConfig(
         use_pst=False,
         use_pawn_structure=False,
@@ -96,7 +103,6 @@ def test_engine_config_str_formatting():
     )
     assert "Eval: [Material]" in str(config)
 
-    # Eval flags enabled
     config.evaluation = EvaluationConfig(
         use_pst=True,
         use_pawn_structure=True,
@@ -113,6 +119,7 @@ def test_engine_config_str_formatting():
 
 
 def test_config_solver_bounds_depth_too_low():
+    """Verifies ConfigSolver raises error when search depth is below minimum."""
     config = EngineConfig(search_depth=0)
     solver = ConfigSolver(config)
     with pytest.raises(ConfigSolverError, match="Search depth must be at least 1"):
@@ -120,6 +127,7 @@ def test_config_solver_bounds_depth_too_low():
 
 
 def test_config_solver_bounds_depth_too_high():
+    """Verifies ConfigSolver raises error when search depth exceeds maximum."""
     config = EngineConfig(search_depth=200)
     solver = ConfigSolver(config)
     with pytest.raises(ConfigSolverError, match="Search depth too high"):
@@ -127,6 +135,7 @@ def test_config_solver_bounds_depth_too_high():
 
 
 def test_config_solver_bounds_timeout_negative():
+    """Verifies ConfigSolver raises error when timeout is negative."""
     config = EngineConfig()
     config.search.max_time = -1.0
     solver = ConfigSolver(config)
@@ -135,6 +144,7 @@ def test_config_solver_bounds_timeout_negative():
 
 
 def test_config_solver_bounds_timeout_zero():
+    """Verifies ConfigSolver raises error when timeout is zero."""
     config = EngineConfig()
     config.search.max_time = 0.0
     solver = ConfigSolver(config)

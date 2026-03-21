@@ -1,3 +1,9 @@
+"""Smoke tests for engine performance.
+
+These tests act as 'canary in the coal mine' for major performance regressions
+by verifying core operations complete within expected time thresholds.
+"""
+
 import time
 
 import pytest
@@ -7,7 +13,8 @@ from engine._core import chess_engine_core as core
 
 def test_perft_speed_smoke():
     """
-    FAIL if Perft(5) takes longer than expected.
+    Fail if Perft(5) takes longer than expected.
+
     This acts as a 'canary in the coal mine' for major performance regressions.
     """
     board = core.Board()

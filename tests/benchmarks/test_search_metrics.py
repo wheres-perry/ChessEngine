@@ -1,3 +1,9 @@
+"""Benchmark search metrics across different engine configurations.
+
+This module provides comprehensive benchmarking of search performance
+including cold vs warm runs, multi-depth sweeps, and statistics collection.
+"""
+
 import statistics
 import time
 from datetime import datetime
@@ -21,7 +27,7 @@ BENCHMARK_FENS = {
 
 
 def get_configs():
-    """Define the 'drop-in' module configurations."""
+    """Return the 'drop-in' module configurations."""
 
     # 1. Base Minimax
     base_cfg = EngineConfig(
@@ -78,11 +84,13 @@ def get_configs():
 
 @pytest.fixture
 def baseline_manager(tmp_path):
+    """Return a BaselineManager for the test session."""
     bm_dir = Path(".benchmarks")
     return BaselineManager(bm_dir)
 
 
 def run_search_harness(config, fen, depth=None, warm=False, runtime_instance=None):
+    """Run a search with the given configuration and position."""
     if runtime_instance and warm:
         runtime = runtime_instance
         # For warm runs, we might need to reset board position if it changed,
@@ -106,12 +114,10 @@ def run_search_harness(config, fen, depth=None, warm=False, runtime_instance=Non
 
 
 def test_search_metrics_full_suite(benchmark, baseline_manager):
-    """
-    Comprehensive search benchmark suite using the Factory.
-    - Cold vs Warm runs
-    - Multiple iterations
-    - C++ vs Python comparison
-    - Hybrid Backend check
+    """Run comprehensive search benchmark suite using the Factory.
+
+    Includes cold vs warm runs, multiple iterations, C++ vs Python comparison,
+    and hybrid backend verification.
     """
     configs = get_configs()
     iterations = 2

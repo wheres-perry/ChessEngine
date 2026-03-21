@@ -29,7 +29,13 @@ class TranspositionTable:
 
     ESTIMATED_ENTRY_SIZE_BYTES = 32
 
-    def __init__(self, config: SearchConfig):
+    def __init__(self, config: SearchConfig) -> None:
+        """Initialize the transposition table.
+
+        Args:
+            config: The search configuration containing transposition table settings,
+                including tt_size_mb for table size and use_tt_aging for aging policy.
+        """
         self.config = config
         estimated_capacity = (
             config.tt_size_mb * 1024 * 1024 // self.ESTIMATED_ENTRY_SIZE_BYTES
@@ -44,13 +50,30 @@ class TranspositionTable:
             self.current_age += 1
 
     def clear(self) -> None:
+        """Clear all entries from the transposition table.
+
+        Removes all stored entries while maintaining the current configuration.
+        """
         self.table.clear()
 
     def size(self) -> int:
+        """Return the number of entries currently stored in the table.
+
+        Returns:
+            The count of transposition table entries.
+        """
         return len(self.table)
 
     def probe(self, key: int) -> TTEntry | None:
-        """Probe table and optionally refresh entry age on hit."""
+        """Probe the table for an entry and optionally refresh its age.
+
+        Args:
+            key: The hash key to look up in the table.
+
+        Returns:
+            The matching TTEntry if found, with its age updated if TT aging is enabled;
+            None if no entry exists for the given key.
+        """
         entry = self.table.get(key)
         if entry is None:
             return None
@@ -65,7 +88,21 @@ class TranspositionTable:
         alpha: float,
         beta: float,
     ) -> float | None:
-        """Return a usable score from an entry if it can cut off at this node."""
+        """Return a usable score from an entry if it can cut off at this node.
+
+        Checks if the stored entry has sufficient depth and appropriate bound type
+        to provide a valid score for the current search window.
+
+        Args:
+            entry: The transposition table entry to evaluate.
+            depth: The current search depth required.
+            alpha: The current alpha bound for the search window.
+            beta: The current beta bound for the search window.
+
+        Returns:
+            The stored score if the entry is usable for cutoff at this node;
+            None if the entry cannot be used (insufficient depth or bounds mismatch).
+        """
         if entry.depth < depth:
             return None
         if entry.bound == "exact":
@@ -84,7 +121,19 @@ class TranspositionTable:
         best_move: chess.Move | None,
         bound: BoundType,
     ) -> None:
-        """Store a search result using depth-preferred replacement."""
+        """Store a search result using depth-preferred replacement.
+
+        Stores a new entry or replaces an existing one based on depth and age.
+        When the table is full, removes the oldest entry to make space.
+
+        Args:
+            key: The hash key for this position.
+            depth: The search depth at which this position was evaluated.
+            score: The evaluated score for this position.
+            best_move: The best move found from this position, if any.
+            bound: The bound type ("exact", "lower", or "upper") indicating
+                how the score relates to the search window.
+        """
         existing = self.table.get(key)
         if existing is not None:
             if self.config.use_tt_aging:

@@ -22,12 +22,29 @@ STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 class CoreAdapter(Protocol):
     """Protocol for the chess board/core backend."""
 
-    def from_fen(self, fen: str) -> Any: ...
-    def fen(self) -> str: ...
-    def push_uci(self, uci: str) -> None: ...
-    def legal_moves(self) -> list[str]: ...
-    def is_game_over(self) -> bool: ...
-    def get_internal_board(self) -> Any: ...
+    def from_fen(self, fen: str) -> Any:
+        """Load position from FEN string."""
+        ...
+
+    def fen(self) -> str:
+        """Return current position as FEN string."""
+        ...
+
+    def push_uci(self, uci: str) -> None:
+        """Make a move in UCI notation."""
+        ...
+
+    def legal_moves(self) -> list[str]:
+        """Return list of legal moves in UCI notation."""
+        ...
+
+    def is_game_over(self) -> bool:
+        """Check if the game is over."""
+        ...
+
+    def get_internal_board(self) -> Any:
+        """Return the internal board object."""
+        ...
 
 
 class CoreBoardAdapter(CoreAdapter):
@@ -37,22 +54,28 @@ class CoreBoardAdapter(CoreAdapter):
         self.board = board
 
     def from_fen(self, fen: str) -> Any:
+        """Load position from FEN string."""
         self.board.set_fen(fen)
         return self
 
     def fen(self) -> str:
+        """Return current position as FEN string."""
         return self.board.fen()
 
     def push_uci(self, uci: str) -> None:
+        """Make a move in UCI notation."""
         self.board.push(core.Move.from_uci(uci))
 
     def legal_moves(self) -> list[str]:
+        """Return list of legal moves in UCI notation."""
         return [m.uci() for m in self.board.generate_legal_moves()]
 
     def is_game_over(self) -> bool:
+        """Check if the game is over."""
         return bool(self.board.is_game_over() != core.GameState.ONGOING)
 
     def get_internal_board(self) -> core.Board:
+        """Return the internal board object."""
         return self.board
 
 
@@ -60,9 +83,17 @@ class CoreBoardAdapter(CoreAdapter):
 class SearchAdapter(Protocol):
     """Protocol for the search engine."""
 
-    def search(self, depth: int) -> tuple[float | None, str | None]: ...
-    def get_stats(self) -> SearchStats: ...
-    def reset(self) -> None: ...
+    def search(self, depth: int) -> tuple[float | None, str | None]:
+        """Search for the best move at the given depth."""
+        ...
+
+    def get_stats(self) -> SearchStats:
+        """Return search statistics."""
+        ...
+
+    def reset(self) -> None:
+        """Reset the search state."""
+        ...
 
 
 class PythonSearchAdapter(SearchAdapter):
@@ -72,14 +103,16 @@ class PythonSearchAdapter(SearchAdapter):
         self.engine = engine
 
     def search(self, depth: int) -> tuple[float | None, str | None]:
+        """Search for the best move at the given depth."""
         score, move = self.engine.find_best_move(depth)
         return score, move.uci() if move else None
 
     def get_stats(self) -> SearchStats:
-        # Minimax uses the python SearchStats directly
+        """Return search statistics."""
         return self.engine.stats
 
     def reset(self) -> None:
+        """Reset the search state."""
         self.engine.reset_state()
 
 
@@ -135,11 +168,20 @@ class Engine:
         return self.searcher.find_best_move(search_depth)
 
     def search(self, depth: int | None = None) -> tuple[float | None, str | None]:
+        """Search for the best move and return score and UCI move.
+
+        Args:
+            depth: Search depth (uses config default if None).
+
+        Returns:
+            Tuple of (score, uci_move) or (None, None) if no move found.
+        """
         score, move = self.find_best_move(depth)
         return score, move.uci() if move else None
 
     @property
     def stats(self) -> SearchStats:
+        """Return search statistics."""
         return self.searcher.stats
 
     def reset(self) -> None:
@@ -148,18 +190,32 @@ class Engine:
 
 
 def create_core_adapter(config: EngineConfig, fen: str | None = None) -> CoreAdapter:
-    """Create a CoreBoardAdapter from the given FEN (or the starting position)."""
+    """Create a CoreBoardAdapter from the given FEN (or the starting position).
+
+    Args:
+        config: Engine configuration (currently unused but reserved for future use).
+        fen: FEN string to load, or None to use the starting position.
+
+    Returns:
+        A CoreAdapter wrapping the initialized board.
+    """
     _ = config
     start_fen = fen if fen else STARTING_FEN
 
-    # Create core board
-    # Check if from_fen is available or init then load
     board = core.Board.from_fen(fen) if fen else core.Board.from_fen(start_fen)
     return CoreBoardAdapter(board)
 
 
 def create_engine(config: EngineConfig, fen: str | None = None) -> Engine:
-    """Construct the primary `Engine` object."""
+    """Construct the primary `Engine` object.
+
+    Args:
+        config: Engine configuration to use.
+        fen: FEN string to load, or None to use the starting position.
+
+    Returns:
+        An initialized Engine instance ready for search operations.
+    """
     ConfigSolver(config).solve()
 
     board = core.Board.from_fen(fen) if fen else core.Board.from_fen(STARTING_FEN)
@@ -171,7 +227,18 @@ def create_engine(config: EngineConfig, fen: str | None = None) -> Engine:
 def create_search_adapter(
     config: EngineConfig, core_adapter: CoreAdapter
 ) -> SearchAdapter:
-    """Build a Python search adapter from the given config and board adapter."""
+    """Build a Python search adapter from the given config and board adapter.
+
+    Args:
+        config: Engine configuration to use.
+        core_adapter: Board adapter providing access to the internal board.
+
+    Returns:
+        A SearchAdapter wrapping the configured search engine.
+
+    Raises:
+        ValueError: If the core_adapter is not a CoreBoardAdapter.
+    """
     ConfigSolver(config).solve()
 
     if not isinstance(core_adapter, CoreBoardAdapter):
@@ -186,7 +253,15 @@ def create_search_adapter(
 def create_engine_runtime(
     config: EngineConfig, fen: str | None = None
 ) -> EngineRuntime:
-    """Canonical entry point to build the engine."""
+    """Canonical entry point to build the engine.
+
+    Args:
+        config: Engine configuration to use.
+        fen: FEN string to load, or None to use the starting position.
+
+    Returns:
+        An EngineRuntime containing all initialized components.
+    """
     engine = create_engine(config, fen)
 
     board_adapter = CoreBoardAdapter(engine.board)

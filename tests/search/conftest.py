@@ -1,4 +1,4 @@
-"""Search test fixtures."""
+"""Provide search test fixtures."""
 
 from __future__ import annotations
 
@@ -16,6 +16,6 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def search_engine(board: chess.Board, default_config: EngineConfig) -> Minimax:
-    """A Minimax instance with sensible defaults, ready to search."""
+    """Return a Minimax instance with sensible defaults, ready to search."""
     evaluator = MockEvaluator()
     return Minimax(board, evaluator, default_config)

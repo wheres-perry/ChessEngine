@@ -47,6 +47,7 @@ class TestMateIn1:
         ids=[f"puzzle_{i}" for i in range(len(PUZZLES))],
     )
     def test_finds_mate(self, fen: str, expected: str) -> None:
+        """Verify engine finds the correct mating move for the given FEN."""
         found = _find_move(fen, depth=2)  # depth 2 to see the mating reply
         assert found == expected, f"Expected {expected}, got {found} for FEN: {fen}"
 

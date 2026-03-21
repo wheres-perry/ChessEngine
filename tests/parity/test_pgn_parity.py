@@ -1,3 +1,5 @@
+"""Parity tests comparing the C++ PGN parser against python-chess ground truth."""
+
 import glob
 import io
 import os
@@ -9,24 +11,23 @@ from engine._core import chess_engine_core as core
 
 
 def get_pgn_files() -> list[str]:
-    # Grab all .pgn files from data/raw/simple_games
+    """Return all .pgn files from data/raw/simple_games."""
     pgn_pattern = os.path.join("data", "raw", "simple_games", "*.pgn")
     return glob.glob(pgn_pattern)
 
 
 @pytest.mark.parametrize("pgn_file", get_pgn_files())
 def test_pgn_parity_with_python_chess(pgn_file: str) -> None:
-    """
-    Extensively test our C++ PGN parser against python-chess for parity.
-    This guarantees that we handle headers, results, and SAN move extraction
-    with exactly the same correctness as the reference library.
+    """Test the C++ PGN parser against python-chess for parity.
+
+    Validates headers, results, and SAN move extraction match the reference library.
     """
 
-    # 1. Parse using our C++ engine
+    # Parse using our C++ engine.
     our_stream = core.pgn.PGNStream(pgn_file)
     our_games = list(our_stream)
 
-    # 2. Parse using Python-chess
+    # Parse using python-chess.
     pychess_games = []
     with open(pgn_file) as f:
         while True:

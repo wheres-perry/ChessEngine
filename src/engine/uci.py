@@ -40,7 +40,13 @@ class UCIHandler:
             handler(self, args)
 
     def _ponderhit(self, _args: list[str] | None = None) -> None:
-        """Handle ponderhit (no-op)."""
+        """Handle ponderhit command.
+
+        This is a no-op as pondering is not implemented.
+
+        Args:
+            _args: Command arguments (ignored).
+        """
 
     def _uci(self, _args: list[str] | None = None) -> None:
         """Handle uci identification handshake."""
@@ -50,11 +56,23 @@ class UCIHandler:
         _out("uciok")
 
     def _isready(self, _args: list[str] | None = None) -> None:
-        """Handle isready."""
+        """Handle isready command.
+
+        Signals that the engine is ready to receive commands.
+
+        Args:
+            _args: Command arguments (ignored).
+        """
         _out("readyok")
 
     def _ucinewgame(self, _args: list[str] | None = None) -> None:
-        """Handle ucinewgame."""
+        """Handle ucinewgame command.
+
+        Resets the search state for a new game.
+
+        Args:
+            _args: Command arguments (ignored).
+        """
         self.runtime.searcher.reset()
 
     def _position(self, args: list[str] | None = None) -> None:
@@ -108,7 +126,13 @@ class UCIHandler:
             _out("bestmove 0000")
 
     def _stop(self, _args: list[str] | None = None) -> None:
-        """Handle stop (no-op)."""
+        """Handle stop command.
+
+        This is a no-op as search is synchronous.
+
+        Args:
+            _args: Command arguments (ignored).
+        """
 
     def _setoption(self, args: list[str] | None = None) -> None:
         """Handle setoption command."""
@@ -153,6 +177,11 @@ class UCIHandler:
 
 
 def main() -> None:
+    """Run the UCI command loop.
+
+    Reads UCI commands from stdin and dispatches them to the handler
+    until EOF or keyboard interrupt.
+    """
     handler = UCIHandler()
     while True:
         try:

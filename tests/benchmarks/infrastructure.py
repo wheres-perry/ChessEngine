@@ -1,3 +1,5 @@
+"""Infrastructure for benchmarking and baseline management."""
+
 import json
 import logging
 from dataclasses import asdict, dataclass
@@ -11,41 +13,34 @@ logger = logging.getLogger(__name__)
 class SearchStats:
     """Metrics collected from a single search run."""
 
-    # Tree Topology
     nodes: int = 0
     depth: int = 0
     seldepth: int = 0
     effective_branching_factor: float = 0.0
     time_to_depth: float = 0.0
     nps: int = 0
-    seldepth_ratio: float = 0.0  # Calculated
+    seldepth_ratio: float = 0.0
 
-    # Move Ordering
     beta_cutoffs: int = 0
     fmbc_count: int = 0
-    fmbc_rate: float = 0.0  # Calculated
+    fmbc_rate: float = 0.0
     killer_cuts: int = 0
     history_cuts: int = 0
 
-    # TT
     tt_hits: int = 0
-    tt_hit_rate: float = 0.0  # Calculated
+    tt_hit_rate: float = 0.0
     hashfull_permillage: int = 0
 
-    # Pruning
     qsearch_nodes: int = 0
-    qs_node_ratio: float = 0.0  # Calculated
+    qs_node_ratio: float = 0.0
 
-    # Stability
     score: int = 0
     score_variance: float = 0.0
     best_move: str = ""
 
-    # Statistical
     time_stddev: float = 0.0
     nodes_stddev: float = 0.0
 
-    # New Metrics
     pvs_researches: int = 0
     qs_see_pruning: int = 0
     root_move_changes: int = 0
@@ -58,10 +53,8 @@ class SearchStats:
             self.fmbc_rate = self.fmbc_count / self.beta_cutoffs
         if self.nodes > 0:
             self.qs_node_ratio = self.qsearch_nodes / self.nodes
-            self.tt_hit_rate = self.tt_hits / self.nodes  # Approx, usually / lookups
+            self.tt_hit_rate = self.tt_hits / self.nodes
 
-        # Calculate Effective Branching Factor (EBF)
-        # Formula: Nodes = EBF ^ Depth  =>  EBF = Nodes ^ (1/Depth)
         if self.depth > 0 and self.nodes > 0:
             self.effective_branching_factor = self.nodes ** (1.0 / self.depth)
 
@@ -75,18 +68,23 @@ class BenchmarkResult:
 
     config_name: str
     timestamp: str
-    stats: dict[str, SearchStats]  # Map FEN -> Stats
+    stats: dict[str, SearchStats]
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the benchmark result to a dictionary."""
         return asdict(self)
 
 
 class BaselineManager:
+    """Manage loading, saving, and comparing benchmark baselines."""
+
     def __init__(self, baseline_dir: Path):
+        """Initialize the baseline manager with the specified directory."""
         self.baseline_dir = baseline_dir
         self.baseline_dir.mkdir(parents=True, exist_ok=True)
 
     def load_baseline(self, name: str) -> dict[str, Any] | None:
+        """Load a baseline by name from the baseline directory."""
         path = self.baseline_dir / f"{name}.json"
         if not path.exists():
             return None
@@ -94,12 +92,13 @@ class BaselineManager:
             return json.load(f)
 
     def save_baseline(self, name: str, data: dict[str, Any]):
+        """Save baseline data to the baseline directory."""
         path = self.baseline_dir / f"{name}.json"
         with open(path, "w") as f:
             json.dump(data, f, indent=4)
 
     def compare(self, current: BenchmarkResult, baseline_name: str) -> dict[str, Any]:
-        """Returns a diff report."""
+        """Return a diff report comparing current results to a baseline."""
         baseline = self.load_baseline(baseline_name)
         if not baseline:
             return {"status": "NEW_BASELINE", "msg": "No previous baseline found."}
@@ -109,7 +108,6 @@ class BaselineManager:
             if fen_name in baseline["stats"]:
                 base_stats = baseline["stats"][fen_name]
 
-                # Calculate diffs
                 node_diff = current_stats.nodes - base_stats["nodes"]
                 node_pct = (
                     (node_diff / base_stats["nodes"]) * 100

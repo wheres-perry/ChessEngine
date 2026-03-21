@@ -32,6 +32,11 @@ class ConfigSolver:
     """
 
     def __init__(self, config: EngineConfig) -> None:
+        """Initialize the ConfigSolver with an engine configuration.
+
+        Args:
+            config: The engine configuration to validate.
+        """
         self.config = config
         self.search_config = config.search
         self._rules = ConfigSolverRules()
@@ -58,6 +63,14 @@ class ConfigSolver:
     # ------------------------------------------------------------------
 
     def _validate_global_bounds(self) -> None:
+        """Validate global configuration bounds that are not expressible as z3 rules.
+
+        Checks that search depth is within valid range (1-128) and that
+        max_time is positive if specified.
+
+        Raises:
+            ConfigSolverError: If any global bound constraint is violated.
+        """
         if self.config.search_depth < 1:
             raise ConfigSolverError(
                 f"Search depth must be at least 1, got {self.config.search_depth}"
@@ -76,6 +89,11 @@ class ConfigSolver:
     # ------------------------------------------------------------------
 
     def _build_eval_substitutions(self) -> list[tuple[object, object]]:
+        """Build z3 variable substitutions for evaluation configuration.
+
+        Returns:
+            A list of (z3_variable, z3_value) tuples for evaluation settings.
+        """
         evl = self.config.evaluation
         return [
             (var, BoolVal(getattr(evl, name)))
@@ -83,6 +101,12 @@ class ConfigSolver:
         ]
 
     def _build_search_substitutions(self) -> list[tuple[object, object]]:
+        """Build z3 variable substitutions for search configuration.
+
+        Returns:
+            A list of (z3_variable, z3_value) tuples for both boolean and
+            integer search settings.
+        """
         cfg = self.search_config
         subs: list[tuple[object, object]] = [
             (var, BoolVal(getattr(cfg, name)))
@@ -103,6 +127,17 @@ class ConfigSolver:
         rules: list[tuple[str, object]],
         substitutions: list[tuple[object, object]],
     ) -> None:
+        """Check all rules against the given substitutions.
+
+        Args:
+            rules: A list of (description, constraint) tuples where description
+                is a human-readable error message and constraint is a z3 expression.
+            substitutions: A list of (z3_variable, z3_value) tuples to substitute
+                into the constraints.
+
+        Raises:
+            ConfigSolverError: If any rule evaluates to false after substitution.
+        """
         for description, constraint in rules:
             result = simplify(substitute(constraint, substitutions))
             if not is_true(result):

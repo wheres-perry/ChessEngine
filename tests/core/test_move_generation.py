@@ -1,7 +1,4 @@
-"""
-Comprehensive edge case tests for chess move generation.
-These tests target specific bugs and edge cases that commonly break chess engines.
-"""
+"""Test chess move generation edge cases and bug scenarios."""
 
 import pytest
 
@@ -9,7 +6,7 @@ from engine._core import chess_engine_core as core  # type: ignore
 
 
 def _move_to_tuple(move: core.Move) -> tuple[int, int, int]:
-    """Normalize a move object into a tuple for easier comparison in assertions."""
+    """Normalize a move object into a tuple for comparison in assertions."""
     to_square: int | None = getattr(move, "to", None)
     if to_square is None:
         to_square = getattr(move, "to_square", None)
@@ -28,7 +25,7 @@ def verify_legal_moves(
     expected_moves: list[tuple[int, int, int]],
     message: str = "Legal moves do not match expected",
 ) -> None:
-    """Helper to verify legal moves for a given FEN."""
+    """Verify legal moves for a given FEN."""
     board = core.Board.from_fen(fen)
     moves = board.generate_legal_moves()
 
@@ -234,12 +231,12 @@ def verify_legal_moves(
     ],
 )
 def test_move_generation_edge_cases(fen, expected_count, expected_moves, description):
-    """Test various move generation edge cases using parameterization."""
+    """Verify various move generation edge cases using parameterization."""
     verify_legal_moves(fen, expected_count, expected_moves, description)
 
 
 def test_lost_castle_rights_state():
-    """Specific test to ensure state is correctly updated after lost castle rights."""
+    """Verify state is correctly updated after lost castle rights."""
     fen = "4k3/8/8/8/1b2p3/4P3/3P3r/r2NK2R w - - 0 1"
     board = core.Board.from_fen(fen)
     assert board.get_castling_rights() == 0, "Castling rights should be lost"

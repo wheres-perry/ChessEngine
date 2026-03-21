@@ -27,8 +27,12 @@ class MoveSorter:
         chess.KING: 20_000,
     }
 
-    def __init__(self, config: SearchConfig):
-        """Initialize empty killer, history, and countermove tables."""
+    def __init__(self, config: SearchConfig) -> None:
+        """Initialize empty killer, history, and countermove tables.
+
+        Args:
+            config: The search configuration containing move ordering settings.
+        """
         self.config = config
         self.killer_moves: dict[int, list[chess.Move]] = {}
         self.history_table: dict[tuple[int, int, int], int] = {}
@@ -50,7 +54,18 @@ class MoveSorter:
         hash_move: chess.Move | None,
         previous_move: chess.Move | None,
     ) -> list[chess.Move]:
-        """Score and sort all moves in descending priority order."""
+        """Score and sort all moves in descending priority order.
+
+        Args:
+            board: The current board state.
+            moves: The list of moves to sort.
+            ply: The current ply (depth) in the search.
+            hash_move: The hash move from the transposition table, if any.
+            previous_move: The previous move made, for countermove heuristic.
+
+        Returns:
+            The sorted list of moves in descending priority order.
+        """
         if not self.config.use_move_ordering or len(moves) <= 1:
             return moves
 
@@ -73,7 +88,15 @@ class MoveSorter:
     def sort_tactical(
         self, board: chess.Board, moves: list[chess.Move]
     ) -> list[chess.Move]:
-        """Sort captures/promotions by MVV-LVA + SEE; used in quiescence search."""
+        """Sort captures/promotions by MVV-LVA + SEE; used in quiescence search.
+
+        Args:
+            board: The current board state.
+            moves: The list of tactical moves (captures/promotions) to sort.
+
+        Returns:
+            The sorted list of tactical moves in descending priority order.
+        """
         scored_moves = [
             (self._score_tactical_move(board, move), move) for move in moves
         ]
@@ -88,7 +111,18 @@ class MoveSorter:
         hash_move: chess.Move | None,
         previous_move: chess.Move | None,
     ) -> int:
-        """Assign an integer priority score to a single move."""
+        """Assign an integer priority score to a single move.
+
+        Args:
+            board: The current board state.
+            move: The move to score.
+            ply: The current ply (depth) in the search.
+            hash_move: The hash move from the transposition table, if any.
+            previous_move: The previous move made, for countermove heuristic.
+
+        Returns:
+            The integer priority score for the move.
+        """
         if (
             self.config.use_hash_move_ordering
             and hash_move is not None
@@ -118,7 +152,15 @@ class MoveSorter:
         return 0
 
     def _score_tactical_move(self, board: chess.Board, move: chess.Move) -> int:
-        """Score a capture or promotion using MVV-LVA, promotions, and SEE."""
+        """Score a capture or promotion using MVV-LVA, promotions, and SEE.
+
+        Args:
+            board: The current board state.
+            move: The tactical move to score.
+
+        Returns:
+            The integer priority score for the tactical move.
+        """
         score = self.TACTICAL_BASE
         if self.config.use_mvv_lva and board.is_capture(move):
             score += self._mvv_lva(board, move)
@@ -133,7 +175,18 @@ class MoveSorter:
         return score
 
     def _mvv_lva(self, board: chess.Board, move: chess.Move) -> int:
-        """Return MVV-LVA bonus: victim_value * 10 - attacker_value."""
+        """Return the MVV-LVA bonus for a capture move.
+
+        MVV-LVA (Most Valuable Victim - Least Valuable Aggressor) prioritizes
+        capturing high-value pieces with low-value pieces.
+
+        Args:
+            board: The current board state.
+            move: The capture move to evaluate.
+
+        Returns:
+            The MVV-LVA bonus score (victim_value * 10 - attacker_value).
+        """
         victim_piece = board.piece_at(move.to_square)
         attacker_piece = board.piece_at(move.from_square)
 
@@ -154,7 +207,18 @@ class MoveSorter:
         return victim_value * 10 - attacker_value
 
     def see(self, board: chess.Board, move: chess.Move) -> int:
-        """Simplified SEE approximation for pruning/ordering decisions."""
+        """Calculate a simplified SEE approximation for pruning/ordering decisions.
+
+        SEE (Static Exchange Evaluation) estimates the material gain/loss from
+        a capture sequence.
+
+        Args:
+            board: The current board state.
+            move: The capture move to evaluate.
+
+        Returns:
+            The estimated SEE value (victim value - attacker value).
+        """
         if not board.is_capture(move):
             return 0
         victim_piece = board.piece_at(move.to_square)
@@ -183,7 +247,15 @@ class MoveSorter:
         previous_move: chess.Move | None,
         is_tactical: bool,
     ) -> None:
-        """Update killers, history, and countermove tables after a beta cutoff."""
+        """Update killers, history, and countermove tables after a beta cutoff.
+
+        Args:
+            move: The move that caused the beta cutoff.
+            ply: The current ply (depth) where the cutoff occurred.
+            depth: The remaining search depth.
+            previous_move: The previous move made, for countermove heuristic.
+            is_tactical: Whether the cutoff move was tactical (capture/promotion).
+        """
         if is_tactical:
             return
 
@@ -209,9 +281,12 @@ class MoveSorter:
             self.countermove_table[self._move_key(previous_move)] = move
 
     def history_saturation(self) -> float:
-        """Return history table saturation as a percentage (0-100).
+        """Return the history table saturation as a percentage (0-100).
 
         100 means fully saturated (all entries at max score).
+
+        Returns:
+            The history table saturation percentage.
         """
         if not self.config.use_history_heuristic or not self.history_table:
             return 0.0
@@ -221,8 +296,24 @@ class MoveSorter:
 
     @staticmethod
     def _is_promotion(move: chess.Move) -> bool:
+        """Check if a move is a promotion.
+
+        Args:
+            move: The move to check.
+
+        Returns:
+            True if the move is a promotion, False otherwise.
+        """
         return int(move.promotion) != 0
 
     @staticmethod
     def _move_key(move: chess.Move) -> tuple[int, int, int]:
+        """Generate a hashable key for a move.
+
+        Args:
+            move: The move to generate a key for.
+
+        Returns:
+            A tuple of (from_square, to_square, promotion) representing the move.
+        """
         return move.from_square, move.to_square, int(move.promotion)

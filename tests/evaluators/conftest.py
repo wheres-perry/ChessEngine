@@ -17,11 +17,11 @@ from engine.evaluators import (
 
 @pytest.fixture
 def simple_evaluator() -> SimpleEvaluator:
-    """A material-only evaluator for quick sanity checks."""
+    """Return a material-only evaluator for quick sanity checks."""
     return SimpleEvaluator()
 
 
 @pytest.fixture
 def full_evaluator() -> Evaluator:
-    """A fully-featured evaluator built from default config (all components)."""
+    """Return a fully-featured evaluator built from default config (all components)."""
     return EvaluatorFactory.create(EvaluationConfig())

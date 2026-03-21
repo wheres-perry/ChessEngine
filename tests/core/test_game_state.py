@@ -1,4 +1,4 @@
-"""Tests for game state detection."""
+"""Test game state detection."""
 
 import pytest
 
@@ -10,7 +10,7 @@ def verify_game_state(
     expected_state: core.GameState,
     message: str = "Game state does not match expected",
 ) -> None:
-    """Helper to verify game state for a given FEN."""
+    """Verify game state for a given FEN."""
     board = core.Board.from_fen(fen)
     state = board.is_game_over()
 
@@ -100,5 +100,5 @@ def verify_game_state(
     ],
 )
 def test_game_states(fen, expected_state, description):
-    """Test game state for various scenarios."""
+    """Verify game state for various scenarios."""
     verify_game_state(fen, expected_state, description)

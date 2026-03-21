@@ -1,10 +1,12 @@
+"""Tests for the C++ PGN parser and integration with the Board class."""
+
 import pytest
 
 from engine._core import chess_engine_core as core
 
 
 def test_pgn_parser() -> None:
-    # Use the test PGN we just created
+    """Test that the PGN parser correctly extracts headers, results, and clean SAN moves."""
     pgn_path = "data/raw/simple_games/test_parser.pgn"
 
     stream = core.pgn.PGNStream(pgn_path)
@@ -45,7 +47,7 @@ def test_pgn_parser() -> None:
 
 
 def test_pgn_integration_with_board() -> None:
-    # Ensure that parsed SANs can be fed directly to the Board
+    """Ensure that parsed SANs can be fed directly to the Board."""
     pgn_path = "data/raw/simple_games/test_parser.pgn"
     stream = core.pgn.PGNStream(pgn_path)
     game2 = list(stream)[1]

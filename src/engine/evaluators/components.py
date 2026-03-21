@@ -50,6 +50,15 @@ class MaterialComponent(EvalComponent):
     """Pure material balance in centipawns."""
 
     def score(self, board: chess.Board, phase: float) -> float:  # noqa: ARG002
+        """Return material balance score in centipawns.
+
+        Args:
+            board: The current board position.
+            phase: Game phase (unused for material).
+
+        Returns:
+            Positive score favors White, negative favors Black.
+        """
         total = 0
         for piece_type, cp in _MATERIAL_CP.items():
             w = len(board.pieces(piece_type, chess.WHITE))
@@ -70,6 +79,15 @@ class PSTComponent(EvalComponent):
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
+        """Return piece-square table score in centipawns.
+
+        Args:
+            board: The current board position.
+            phase: Game phase value in [0.0, 1.0] for interpolation.
+
+        Returns:
+            PST evaluation score (positive favors White).
+        """
         total = 0.0
         for square in chess.SQUARES:
             piece = board.piece_at(square)
@@ -89,8 +107,6 @@ class PSTComponent(EvalComponent):
             else:
                 total -= value
 
-        # PST tables are already in centipawns (/100 inside make_table),
-        # so we keep the same unit.
         return total
 
 
@@ -118,6 +134,17 @@ class PawnStructureComponent(EvalComponent):
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
+        """Return pawn structure evaluation in centipawns.
+
+        Evaluates doubled, isolated, and passed pawns with phase weighting.
+
+        Args:
+            board: The current board position.
+            phase: Game phase value in [0.0, 1.0] for interpolation.
+
+        Returns:
+            Pawn structure score (positive favors White).
+        """
         raw = 0.0
         for color in (chess.WHITE, chess.BLACK):
             sign = 1.0 if color == chess.WHITE else -1.0
@@ -153,9 +180,18 @@ class PawnStructureComponent(EvalComponent):
             return raw * weight
         return raw
 
-    # --- helpers ---
     @staticmethod
     def _is_passed(board: chess.Board, square: int, color: chess.Color) -> bool:
+        """Check if a pawn is passed (no enemy pawns ahead on adjacent files).
+
+        Args:
+            board: The current board position.
+            square: The square of the pawn to check.
+            color: The color of the pawn.
+
+        Returns:
+            True if the pawn is passed, False otherwise.
+        """
         file = chess.square_file(square)
         rank = chess.square_rank(square)
         enemy = chess.Color.BLACK if color == chess.Color.WHITE else chess.Color.WHITE
@@ -203,6 +239,15 @@ class MobilityComponent(EvalComponent):
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
+        """Return mobility evaluation in centipawns.
+
+        Args:
+            board: The current board position.
+            phase: Game phase value in [0.0, 1.0] for interpolation.
+
+        Returns:
+            Mobility score (positive favors White).
+        """
         raw = self._raw_mobility(board)
         if self._gsc:
             weight = _lerp(_MOBILITY_GSC_MG, _MOBILITY_GSC_EG, phase)
@@ -211,8 +256,14 @@ class MobilityComponent(EvalComponent):
 
     @staticmethod
     def _raw_mobility(board: chess.Board) -> float:
-        """Compute mobility differential for current side to move."""
-        # Accumulate per-square move counts
+        """Compute raw mobility differential for the side to move.
+
+        Args:
+            board: The current board position.
+
+        Returns:
+            Weighted mobility score (positive favors White).
+        """
         move_counts: dict[int, int] = {}
         for m in board.legal_moves:
             move_counts[m.from_square] = move_counts.get(m.from_square, 0) + 1
@@ -255,6 +306,17 @@ class KingSafetyComponent(EvalComponent):
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
+        """Return king safety evaluation in centipawns.
+
+        Evaluates pawn shield, open files near king, and attack zone pressure.
+
+        Args:
+            board: The current board position.
+            phase: Game phase value in [0.0, 1.0] for interpolation.
+
+        Returns:
+            King safety score (positive favors White).
+        """
         raw = 0.0
         for color in (chess.WHITE, chess.BLACK):
             sign = 1.0 if color == chess.WHITE else -1.0
@@ -273,7 +335,6 @@ class KingSafetyComponent(EvalComponent):
             return raw * weight
         return raw
 
-    # --- helpers ---
     @staticmethod
     def _pawn_shield(
         board: chess.Board,
@@ -281,6 +342,17 @@ class KingSafetyComponent(EvalComponent):
         king_file: int,
         king_rank: int,
     ) -> float:
+        """Calculate pawn shield bonus for the king.
+
+        Args:
+            board: The current board position.
+            color: The king's color.
+            king_file: The king's file (0-7).
+            king_rank: The king's rank (0-7).
+
+        Returns:
+            Pawn shield bonus in centipawns.
+        """
         bonus = 0.0
         direction = 1 if color == chess.Color.WHITE else -1
         for df in (-1, 0, 1):
@@ -299,6 +371,15 @@ class KingSafetyComponent(EvalComponent):
 
     @staticmethod
     def _open_file_penalty(board: chess.Board, king_file: int) -> float:
+        """Calculate penalty for king on an open file (no pawns).
+
+        Args:
+            board: The current board position.
+            king_file: The king's file (0-7).
+
+        Returns:
+            Open file penalty in centipawns (negative value).
+        """
         for sq in chess.SQUARES:
             if chess.square_file(sq) != king_file:
                 continue
@@ -314,7 +395,17 @@ class KingSafetyComponent(EvalComponent):
         king_file: int,
         king_rank: int,
     ) -> float:
-        """Count enemy pieces that attack the 3x3 king zone."""
+        """Count enemy pieces that attack the 3x3 king zone.
+
+        Args:
+            board: The current board position.
+            color: The king's color.
+            king_file: The king's file (0-7).
+            king_rank: The king's rank (0-7).
+
+        Returns:
+            Attack zone pressure score in centipawns.
+        """
         enemy = chess.Color.BLACK if color == chess.Color.WHITE else chess.Color.WHITE
         pressure = 0.0
         for df in (-1, 0, 1):

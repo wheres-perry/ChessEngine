@@ -1,5 +1,5 @@
-"""
-Performance benchmarks for the C++ core engine.
+"""Performance benchmarks for the C++ core engine.
+
 Tests include heavy stress tests like Perft, deep game simulation,
 search node expansion, and raw move throughput.
 
@@ -44,8 +44,8 @@ RANDOM_SEED = 42
 
 @pytest.fixture(scope="session")
 def deep_game_moves() -> list[str]:
-    """
-    Pre-generates a valid sequence of 300 moves (150 full moves) from start pos.
+    """Pre-generate a valid sequence of 300 moves (150 full moves) from start pos.
+
     Uses core to ensure validity, returns UCI strings.
     """
     board = core.Board()
@@ -68,7 +68,7 @@ def deep_game_moves() -> list[str]:
 
 @pytest.fixture
 def board_adapter_factory():
-    """Fixture to provide a factory function for board adapters."""
+    """Return a factory function for board adapters."""
     config = EngineConfig()
 
     def _create(fen: str | None = None) -> CoreAdapter:
@@ -83,9 +83,9 @@ def board_adapter_factory():
 
 
 def test_full_game_cycle_300_ply(benchmark: Any, deep_game_moves: list[str]) -> None:
-    """
-    STRESS TEST: Push a full 300-ply game and then Pop it all back.
-    Tests history stack depth, repetition tracking, and accumulated state updates.
+    """Push a full 300-ply game and then Pop it all back.
+
+    STRESS TEST: Tests history stack depth, repetition tracking, and accumulated state updates.
     """
     uci_moves = deep_game_moves
     config = EngineConfig()

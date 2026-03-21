@@ -156,8 +156,8 @@ class EngineConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "EngineConfig":
-        """
-        Create configuration from a dictionary.
+        """Create configuration from a dictionary.
+
         This handles nested config objects validation automatically.
         """
         search_data = data.get("search", {})
@@ -180,12 +180,24 @@ class EngineConfig:
         return cls.from_dict(data)
 
     def __str__(self) -> str:
+        """Return a human-readable string representation of the engine configuration.
+
+        Returns:
+            A formatted string showing search depth, search flags, and evaluation flags.
+        """
         parts: list[str] = [f"Depth: {self.search_depth}"]
         parts.append(self._format_search_flags())
         parts.append(self._format_evaluation_flags())
         return " | ".join(parts)
 
     def _format_search_flags(self) -> str:  # noqa: C901, PLR0912
+        """Format search-related configuration flags into a readable string.
+
+        Returns:
+            A string representation of enabled search features and algorithms.
+            Returns "Search: [Base Minimax]" if alpha-beta is disabled,
+            or "Search: [Empty]" if no flags are enabled.
+        """
         s_flags: list[str] = []
         cfg = self.search
 
@@ -226,6 +238,12 @@ class EngineConfig:
         return "Search: [Empty]"
 
     def _format_evaluation_flags(self) -> str:
+        """Format evaluation-related configuration flags into a readable string.
+
+        Returns:
+            A string representation of enabled evaluation features.
+            Returns "Eval: [Material]" if no evaluation features are enabled.
+        """
         e = self.evaluation
         parts: list[str] = []
         if e.use_pst:

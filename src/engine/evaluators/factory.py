@@ -48,6 +48,7 @@ class MockEvaluator:
     """Always returns 0.0 — useful for testing search in isolation."""
 
     def go(self, board: chess.Board) -> float:  # noqa: ARG002
+        """Return zero regardless of board state."""
         return 0.0
 
 
@@ -61,6 +62,7 @@ class SimpleEvaluator:
         self._inner = CompositeEvaluator([MaterialComponent()])
 
     def go(self, board: chess.Board) -> float:
+        """Return material-only evaluation score."""
         return self._inner.go(board)
 
 
@@ -102,5 +104,5 @@ class EvaluatorFactory:
 
     @staticmethod
     def create_mock() -> Evaluator:
-        """Convenience constructor for a zero-valued mock evaluator."""
+        """Create a zero-valued mock evaluator."""
         return MockEvaluator()

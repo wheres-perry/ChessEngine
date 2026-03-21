@@ -1,3 +1,10 @@
+"""Tests for move ordering functionality.
+
+This module contains unit tests for the MoveSorter class, including
+hash move priority, killer moves, history heuristic, countermoves,
+and MVV-LVA (Most Valuable Victim - Least Valuable Aggressor) ordering.
+"""
+
 from __future__ import annotations
 
 from engine._core import chess_engine_core as chess
@@ -22,6 +29,7 @@ def _config(**overrides: object) -> SearchConfig:
 
 
 def test_hash_move_is_ranked_first() -> None:
+    """Verify the hash move is ranked first in the move list."""
     board = chess.Board()
     sorter = MoveSorter(_config())
 
@@ -40,6 +48,7 @@ def test_hash_move_is_ranked_first() -> None:
 
 
 def test_on_beta_cutoff_updates_killer_and_history() -> None:
+    """Verify beta cutoff updates killer moves and history tables."""
     board = chess.Board()
     sorter = MoveSorter(_config())
     move = chess.Move.from_uci("d2d4")
@@ -60,6 +69,7 @@ def test_on_beta_cutoff_updates_killer_and_history() -> None:
 
 
 def test_countermove_priority_after_update() -> None:
+    """Verify countermove is prioritized after a beta cutoff update."""
     board = chess.Board()
     sorter = MoveSorter(_config())
 
@@ -86,6 +96,7 @@ def test_countermove_priority_after_update() -> None:
 
 
 def test_mvv_lva_prefers_queen_capture_over_pawn_capture() -> None:
+    """Verify MVV-LVA prefers capturing a queen over capturing a pawn."""
     board = chess.Board.from_fen("7k/8/8/8/3Rq3/8/3p4/K7 w - - 0 1")
     sorter = MoveSorter(_config())
 
@@ -96,6 +107,7 @@ def test_mvv_lva_prefers_queen_capture_over_pawn_capture() -> None:
 
 
 def test_history_saturation_nonzero_after_updates() -> None:
+    """Verify history saturation becomes nonzero after beta cutoffs."""
     sorter = MoveSorter(_config())
 
     sorter.on_beta_cutoff(

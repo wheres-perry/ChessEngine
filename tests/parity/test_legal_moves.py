@@ -15,10 +15,12 @@ PARITY_FENS: list[str] = [
 
 
 def _legal_moves_cpp(board: chess.Board) -> list[str]:
+    """Return sorted UCI legal moves from the C++ engine."""
     return sorted(chess.move_to_uci(move) for move in board.generate_legal_moves())
 
 
 def _legal_moves_py(board: pychess.Board) -> list[str]:
+    """Return sorted UCI legal moves from python-chess."""
     return sorted(move.uci() for move in board.legal_moves)
 
 

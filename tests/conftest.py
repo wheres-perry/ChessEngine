@@ -1,4 +1,4 @@
-"""Root conftest — shared fixtures, marker registration, and test hooks.
+"""Provide root conftest — shared fixtures, marker registration, and test hooks.
 
 Markers registered here appear in ``pytest --markers`` and are enforced
 by ``--strict-markers`` in pyproject.toml.
@@ -33,19 +33,19 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 # ── Shared fixtures ──────────────────────────────────────────────────
 @pytest.fixture
 def board() -> chess.Board:
-    """A fresh starting-position board."""
+    """Return a fresh starting-position board."""
     return chess.Board()
 
 
 @pytest.fixture
 def mock_evaluator() -> MockEvaluator:
-    """A zero-returning mock evaluator."""
+    """Return a zero-returning mock evaluator."""
     return MockEvaluator()
 
 
 @pytest.fixture
 def default_config() -> EngineConfig:
-    """Sensible default ``EngineConfig`` for search tests."""
+    """Return sensible default ``EngineConfig`` for search tests."""
     return EngineConfig(
         search=SearchConfig(
             use_alpha_beta=True,
@@ -58,7 +58,7 @@ def default_config() -> EngineConfig:
 
 @pytest.fixture
 def minimal_config() -> EngineConfig:
-    """Bare-minimum config: alpha-beta only, no extras."""
+    """Return bare-minimum config: alpha-beta only, no extras."""
     return EngineConfig(
         search=SearchConfig(
             use_alpha_beta=True,

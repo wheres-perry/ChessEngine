@@ -1,3 +1,9 @@
+"""Robustness tests for the engine configuration system.
+
+This module rigorously tests the configuration validation and factory logic to ensure
+dependencies are enforced and incompatibilities are caught.
+"""
+
 import pytest
 
 from engine.config import EngineConfig, EvaluationConfig, SearchConfig
@@ -5,13 +11,10 @@ from engine.factory import create_engine_runtime
 
 
 class TestConfigRobustness:
-    """
-    Rigorously test the configuration validation and factory logic to ensure
-    dependencies are enforced and incompatibilities are caught.
-    """
+    """Test suite for configuration validation and dependency enforcement."""
 
     def test_valid_alpha_beta_only(self):
-        """Verify: Custom Core + Python Search (Alpha-Beta Only) is valid."""
+        """Verifies Custom Core + Python Search (Alpha-Beta Only) is valid."""
         cfg = EngineConfig(
             search=SearchConfig(
                 use_alpha_beta=True,
@@ -38,16 +41,14 @@ class TestConfigRobustness:
                 use_aspiration_windows=False,
             ),
         )
-        # Should initialize without error
         assert cfg.search.use_alpha_beta is True
         assert cfg.search.use_move_ordering is False
 
-        # Should result in a valid runtime
         runtime = create_engine_runtime(cfg)
         assert runtime is not None
 
     def test_invalid_killer_without_ordering(self):
-        """Verify: Enabling Killer Moves without Move Ordering raises ValueError."""
+        """Verifies enabling Killer Moves without Move Ordering raises ValueError."""
         with pytest.raises(
             ValueError, match="Killer heuristic requires both move ordering"
         ):
@@ -60,7 +61,7 @@ class TestConfigRobustness:
             )
 
     def test_invalid_pvs_without_ab(self):
-        """Verify: PVS requires Alpha-Beta."""
+        """Verifies PVS requires Alpha-Beta."""
         with pytest.raises(
             ValueError, match=r"Principal Variation Search.*requires alpha-beta"
         ):
@@ -72,7 +73,7 @@ class TestConfigRobustness:
             )
 
     def test_invalid_tt_aging_without_tt(self):
-        """Verify: TT Aging requires TT."""
+        """Verifies TT Aging requires TT."""
         with pytest.raises(ValueError, match="TT aging requires transposition table"):
             EngineConfig(
                 search=SearchConfig(
@@ -82,7 +83,7 @@ class TestConfigRobustness:
             )
 
     def test_full_optimization_stack(self):
-        """Verify: A fully loaded configuration passes validation."""
+        """Verifies a fully loaded configuration passes validation."""
         cfg = EngineConfig(
             search=SearchConfig(
                 use_alpha_beta=True,
@@ -101,7 +102,7 @@ class TestConfigRobustness:
         assert cfg is not None
 
     def test_eval_dependency_pawn_structure_requires_pst(self):
-        """Verify: Pawn structure evaluation requires PST to be enabled."""
+        """Verifies pawn structure evaluation requires PST to be enabled."""
         with pytest.raises(
             ValueError,
             match="Pawn structure evaluation requires Piece-Square Tables",

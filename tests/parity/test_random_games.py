@@ -1,5 +1,4 @@
-"""
-Extensive parity tests comparing C++ engine against python-chess across random games.
+"""Extensive parity tests comparing C++ engine against python-chess across random games.
 
 Simulates 100 random games, making random moves and verifying that:
 1. Legal move generation matches at every position
@@ -24,27 +23,32 @@ RANDOM_SEED = 42
 
 
 def get_cpp_legal_moves_uci(board: core.Board) -> set[str]:
-    """Get legal moves from C++ board as UCI strings."""
+    """Return legal moves from C++ board as UCI strings."""
     return {core.move_to_uci(m) for m in board.generate_legal_moves()}
 
 
 def get_pychess_legal_moves_uci(board: pychess.Board) -> set[str]:
-    """Get legal moves from python-chess board as UCI strings."""
+    """Return legal moves from python-chess board as UCI strings."""
     return {m.uci() for m in board.legal_moves}
 
 
 def compare_fen_ignore_ep(cpp_fen: str, py_fen: str) -> bool:
-    """
-    Compare FEN strings ignoring the en-passant square field.
+    """Compare FEN strings ignoring the en-passant square field.
 
     Known difference: C++ engine sets ep square on any double pawn push,
     python-chess only sets it when an en passant capture is actually possible.
+
+    Args:
+        cpp_fen: FEN string from C++ engine.
+        py_fen: FEN string from python-chess.
+
+    Returns:
+        True if FENs match (excluding ep square), False otherwise.
     """
     cpp_parts = cpp_fen.split()
     py_parts = py_fen.split()
 
-    # Compare: position, side to move, castling (skip ep at index 3)
-    # Then compare halfmove clock and fullmove number
+    # cpp_parts[3] and py_parts[3] are the ep squares (excluded from comparison)
     return (
         cpp_parts[0] == py_parts[0]  # Position
         and cpp_parts[1] == py_parts[1]  # Side to move
@@ -63,8 +67,7 @@ class TestRandomGameParity:
         random.seed(RANDOM_SEED)
 
     def test_100_random_games_legal_moves_parity(self) -> None:
-        """
-        Play 100 random games, verifying legal move parity at each position.
+        """Play 100 random games, verifying legal move parity at each position.
 
         For each game:
         1. Start from initial position
@@ -84,13 +87,10 @@ class TestRandomGameParity:
             game_over = False
 
             for move_num in range(MAX_MOVES_PER_GAME):
-                # Get legal moves from both engines
                 cpp_moves = get_cpp_legal_moves_uci(cpp_board)
                 py_moves = get_pychess_legal_moves_uci(py_board)
 
-                # Verify legal moves match
                 if cpp_moves != py_moves:
-                    # Detailed error message
                     only_in_cpp = cpp_moves - py_moves
                     only_in_py = py_moves - cpp_moves
 
@@ -106,29 +106,24 @@ class TestRandomGameParity:
 
                 total_positions_checked += 1
 
-                # Check if game is over
                 if not cpp_moves:
                     game_over = True
                     games_ended_early += 1
                     break
 
-                # Pick a random move
                 chosen_uci = random.choice(sorted(cpp_moves))
 
-                # Apply to both boards
                 cpp_board.push(core.Move.from_uci(chosen_uci))
                 py_board.push(pychess.Move.from_uci(chosen_uci))
 
-                # Verify board state matches (position, side to move, castling)
                 cpp_fen_parts = cpp_board.fen().split()
                 py_fen_parts = py_board.fen().split()
 
-                # Compare: position, side to move, castling
                 if (
-                    cpp_fen_parts[0] != py_fen_parts[0]  # Position
-                    or cpp_fen_parts[1] != py_fen_parts[1]  # Side to move
+                    cpp_fen_parts[0] != py_fen_parts[0]
+                    or cpp_fen_parts[1] != py_fen_parts[1]
                     or cpp_fen_parts[2] != py_fen_parts[2]
-                ):  # Castling
+                ):
                     pytest.fail(
                         f"Board state mismatch after move {chosen_uci} in "
                         f"game {game_num + 1}!\n"
@@ -138,7 +133,6 @@ class TestRandomGameParity:
 
             games_completed += 1
 
-        # Print summary
         print(f"\n✓ Completed {games_completed} games")
         print(f"✓ Checked {total_positions_checked} positions")
         print(f"✓ {games_ended_early} games ended before {MAX_MOVES_PER_GAME} moves")
@@ -146,8 +140,8 @@ class TestRandomGameParity:
         assert games_completed == NUM_GAMES
 
     def test_random_games_with_full_fen_comparison(self) -> None:
-        """
-        Same as above but also compares halfmove clock and fullmove number.
+        """Verify FEN parity including halfmove clock and fullmove number.
+
         Uses fewer games since this is stricter.
 
         Note: En passant square is excluded from comparison due to known difference -
@@ -176,7 +170,6 @@ class TestRandomGameParity:
                 cpp_board.push(core.Move.from_uci(chosen_uci))
                 py_board.push(pychess.Move.from_uci(chosen_uci))
 
-                # Compare FEN parts excluding ep square (known difference)
                 assert compare_fen_ignore_ep(cpp_board.fen(), py_board.fen()), (
                     f"FEN mismatch after {chosen_uci}:\n"
                     f"C++: {cpp_board.fen()}\n"
@@ -203,7 +196,6 @@ class TestRandomGameParity:
                 cpp_board.push(core.Move.from_uci(chosen_uci))
                 py_board.push(pychess.Move.from_uci(chosen_uci))
 
-                # Compare check status
                 cpp_in_check = cpp_board.is_check()
                 py_in_check = py_board.is_check()
 
@@ -228,7 +220,6 @@ class TestRandomGameParity:
             py_board = pychess.Board()
 
             for _ in range(MAX_MOVES_PER_GAME):
-                # Check capture status for ALL legal moves
                 for move in cpp_board.generate_legal_moves():
                     uci = core.move_to_uci(move)
                     py_move = pychess.Move.from_uci(uci)
@@ -245,7 +236,6 @@ class TestRandomGameParity:
 
                     captures_checked += 1
 
-                # Make a random move to continue
                 cpp_moves = list(cpp_board.generate_legal_moves())
                 if not cpp_moves:
                     break
@@ -268,7 +258,6 @@ class TestRandomGameParity:
             py_board = pychess.Board()
 
             for _ in range(MAX_MOVES_PER_GAME):
-                # Check castling status for all legal moves
                 for move in cpp_board.generate_legal_moves():
                     uci = core.move_to_uci(move)
                     py_move = pychess.Move.from_uci(uci)
@@ -339,12 +328,10 @@ class TestSpecificPositionsParity:
         )
 
     def test_en_passant_positions(self) -> None:
-        """Specifically test en passant capture scenarios."""
-        # Create position with en passant available
+        """Test en passant capture scenarios."""
         cpp_board = core.Board()
         py_board = pychess.Board()
 
-        # Play to create en passant opportunity
         moves = ["e4", "a6", "e5", "d5"]  # d5 creates en passant on d6
 
         for san in moves:
@@ -354,14 +341,12 @@ class TestSpecificPositionsParity:
         cpp_moves = get_cpp_legal_moves_uci(cpp_board)
         py_moves = get_pychess_legal_moves_uci(py_board)
 
-        # Verify en passant is available
         assert "e5d6" in cpp_moves, "C++ should have en passant move"
         assert "e5d6" in py_moves, "python-chess should have en passant move"
         assert cpp_moves == py_moves
 
     def test_promotion_moves(self) -> None:
         """Test that promotion moves are generated correctly."""
-        # Position with pawn about to promote
         fen = "8/P7/8/8/8/8/8/4K2k w - - 0 1"
 
         cpp_board = core.Board.from_fen(fen)
@@ -370,7 +355,6 @@ class TestSpecificPositionsParity:
         cpp_moves = get_cpp_legal_moves_uci(cpp_board)
         py_moves = get_pychess_legal_moves_uci(py_board)
 
-        # Should have 4 promotion moves (Q, R, B, N)
         promotion_moves = {m for m in cpp_moves if m.startswith("a7a8")}
         assert len(promotion_moves) == 4, (
             f"Expected 4 promotion moves, got {promotion_moves}"
@@ -384,7 +368,6 @@ class TestGameTerminationParity:
 
     def test_checkmate_detection(self) -> None:
         """Test checkmate is detected correctly."""
-        # Fool's mate position (after 1. f3 e5 2. g4 Qh4#)
         cpp_board = core.Board()
         py_board = pychess.Board()
 
@@ -402,7 +385,6 @@ class TestGameTerminationParity:
 
     def test_stalemate_detection(self) -> None:
         """Test stalemate is detected correctly."""
-        # Classic stalemate: black king trapped by white queen and king
         fen = "k7/2Q5/1K6/8/8/8/8/8 b - - 0 1"
 
         cpp_board = core.Board.from_fen(fen)
@@ -424,7 +406,6 @@ class TestGameTerminationParity:
 
     def test_stalemate_white_trapped(self) -> None:
         """Test stalemate where white king is trapped by own pawn."""
-        # White king trapped in corner by own pawn
         fen = "8/8/8/8/8/5k2/5p2/5K2 w - - 0 1"
 
         cpp_board = core.Board.from_fen(fen)

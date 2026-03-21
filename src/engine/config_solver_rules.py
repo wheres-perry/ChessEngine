@@ -14,6 +14,11 @@ class ConfigSolverRules:
     """
 
     def __init__(self) -> None:
+        """Initialize the symbolic constraint rules for engine configuration.
+
+        Creates z3 symbolic variables for evaluation settings, search boolean flags,
+        and search integer parameters, then builds the corresponding validation rules.
+        """
         # ==================================================================
         # Evaluation variables
         # ==================================================================

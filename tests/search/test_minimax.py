@@ -1,3 +1,9 @@
+"""Tests for the Minimax search algorithm.
+
+This module contains unit tests for the Minimax search implementation,
+including alpha-beta pruning, time limits, and transposition table integration.
+"""
+
 from __future__ import annotations
 
 import time
@@ -40,6 +46,7 @@ def _minimal_search_config(**overrides: object) -> SearchConfig:
 
 
 def test_find_best_move_returns_legal_move() -> None:
+    """Verify find_best_move returns a legal move."""
     config = EngineConfig(search=_minimal_search_config())
     board = chess.Board()
     engine = Minimax(board, MockEvaluator(), config)
@@ -53,6 +60,7 @@ def test_find_best_move_returns_legal_move() -> None:
 
 
 def test_find_top_move_alias_matches_find_best_move() -> None:
+    """Verify find_top_move produces the same result as find_best_move."""
     config = EngineConfig(search=_minimal_search_config())
 
     engine_a = Minimax(chess.Board(), MockEvaluator(), config)
@@ -66,6 +74,7 @@ def test_find_top_move_alias_matches_find_best_move() -> None:
 
 
 def test_non_alpha_beta_mode_runs() -> None:
+    """Verify search completes without alpha-beta pruning enabled."""
     config = EngineConfig(
         search=_minimal_search_config(
             use_alpha_beta=False,
@@ -81,6 +90,7 @@ def test_non_alpha_beta_mode_runs() -> None:
 
 
 def test_time_limit_flag_trips() -> None:
+    """Verify the time limit flag triggers when time is exceeded."""
     config = EngineConfig(search=_minimal_search_config(max_time=0.01))
     engine = Minimax(chess.Board(), MockEvaluator(), config)
 
@@ -91,6 +101,7 @@ def test_time_limit_flag_trips() -> None:
 
 
 def test_transposition_table_records_hits_on_repeated_search() -> None:
+    """Verify transposition table hits increase on repeated searches."""
     config = EngineConfig(
         search=_minimal_search_config(
             use_transposition_table=True,

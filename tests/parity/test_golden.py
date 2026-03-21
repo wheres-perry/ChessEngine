@@ -1,9 +1,12 @@
+"""Golden file regression tests for engine consistency."""
+
 import pytest
 
 from engine._core import chess_engine_core as core
 
 
 def load_fens():
+    """Load FEN positions from the test data file."""
     try:
         with open("tests/parity/data/fens.txt") as f:
             return [line.strip() for line in f if line.strip()]
@@ -12,9 +15,11 @@ def load_fens():
 
 
 class TestGoldenParity:
+    """Golden file regression tests for engine consistency."""
+
     def test_engine_consistency(self, data_regression):
-        """
-        Runs the engine on a suite of FENs and compares results to the 'Golden' file.
+        """Run the engine on a suite of FENs and compare results to the 'Golden' file.
+
         If logic changes (e.g., node count changes), this test FAILS and shows the diff.
         """
         fens = load_fens()

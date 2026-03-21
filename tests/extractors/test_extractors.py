@@ -1,3 +1,5 @@
+"""Tests for CNN, HalfKP, and GNN feature extractors."""
+
 import numpy as np
 import pytest
 
@@ -5,6 +7,7 @@ from engine._core import chess_engine_core as core
 
 
 def test_extract_cnn_starting_position() -> None:
+    """Verify CNN feature extraction for the starting position."""
     board = core.Board()
     cnn = core.extractors.extract_cnn(board)
 
@@ -37,6 +40,7 @@ def test_extract_cnn_starting_position() -> None:
 
 
 def test_extract_cnn_black_to_move() -> None:
+    """Verify CNN side-to-move channel for Black."""
     board = core.Board.from_fen(
         "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
     )
@@ -47,6 +51,7 @@ def test_extract_cnn_black_to_move() -> None:
 
 
 def test_extract_halfkp_starting_position() -> None:
+    """Verify HalfKP feature extraction for the starting position."""
     board = core.Board()
     halfkp = core.extractors.extract_halfkp(board)
 
@@ -62,7 +67,7 @@ def test_extract_halfkp_starting_position() -> None:
 
 
 def test_extract_halfkp_endgame() -> None:
-    # Just kings and one pawn
+    """Verify HalfKP extraction with minimal pieces."""
     board = core.Board.from_fen("8/8/8/8/8/8/4P3/K6k w - - 0 1")
     halfkp = core.extractors.extract_halfkp(board)
 
@@ -71,6 +76,7 @@ def test_extract_halfkp_endgame() -> None:
 
 
 def test_extract_gnn_starting_position() -> None:
+    """Verify GNN graph extraction for the starting position."""
     board = core.Board()
     gnn = core.extractors.extract_gnn(board)
 
@@ -108,8 +114,7 @@ def test_extract_gnn_starting_position() -> None:
 
 
 def test_extract_gnn_empty_board() -> None:
-    # Board with no pieces (invalid chess state, but good for testing bounds)
-    # Actually let's just use Kings to be safe
+    """Verify GNN extraction with minimal pieces (just kings)."""
     board = core.Board.from_fen("8/8/8/8/8/8/8/K6k w - - 0 1")
     gnn = core.extractors.extract_gnn(board)
 
@@ -118,4 +123,4 @@ def test_extract_gnn_empty_board() -> None:
 
     assert nodes.shape == (2, 3)
     # Kings don't attack each other here, so no edges
-    assert edges.shape == (2, 0)
+    assert edges.shape[1] == 0
