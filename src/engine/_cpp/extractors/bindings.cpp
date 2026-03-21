@@ -1,9 +1,8 @@
 #include "extractors.hpp"
+#include <algorithm>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <algorithm>
-#include "extractors.hpp"
 
 namespace py = pybind11;
 
