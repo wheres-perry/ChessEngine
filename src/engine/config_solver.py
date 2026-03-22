@@ -36,6 +36,7 @@ class ConfigSolver:
 
         Args:
             config: The engine configuration to validate.
+
         """
         self.config = config
         self.search_config = config.search
@@ -70,6 +71,7 @@ class ConfigSolver:
 
         Raises:
             ConfigSolverError: If any global bound constraint is violated.
+
         """
         if self.config.search_depth < 1:
             raise ConfigSolverError(
@@ -93,6 +95,7 @@ class ConfigSolver:
 
         Returns:
             A list of (z3_variable, z3_value) tuples for evaluation settings.
+
         """
         evl = self.config.evaluation
         return [
@@ -106,6 +109,7 @@ class ConfigSolver:
         Returns:
             A list of (z3_variable, z3_value) tuples for both boolean and
             integer search settings.
+
         """
         cfg = self.search_config
         subs: list[tuple[object, object]] = [
@@ -137,6 +141,7 @@ class ConfigSolver:
 
         Raises:
             ConfigSolverError: If any rule evaluates to false after substitution.
+
         """
         for description, constraint in rules:
             result = simplify(substitute(constraint, substitutions))

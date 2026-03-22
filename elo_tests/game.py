@@ -1,17 +1,46 @@
+"""Game simulation logic for Elo testing.
+
+This module handles the simulation of chess games between two engines,
+computing results based on Elo ratings and configurable parameters.
+"""
+
 from __future__ import annotations
 
 import math
 import random
+from typing import TYPE_CHECKING
 
-from elo_tests.engines.base import EngineAdapter
+if TYPE_CHECKING:
+    from elo_tests.engines.base import EngineAdapter
+
 from elo_tests.models import GameRecord, ScheduledGame, TimeControlSpec
 
 
 def _clamp(value: float, low: float, high: float) -> float:
+    """Clamp a value between low and high bounds.
+
+    Args:
+        value: The value to clamp.
+        low: Lower bound (inclusive).
+        high: Upper bound (inclusive).
+
+    Returns:
+        The clamped value.
+
+    """
     return max(low, min(high, value))
 
 
 def _score_probability(delta_elo: float) -> float:
+    """Calculate the expected score probability from an Elo difference.
+
+    Args:
+        delta_elo: Elo rating difference (candidate - baseline).
+
+    Returns:
+        Expected score probability (0.0 to 1.0).
+
+    """
     return 1.0 / (1.0 + math.pow(10.0, -delta_elo / 400.0))
 
 
@@ -22,6 +51,19 @@ def play_game(
     scheduled: ScheduledGame,
     tc: TimeControlSpec,
 ) -> GameRecord:
+    """Simulate a single game between candidate and baseline engines.
+
+    Args:
+        run_id: Identifier for this run.
+        candidate: The engine being evaluated.
+        baseline: The reference engine.
+        scheduled: Scheduled game parameters.
+        tc: Time control settings.
+
+    Returns:
+        A GameRecord containing the game results.
+
+    """
     rng = random.Random(scheduled.seed)
     candidate_side = "white" if scheduled.candidate_is_white else "black"
 
@@ -35,10 +77,7 @@ def play_game(
     color_bonus = 18.0 if candidate_side == "white" else -18.0
     opening_noise = rng.uniform(-12.0, 12.0)
     total_delta = (
-        candidate.strength_elo
-        - baseline.strength_elo
-        + color_bonus
-        + opening_noise
+        candidate.strength_elo - baseline.strength_elo + color_bonus + opening_noise
     )
 
     expected = _score_probability(total_delta)
@@ -74,4 +113,13 @@ def play_game(
 
 
 def game_record_to_json(record: GameRecord) -> dict[str, object]:
+    """Convert a GameRecord to a JSON-serializable dictionary.
+
+    Args:
+        record: The game record to convert.
+
+    Returns:
+        Dictionary representation of the record.
+
+    """
     return record.to_dict()

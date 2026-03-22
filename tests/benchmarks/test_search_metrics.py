@@ -28,7 +28,6 @@ BENCHMARK_FENS = {
 
 def get_configs():
     """Return the 'drop-in' module configurations."""
-
     # 1. Base Minimax
     base_cfg = EngineConfig(
         search=SearchConfig(

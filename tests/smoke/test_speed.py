@@ -12,8 +12,7 @@ from engine._core import chess_engine_core as core
 
 
 def test_perft_speed_smoke():
-    """
-    Fail if Perft(5) takes longer than expected.
+    """Fail if Perft(5) takes longer than expected.
 
     This acts as a 'canary in the coal mine' for major performance regressions.
     """

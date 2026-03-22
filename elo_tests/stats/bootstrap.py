@@ -1,3 +1,9 @@
+"""Bootstrap confidence interval calculation for paired data.
+
+This module provides paired bootstrap resampling for computing
+confidence intervals on Elo estimates.
+"""
+
 from __future__ import annotations
 
 import random
@@ -11,6 +17,18 @@ def paired_bootstrap_elo_ci(
     n_resamples: int,
     seed: int,
 ) -> tuple[float, float]:
+    """Calculate a bootstrap confidence interval for Elo from paired scores.
+
+    Args:
+        pair_scores: Mean scores for each paired block.
+        level: Confidence level (e.g., 0.95 for 95%).
+        n_resamples: Number of bootstrap resamples.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        Tuple of (lower_bound, upper_bound) for the Elo estimate.
+
+    """
     if not pair_scores:
         return 0.0, 0.0
 

@@ -1,3 +1,5 @@
+"""Command-line interface for the Elo estimation package."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,6 +10,11 @@ from elo_tests.runner import run_elo_estimation
 
 
 def main() -> None:
+    """Run the Elo estimation CLI.
+
+    Parses command-line arguments, loads the run configuration,
+    executes the Elo estimation, and prints the summary as JSON.
+    """
     parser = argparse.ArgumentParser(description="Standalone Elo estimator")
     parser.add_argument(
         "--config",

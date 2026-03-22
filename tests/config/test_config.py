@@ -1,7 +1,7 @@
 """Tests for the engine configuration system.
 
 This module tests the EngineConfig, SearchConfig, and EvaluationConfig classes,
-including serialization, deserialization, string formatting, and solver bounds validation.
+including serialization, string formatting, and solver bounds validation.
 """
 
 import json

@@ -160,6 +160,7 @@ class Minimax:
 
         Returns:
             The best score found for the current position.
+
         """
         if (
             not (
@@ -218,7 +219,7 @@ class Minimax:
         previous_move: chess.Move | None,
         extensions_left: int,
     ) -> float:
-        """Run core negamax search with TT, RFP, NMP, IID, futility, LMR, PVS, check extensions.
+        """Run core negamax search with all pruning and extensions.
 
         Args:
             depth: The remaining search depth.
@@ -230,6 +231,7 @@ class Minimax:
 
         Returns:
             The best score for the current position from the side to move's perspective.
+
         """
         self.stats.nodes += 1
         self.stats.seldepth = max(self.stats.seldepth, ply)
@@ -456,6 +458,7 @@ class Minimax:
 
         Returns:
             The score for the child position.
+
         """
         if not self.search_cfg.use_alpha_beta:
             return -self._negamax(
@@ -536,6 +539,7 @@ class Minimax:
 
         Returns:
             The best score for the quiet position.
+
         """
         self.stats.qsearch_nodes += 1
         self.stats.seldepth = max(self.stats.seldepth, ply)
@@ -614,6 +618,7 @@ class Minimax:
 
         Returns:
             The score from the null-move search.
+
         """
         saved_hash = (
             self.zobrist.get_current_hash() if self.zobrist is not None else None
@@ -652,6 +657,7 @@ class Minimax:
 
         Returns:
             True if the time limit has been exceeded, False otherwise.
+
         """
         max_time = self.search_cfg.max_time
         if max_time is None or self.start_time is None:
@@ -666,6 +672,7 @@ class Minimax:
 
         Returns:
             The evaluation score from the side to move's perspective.
+
         """
         white_perspective = float(self.evaluator.go(self.board))
         return white_perspective if bool(self.board.turn) else -white_perspective
@@ -680,6 +687,7 @@ class Minimax:
         Returns:
             The score for the terminal position (mate score adjusted by ply for
             checkmate, or 0.0 for draw).
+
         """
         if game_state == chess.GameState.CHECKMATE:
             return -self.MATE_SCORE + ply
@@ -690,6 +698,7 @@ class Minimax:
 
         Returns:
             The current Zobrist hash, or None if transposition tables are disabled.
+
         """
         if self.zobrist is None:
             return None
@@ -703,6 +712,7 @@ class Minimax:
 
         Returns:
             The saved hash before the move was applied, or None if TT is disabled.
+
         """
         saved_hash = self._current_hash()
         next_hash: int | None = None
@@ -724,6 +734,7 @@ class Minimax:
 
         Args:
             saved_hash: The hash to restore after popping the move.
+
         """
         self.board.pop()
         if self.zobrist is not None and saved_hash is not None:
@@ -737,6 +748,7 @@ class Minimax:
 
         Returns:
             The centipawn value of the captured piece, or 0 if no capture.
+
         """
         piece = self.board.piece_at(move.to_square)
         if piece is None and self.board.is_en_passant(move):
@@ -750,6 +762,7 @@ class Minimax:
 
         Returns:
             True if the side to move has knights, bishops, rooks, or queens.
+
         """
         color = chess.WHITE if bool(self.board.turn) else chess.BLACK
         return any(
@@ -765,6 +778,7 @@ class Minimax:
 
         Returns:
             True if the move is a capture or promotion.
+
         """
         return bool(self.board.is_capture(move) or int(move.promotion) != 0)
 
@@ -787,6 +801,7 @@ class Minimax:
 
         Returns:
             True if the node should be pruned by futility pruning.
+
         """
         if not self.search_cfg.use_alpha_beta:
             return False
@@ -825,6 +840,7 @@ class Minimax:
 
         Returns:
             True if LMR can be applied to this move.
+
         """
         if not self.search_cfg.use_lmr:
             return False
@@ -846,6 +862,7 @@ class Minimax:
 
         Returns:
             The depth reduction amount (1-3).
+
         """
         base = 0.75 * math.log(max(2, depth)) * math.log(max(2, move_index + 1))
         return max(1, min(3, int(base)))
@@ -865,6 +882,7 @@ class Minimax:
 
         Returns:
             The bound type: "exact", "upper", or "lower".
+
         """
         if not self.search_cfg.use_alpha_beta:
             return "exact"

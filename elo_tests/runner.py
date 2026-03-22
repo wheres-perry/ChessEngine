@@ -1,10 +1,19 @@
+"""Main runner for Elo estimation.
+
+This module provides the core functionality for running Elo estimation
+campaigns, including game scheduling, execution, and result aggregation.
+"""
+
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from elo_tests.config import RunConfig
+if TYPE_CHECKING:
+    from elo_tests.config import RunConfig
+
 from elo_tests.engines.factory import create_engine
 from elo_tests.game import game_record_to_json, play_game
 from elo_tests.models import EloSummary
@@ -17,10 +26,28 @@ from elo_tests.stats.sequential import should_stop
 
 
 def _ci_halfwidth(ci: tuple[float, float]) -> float:
+    """Calculate the half-width of a confidence interval.
+
+    Args:
+        ci: Tuple of (lower_bound, upper_bound).
+
+    Returns:
+        The half-width of the interval.
+
+    """
     return (ci[1] - ci[0]) / 2.0
 
 
 def run_elo_estimation(config: RunConfig) -> EloSummary:
+    """Run a complete Elo estimation campaign.
+
+    Args:
+        config: Configuration for the run.
+
+    Returns:
+        An EloSummary containing the results of the campaign.
+
+    """
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{stamp}_{config.seed}"
     out_dir = Path(config.output_dir) / run_id
@@ -73,7 +100,10 @@ def run_elo_estimation(config: RunConfig) -> EloSummary:
         if not should_recompute:
             continue
 
-        pair_means = [sum(pair_scores_by_id[idx]) / len(pair_scores_by_id[idx]) for idx in sorted(pair_scores_by_id)]
+        pair_means = [
+            sum(pair_scores_by_id[idx]) / len(pair_scores_by_id[idx])
+            for idx in sorted(pair_scores_by_id)
+        ]
         normal_ci = normal_ci_for_elo(game_scores, level=config.ci_level)
         bootstrap_ci = paired_bootstrap_elo_ci(
             pair_scores=pair_means,
@@ -100,7 +130,10 @@ def run_elo_estimation(config: RunConfig) -> EloSummary:
         game_scores = [0.5]
     if primary_ci == (0.0, 0.0):
         normal_ci = normal_ci_for_elo(game_scores, level=config.ci_level)
-        pair_means = [sum(pair_scores_by_id[idx]) / len(pair_scores_by_id[idx]) for idx in sorted(pair_scores_by_id)] or [0.5]
+        pair_means = [
+            sum(pair_scores_by_id[idx]) / len(pair_scores_by_id[idx])
+            for idx in sorted(pair_scores_by_id)
+        ] or [0.5]
         bootstrap_ci = paired_bootstrap_elo_ci(
             pair_scores=pair_means,
             level=config.ci_level,

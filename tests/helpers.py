@@ -4,8 +4,7 @@ from engine._core import chess_engine_core as chess
 
 
 def make_candidate_move(board: chess.Board, candidate_moves: list[str]) -> bool:
-    """
-    Try to make one of the candidate moves on the board.
+    """Try to make one of the candidate moves on the board.
 
     Args:
         board: The chess board to make a move on
@@ -13,6 +12,7 @@ def make_candidate_move(board: chess.Board, candidate_moves: list[str]) -> bool:
 
     Returns:
         True if a move was made, False otherwise
+
     """
     for candidate_move in candidate_moves:
         try:
@@ -24,14 +24,14 @@ def make_candidate_move(board: chess.Board, candidate_moves: list[str]) -> bool:
 
 
 def make_any_legal_move(board: chess.Board) -> bool:
-    """
-    Make any legal move on the board.
+    """Make any legal move on the board.
 
     Args:
         board: The chess board to make a move on
 
     Returns:
         True if a move was made, False if no legal moves available
+
     """
     legal_moves = list(board.legal_moves)
     if legal_moves:
@@ -41,14 +41,14 @@ def make_any_legal_move(board: chess.Board) -> bool:
 
 
 def make_test_move(board: chess.Board) -> bool:
-    """
-    Make a test move on the board, trying common moves first.
+    """Make a test move on the board, trying common moves first.
 
     Args:
         board: The chess board to make a move on
 
     Returns:
         True if a move was made, False if no moves available
+
     """
     if board.turn:  # True = white to move
         white_candidates = ["Bc4", "d4", "Nc3", "Nf3", "Qe2", "0-0", "h3"]

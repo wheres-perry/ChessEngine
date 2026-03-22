@@ -20,6 +20,8 @@ class SearchConfig:
     max_depth: int | None = None  # Useful for depth-limited searches
 
     class TTPolicy(Enum):
+        """Transposition table aging policy."""
+
         NONE = 0
         AGING = 1
 
@@ -113,8 +115,7 @@ class SearchConfig:
 
 @dataclass
 class EvaluationConfig:
-    """
-    Configuration for the static board evaluation.
+    """Configuration for the static board evaluation.
 
     Components (each independently toggleable):
       - PST:            Piece-Square Tables
@@ -184,6 +185,7 @@ class EngineConfig:
 
         Returns:
             A formatted string showing search depth, search flags, and evaluation flags.
+
         """
         parts: list[str] = [f"Depth: {self.search_depth}"]
         parts.append(self._format_search_flags())
@@ -197,6 +199,7 @@ class EngineConfig:
             A string representation of enabled search features and algorithms.
             Returns "Search: [Base Minimax]" if alpha-beta is disabled,
             or "Search: [Empty]" if no flags are enabled.
+
         """
         s_flags: list[str] = []
         cfg = self.search
@@ -243,6 +246,7 @@ class EngineConfig:
         Returns:
             A string representation of enabled evaluation features.
             Returns "Eval: [Material]" if no evaluation features are enabled.
+
         """
         e = self.evaluation
         parts: list[str] = []

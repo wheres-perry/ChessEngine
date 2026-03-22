@@ -31,6 +31,12 @@ class CompositeEvaluator:
     """
 
     def __init__(self, components: list[EvalComponent]) -> None:
+        """Initialize with a list of components.
+
+        Args:
+            components: List of evaluation components.
+
+        """
         self._components = components
 
     def go(self, board: chess.Board) -> float:
@@ -59,6 +65,7 @@ class SimpleEvaluator:
     """
 
     def __init__(self) -> None:
+        """Initialize the factory with a default material evaluator."""
         self._inner = CompositeEvaluator([MaterialComponent()])
 
     def go(self, board: chess.Board) -> float:

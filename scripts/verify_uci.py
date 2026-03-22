@@ -20,6 +20,7 @@ def _start_engine():
 
     Returns:
         A Popen object representing the engine process.
+
     """
     return subprocess.Popen(  # noqa: S603
         _ENGINE_CMD,
@@ -37,6 +38,7 @@ def _send(process, cmd):
     Args:
         process: The engine subprocess.
         cmd: The UCI command string to send.
+
     """
     print(f"> {cmd}")
     process.stdin.write(cmd + "\n")
@@ -53,6 +55,7 @@ def _expect(process, pattern, timeout=2.0):
 
     Returns:
         True if pattern found, False otherwise.
+
     """
     start = time.time()
     while time.time() - start < timeout:
@@ -75,6 +78,7 @@ def _run_checks(process):
 
     Returns:
         True if all checks pass, False otherwise.
+
     """
     _send(process, "uci")
     if not _expect(process, "id name ChessEngine"):
@@ -101,6 +105,7 @@ def verify_uci():
 
     Returns:
         True if verification passes, False otherwise.
+
     """
     process = _start_engine()
     ok = _run_checks(process)

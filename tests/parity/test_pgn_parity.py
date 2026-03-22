@@ -22,7 +22,6 @@ def test_pgn_parity_with_python_chess(pgn_file: str) -> None:
 
     Validates headers, results, and SAN move extraction match the reference library.
     """
-
     # Parse using our C++ engine.
     our_stream = core.pgn.PGNStream(pgn_file)
     our_games = list(our_stream)

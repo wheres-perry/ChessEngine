@@ -1,3 +1,5 @@
+"""Configuration loading and defaults for Elo estimation runs."""
+
 from __future__ import annotations
 
 import json
@@ -8,6 +10,12 @@ from elo_tests.models import EngineSpec, RunConfig, TimeControlSpec
 
 
 def default_run_config() -> RunConfig:
+    """Return the default run configuration.
+
+    Returns:
+        A RunConfig instance with sensible defaults for Elo estimation.
+
+    """
     return RunConfig(
         candidate=EngineSpec(engine_id="candidate", strength_elo=40.0, version="sim-1"),
         baseline=EngineSpec(engine_id="baseline", strength_elo=0.0, version="sim-1"),
@@ -28,6 +36,16 @@ def default_run_config() -> RunConfig:
 
 
 def _merge_engine(base: EngineSpec, payload: dict[str, Any]) -> EngineSpec:
+    """Merge engine configuration from a JSON payload into a base spec.
+
+    Args:
+        base: The base EngineSpec to use as defaults.
+        payload: Dictionary containing override values from JSON config.
+
+    Returns:
+        A new EngineSpec with merged values.
+
+    """
     return EngineSpec(
         engine_id=str(payload.get("engine_id", base.engine_id)),
         kind="simulated",
@@ -38,6 +56,15 @@ def _merge_engine(base: EngineSpec, payload: dict[str, Any]) -> EngineSpec:
 
 
 def load_run_config(config_path: str | None = None) -> RunConfig:
+    """Load run configuration from a JSON file.
+
+    Args:
+        config_path: Path to the JSON config file, or None to use defaults.
+
+    Returns:
+        A RunConfig instance with values from the file merged with defaults.
+
+    """
     base = default_run_config()
     if not config_path:
         return base
@@ -59,7 +86,9 @@ def load_run_config(config_path: str | None = None) -> RunConfig:
             depth=tc_payload.get("depth", base.time_control.depth),
         ),
         openings_file=payload.get("openings_file", base.openings_file),
-        paired_blocks_target=int(payload.get("paired_blocks_target", base.paired_blocks_target)),
+        paired_blocks_target=int(
+            payload.get("paired_blocks_target", base.paired_blocks_target)
+        ),
         min_blocks=int(payload.get("min_blocks", base.min_blocks)),
         max_games=int(payload.get("max_games", base.max_games)),
         ci_method=payload.get("ci_method", base.ci_method),

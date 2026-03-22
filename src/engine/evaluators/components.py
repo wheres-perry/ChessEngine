@@ -58,6 +58,7 @@ class MaterialComponent(EvalComponent):
 
         Returns:
             Positive score favors White, negative favors Black.
+
         """
         total = 0
         for piece_type, cp in _MATERIAL_CP.items():
@@ -76,6 +77,12 @@ class PSTComponent(EvalComponent):
     """
 
     def __init__(self, *, gsc: bool = False) -> None:
+        """Initialize the component.
+
+        Args:
+            gsc: Whether to use the generalist sub-agent for evaluation.
+
+        """
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
@@ -87,6 +94,7 @@ class PSTComponent(EvalComponent):
 
         Returns:
             PST evaluation score (positive favors White).
+
         """
         total = 0.0
         for square in chess.SQUARES:
@@ -131,6 +139,12 @@ class PawnStructureComponent(EvalComponent):
     """
 
     def __init__(self, *, gsc: bool = False) -> None:
+        """Initialize the component.
+
+        Args:
+            gsc: Whether to use the generalist sub-agent for evaluation.
+
+        """
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
@@ -144,6 +158,7 @@ class PawnStructureComponent(EvalComponent):
 
         Returns:
             Pawn structure score (positive favors White).
+
         """
         raw = 0.0
         for color in (chess.WHITE, chess.BLACK):
@@ -191,6 +206,7 @@ class PawnStructureComponent(EvalComponent):
 
         Returns:
             True if the pawn is passed, False otherwise.
+
         """
         file = chess.square_file(square)
         rank = chess.square_rank(square)
@@ -236,6 +252,12 @@ class MobilityComponent(EvalComponent):
     """
 
     def __init__(self, *, gsc: bool = False) -> None:
+        """Initialize the component.
+
+        Args:
+            gsc: Whether to use the generalist sub-agent for evaluation.
+
+        """
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
@@ -247,6 +269,7 @@ class MobilityComponent(EvalComponent):
 
         Returns:
             Mobility score (positive favors White).
+
         """
         raw = self._raw_mobility(board)
         if self._gsc:
@@ -263,6 +286,7 @@ class MobilityComponent(EvalComponent):
 
         Returns:
             Weighted mobility score (positive favors White).
+
         """
         move_counts: dict[int, int] = {}
         for m in board.legal_moves:
@@ -303,6 +327,12 @@ class KingSafetyComponent(EvalComponent):
     """
 
     def __init__(self, *, gsc: bool = False) -> None:
+        """Initialize the component.
+
+        Args:
+            gsc: Whether to use the generalist sub-agent for evaluation.
+
+        """
         self._gsc = gsc
 
     def score(self, board: chess.Board, phase: float) -> float:
@@ -316,6 +346,7 @@ class KingSafetyComponent(EvalComponent):
 
         Returns:
             King safety score (positive favors White).
+
         """
         raw = 0.0
         for color in (chess.WHITE, chess.BLACK):
@@ -352,6 +383,7 @@ class KingSafetyComponent(EvalComponent):
 
         Returns:
             Pawn shield bonus in centipawns.
+
         """
         bonus = 0.0
         direction = 1 if color == chess.Color.WHITE else -1
@@ -379,6 +411,7 @@ class KingSafetyComponent(EvalComponent):
 
         Returns:
             Open file penalty in centipawns (negative value).
+
         """
         for sq in chess.SQUARES:
             if chess.square_file(sq) != king_file:
@@ -405,6 +438,7 @@ class KingSafetyComponent(EvalComponent):
 
         Returns:
             Attack zone pressure score in centipawns.
+
         """
         enemy = chess.Color.BLACK if color == chess.Color.WHITE else chess.Color.WHITE
         pressure = 0.0
