@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774086387941,
+  "lastUpdate": 1774213078400,
   "repoUrl": "https://github.com/wheres-perry/ChessEngine",
   "entries": {
     "Benchmark": [
@@ -324,6 +324,114 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00016689119370425127",
             "extra": "mean: 32.5942515333395 msec\nrounds: 30"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86326912+wheres-perry@users.noreply.github.com",
+            "name": "Ethan Perry",
+            "username": "wheres-perry"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0972801128b4287cfe3c26889741ecb39f1d0716",
+          "message": "feat(elo): add standalone deterministic Elo estimation subsystem (#7)\n\n* feat(elo): add standalone deterministic Elo estimation subsystem\n\nIntroduce a self-contained elo_tests package with deterministic paired scheduling, simulated engine adapters, JSONL raw game logging, Elo point estimation, normal and paired-bootstrap confidence intervals, sequential stopping, and CLI/config/reporting support.\n\n* fix: resolve style guide issues, runtime errors, and docstring violations\n\n- Fix TypeError in PST tables caused by misplaced string literals.\n- Enable and satisfy strict docstring (pydocstyle) rules project-wide.\n- Move type-only imports into TYPE_CHECKING blocks to resolve TC001/TC003 failures.\n- Resolve undefined name 'Searcher' in Engine initialization.\n- Shorten long lines to comply with 88-character limit.\n- Update TODO.md with project roadmap and maintenance task completion.",
+          "timestamp": "2026-03-22T14:51:03-06:00",
+          "tree_id": "2216697e688b63ec1dfeecc34f7ce26bf783a457",
+          "url": "https://github.com/wheres-perry/ChessEngine/commit/0972801128b4287cfe3c26889741ecb39f1d0716"
+        },
+        "date": 1774213077415,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/test_performance.py::test_full_game_cycle_300_ply",
+            "value": 2626.736078987747,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006316081497294919",
+            "extra": "mean: 380.70059950041315 usec\nrounds: 2402"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_3",
+            "value": 8.867772507575618,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000819593767951151",
+            "extra": "mean: 112.76789060000283 msec\nrounds: 5"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_5",
+            "value": 0.17395474973961292,
+            "unit": "iter/sec",
+            "range": "stddev: 0.03986579664873935",
+            "extra": "mean: 5.748621417333339 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_search_node_expansion_loop",
+            "value": 85.92101642025122,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00014858735179540056",
+            "extra": "mean: 11.638596022990066 msec\nrounds: 87"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_promotion_heavy_movegen",
+            "value": 121311.02278142961,
+            "unit": "iter/sec",
+            "range": "stddev: 2.03903589211461e-7",
+            "extra": "mean: 8.243273999937628 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_castling_and_ep_movegen",
+            "value": 73824.69970684049,
+            "unit": "iter/sec",
+            "range": "stddev: 1.7925088331789914e-7",
+            "extra": "mean: 13.545602000021972 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_push_pop_precomputed",
+            "value": 68457.09348890783,
+            "unit": "iter/sec",
+            "range": "stddev: 2.1731073231234683e-7",
+            "extra": "mean: 14.607690000190132 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_instantiation_1000",
+            "value": 722.8216800624461,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000045140924822467304",
+            "extra": "mean: 1.3834670812773737 msec\nrounds: 689"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_single_move_toggle_50k",
+            "value": 26.606034680080267,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00015950728406995251",
+            "extra": "mean: 37.58545803703294 msec\nrounds: 27"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_copy_chain_stress",
+            "value": 1633.3630033082109,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00004662776623600035",
+            "extra": "mean: 612.2337765546309 usec\nrounds: 1544"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_batch_legal_generation",
+            "value": 163.81656587331102,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00019745633312539835",
+            "extra": "mean: 6.104388739130075 msec\nrounds: 161"
+          },
+          {
+            "name": "tests/benchmarks/test_search_metrics.py::test_search_metrics_full_suite",
+            "value": 30.25789328719916,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006007691400377753",
+            "extra": "mean: 33.04922753571406 msec\nrounds: 28"
           }
         ]
       }
