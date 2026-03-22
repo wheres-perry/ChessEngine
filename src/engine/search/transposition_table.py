@@ -35,6 +35,7 @@ class TranspositionTable:
         Args:
             config: The search configuration containing transposition table settings,
                 including tt_size_mb for table size and use_tt_aging for aging policy.
+
         """
         self.config = config
         estimated_capacity = (
@@ -61,6 +62,7 @@ class TranspositionTable:
 
         Returns:
             The count of transposition table entries.
+
         """
         return len(self.table)
 
@@ -73,6 +75,7 @@ class TranspositionTable:
         Returns:
             The matching TTEntry if found, with its age updated if TT aging is enabled;
             None if no entry exists for the given key.
+
         """
         entry = self.table.get(key)
         if entry is None:
@@ -102,6 +105,7 @@ class TranspositionTable:
         Returns:
             The stored score if the entry is usable for cutoff at this node;
             None if the entry cannot be used (insufficient depth or bounds mismatch).
+
         """
         if entry.depth < depth:
             return None
@@ -133,6 +137,7 @@ class TranspositionTable:
             best_move: The best move found from this position, if any.
             bound: The bound type ("exact", "lower", or "upper") indicating
                 how the score relates to the search window.
+
         """
         existing = self.table.get(key)
         if existing is not None:

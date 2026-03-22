@@ -1,5 +1,4 @@
-"""
-Test suite for the module config solver.
+"""Test suite for the module config solver.
 
 This module contains tests for the ConfigSolver class, which validates
 feature dependencies and ensures configurations are internally consistent.

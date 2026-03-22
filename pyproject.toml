@@ -107,10 +107,11 @@ select = [
     # Naming & quotes
     "N", # pep8-naming
     "Q", # flake8-quotes
+    # Docstrings
+    "D", # pydocstyle
 ]
 ignore = [
     "ANN",     # type annotations — handled by mypy
-    "D",       # docstrings — too strict for dev
     "F401",    # unused-import — Pylance/IDE handles
     "F841",    # unused-variable — Pylance/IDE handles
     "FBT001",  # boolean-positional-arg

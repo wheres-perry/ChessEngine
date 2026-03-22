@@ -51,6 +51,12 @@ class CoreBoardAdapter(CoreAdapter):
     """Adapter for the C++ Core Board."""
 
     def __init__(self, board: core.Board):
+        """Initialize the adapter with a C++ board.
+
+        Args:
+            board: The C++ Board object.
+
+        """
         self.board = board
 
     def from_fen(self, fen: str) -> Any:
@@ -100,6 +106,12 @@ class PythonSearchAdapter(SearchAdapter):
     """Adapter for the Python Minimax searcher."""
 
     def __init__(self, engine: Minimax):
+        """Initialize the adapter with a searcher.
+
+        Args:
+            engine: The Minimax search engine.
+
+        """
         self.engine = engine
 
     def search(self, depth: int) -> tuple[float | None, str | None]:
@@ -139,6 +151,15 @@ class Engine:
         searcher: Minimax,
         config: EngineConfig,
     ):
+        """Initialize the engine runtime with all core components.
+
+        Args:
+            board: The C++ Board object.
+            evaluator: The position evaluation engine.
+            searcher: The Minimax search engine.
+            config: The runtime engine configuration.
+
+        """
         self.board = board
         self.evaluator = evaluator
         self.searcher = searcher
@@ -175,6 +196,7 @@ class Engine:
 
         Returns:
             Tuple of (score, uci_move) or (None, None) if no move found.
+
         """
         score, move = self.find_best_move(depth)
         return score, move.uci() if move else None
@@ -198,6 +220,7 @@ def create_core_adapter(config: EngineConfig, fen: str | None = None) -> CoreAda
 
     Returns:
         A CoreAdapter wrapping the initialized board.
+
     """
     _ = config
     start_fen = fen if fen else STARTING_FEN
@@ -215,6 +238,7 @@ def create_engine(config: EngineConfig, fen: str | None = None) -> Engine:
 
     Returns:
         An initialized Engine instance ready for search operations.
+
     """
     ConfigSolver(config).solve()
 
@@ -238,6 +262,7 @@ def create_search_adapter(
 
     Raises:
         ValueError: If the core_adapter is not a CoreBoardAdapter.
+
     """
     ConfigSolver(config).solve()
 
@@ -261,6 +286,7 @@ def create_engine_runtime(
 
     Returns:
         An EngineRuntime containing all initialized components.
+
     """
     engine = create_engine(config, fen)
 

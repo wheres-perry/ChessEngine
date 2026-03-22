@@ -6,7 +6,7 @@ from engine._core import chess_engine_core as core
 
 
 def test_pgn_parser() -> None:
-    """Test that the PGN parser correctly extracts headers, results, and clean SAN moves."""
+    """Test that the PGN parser correctly extracts headers and moves."""
     pgn_path = "data/raw/simple_games/test_parser.pgn"
 
     stream = core.pgn.PGNStream(pgn_path)

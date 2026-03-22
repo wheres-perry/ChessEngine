@@ -32,6 +32,7 @@ class MoveSorter:
 
         Args:
             config: The search configuration containing move ordering settings.
+
         """
         self.config = config
         self.killer_moves: dict[int, list[chess.Move]] = {}
@@ -65,6 +66,7 @@ class MoveSorter:
 
         Returns:
             The sorted list of moves in descending priority order.
+
         """
         if not self.config.use_move_ordering or len(moves) <= 1:
             return moves
@@ -96,6 +98,7 @@ class MoveSorter:
 
         Returns:
             The sorted list of tactical moves in descending priority order.
+
         """
         scored_moves = [
             (self._score_tactical_move(board, move), move) for move in moves
@@ -122,6 +125,7 @@ class MoveSorter:
 
         Returns:
             The integer priority score for the move.
+
         """
         if (
             self.config.use_hash_move_ordering
@@ -160,6 +164,7 @@ class MoveSorter:
 
         Returns:
             The integer priority score for the tactical move.
+
         """
         score = self.TACTICAL_BASE
         if self.config.use_mvv_lva and board.is_capture(move):
@@ -186,6 +191,7 @@ class MoveSorter:
 
         Returns:
             The MVV-LVA bonus score (victim_value * 10 - attacker_value).
+
         """
         victim_piece = board.piece_at(move.to_square)
         attacker_piece = board.piece_at(move.from_square)
@@ -218,6 +224,7 @@ class MoveSorter:
 
         Returns:
             The estimated SEE value (victim value - attacker value).
+
         """
         if not board.is_capture(move):
             return 0
@@ -255,6 +262,7 @@ class MoveSorter:
             depth: The remaining search depth.
             previous_move: The previous move made, for countermove heuristic.
             is_tactical: Whether the cutoff move was tactical (capture/promotion).
+
         """
         if is_tactical:
             return
@@ -287,6 +295,7 @@ class MoveSorter:
 
         Returns:
             The history table saturation percentage.
+
         """
         if not self.config.use_history_heuristic or not self.history_table:
             return 0.0
@@ -303,6 +312,7 @@ class MoveSorter:
 
         Returns:
             True if the move is a promotion, False otherwise.
+
         """
         return int(move.promotion) != 0
 
@@ -315,5 +325,6 @@ class MoveSorter:
 
         Returns:
             A tuple of (from_square, to_square, promotion) representing the move.
+
         """
         return move.from_square, move.to_square, int(move.promotion)

@@ -44,6 +44,7 @@ def compare_fen_ignore_ep(cpp_fen: str, py_fen: str) -> bool:
 
     Returns:
         True if FENs match (excluding ep square), False otherwise.
+
     """
     cpp_parts = cpp_fen.split()
     py_parts = py_fen.split()

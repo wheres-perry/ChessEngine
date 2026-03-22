@@ -93,3 +93,4 @@ pip-log.txt
 bin/
 
 output.json
+elo_tests/output/

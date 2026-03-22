@@ -85,7 +85,8 @@ def board_adapter_factory():
 def test_full_game_cycle_300_ply(benchmark: Any, deep_game_moves: list[str]) -> None:
     """Push a full 300-ply game and then Pop it all back.
 
-    STRESS TEST: Tests history stack depth, repetition tracking, and accumulated state updates.
+    STRESS TEST: Tests history stack depth, repetition tracking,
+    and accumulated state updates.
     """
     uci_moves = deep_game_moves
     config = EngineConfig()
@@ -112,9 +113,7 @@ def test_full_game_cycle_300_ply(benchmark: Any, deep_game_moves: list[str]) -> 
 
 
 def test_perft_traversal_depth_3(benchmark: Any) -> None:
-    """
-    STRESS TEST: Recursive Perft to Depth 3 on 'KiwiPete'.
-    """
+    """STRESS TEST: Recursive Perft to Depth 3 on 'KiwiPete'."""
     fen = STRESS_FENS[1]
     depth = 3
     config = EngineConfig()
@@ -151,9 +150,7 @@ def test_perft_traversal_depth_3(benchmark: Any) -> None:
 
 
 def test_perft_traversal_depth_5(benchmark: Any) -> None:
-    """
-    STRESS TEST: Recursive Perft to Depth 5 on start position.
-    """
+    """STRESS TEST: Recursive Perft to Depth 5 on start position."""
     fen = STRESS_FENS[0]
     depth = 5
     config = EngineConfig()
@@ -179,9 +176,7 @@ def test_perft_traversal_depth_5(benchmark: Any) -> None:
 
 
 def test_search_node_expansion_loop(benchmark: Any) -> None:
-    """
-    STRESS TEST: Simulate Alpha-Beta Inner Loop.
-    """
+    """STRESS TEST: Simulate Alpha-Beta Inner Loop."""
     fen = STRESS_FENS[1]
     loops = 200
     config = EngineConfig()
@@ -201,16 +196,12 @@ def test_search_node_expansion_loop(benchmark: Any) -> None:
 
 
 def test_attacked_squares_middlegame(benchmark: Any) -> None:
-    """
-    MICROBENCH: Attacked-squares computation.
-    """
+    """MICROBENCH: Attacked-squares computation."""
     pytest.skip("core bindings do not expose get_attacked_squares yet")
 
 
 def test_promotion_heavy_movegen(benchmark: Any) -> None:
-    """
-    MICROBENCH: Promotion-heavy move generation.
-    """
+    """MICROBENCH: Promotion-heavy move generation."""
     fen = "4k3/P1P1P1P1/8/8/8/8/p1p1p1p1/4K3 w - - 0 1"
     config = EngineConfig()
 
@@ -223,9 +214,7 @@ def test_promotion_heavy_movegen(benchmark: Any) -> None:
 
 
 def test_castling_and_ep_movegen(benchmark: Any) -> None:
-    """
-    MICROBENCH: Position with both castling rights and en-passant available.
-    """
+    """MICROBENCH: Position with both castling rights and en-passant available."""
     fen = "r3k2r/ppp1pppp/8/3pP3/8/8/PPP1PPPP/R3K2R w KQkq d6 0 3"
     config = EngineConfig()
 
@@ -238,9 +227,7 @@ def test_castling_and_ep_movegen(benchmark: Any) -> None:
 
 
 def test_bulk_push_pop_precomputed(benchmark: Any) -> None:
-    """
-    MICROBENCH: Push/Pop a fixed precomputed move list repeatedly (no regen).
-    """
+    """MICROBENCH: Push/Pop a fixed precomputed move list repeatedly (no regen)."""
     fen = STRESS_FENS[0]
     config = EngineConfig()
 
@@ -258,9 +245,7 @@ def test_bulk_push_pop_precomputed(benchmark: Any) -> None:
 
 
 def test_bulk_instantiation_1000(benchmark: Any) -> None:
-    """
-    STRESS TEST: Create 1,000 distinct Board objects via Factory.
-    """
+    """STRESS TEST: Create 1,000 distinct Board objects via Factory."""
     count = 1000
     fen = STRESS_FENS[1]
     config = EngineConfig()
@@ -273,9 +258,7 @@ def test_bulk_instantiation_1000(benchmark: Any) -> None:
 
 
 def test_single_move_toggle_50k(benchmark: Any) -> None:
-    """
-    STRESS TEST: Push/Pop a single move 50,000 times.
-    """
+    """STRESS TEST: Push/Pop a single move 50,000 times."""
     iterations = 50_000
     config = EngineConfig()
 
@@ -293,9 +276,7 @@ def test_single_move_toggle_50k(benchmark: Any) -> None:
 
 
 def test_copy_chain_stress(benchmark: Any) -> None:
-    """
-    STRESS TEST: Chain copies of the board.
-    """
+    """STRESS TEST: Chain copies of the board."""
     depth = 1000
     fen = STRESS_FENS[3]
     config = EngineConfig()
@@ -312,9 +293,7 @@ def test_copy_chain_stress(benchmark: Any) -> None:
 
 
 def test_batch_legal_generation(benchmark: Any) -> None:
-    """
-    STRESS TEST: Pure move generation throughput via Adapter.
-    """
+    """STRESS TEST: Pure move generation throughput via Adapter."""
     loops = 100
     config = EngineConfig()
 

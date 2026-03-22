@@ -1,0 +1,8 @@
+{
+  "paired_blocks_target": 40,
+  "min_blocks": 20,
+  "max_games": 80,
+  "stop_ci_halfwidth_elo": 30.0,
+  "bootstrap_resamples": 400,
+  "seed": 42
+}

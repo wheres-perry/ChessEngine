@@ -20,6 +20,7 @@ class UCIHandler:
     """Handles UCI commands and interacts with the engine."""
 
     def __init__(self) -> None:
+        """Initialize the UCI handler with default configuration and runtime."""
         self.config = EngineConfig()
         self.runtime = create_engine_runtime(self.config)
 
@@ -46,6 +47,7 @@ class UCIHandler:
 
         Args:
             _args: Command arguments (ignored).
+
         """
 
     def _uci(self, _args: list[str] | None = None) -> None:
@@ -62,6 +64,7 @@ class UCIHandler:
 
         Args:
             _args: Command arguments (ignored).
+
         """
         _out("readyok")
 
@@ -72,6 +75,7 @@ class UCIHandler:
 
         Args:
             _args: Command arguments (ignored).
+
         """
         self.runtime.searcher.reset()
 
@@ -132,6 +136,7 @@ class UCIHandler:
 
         Args:
             _args: Command arguments (ignored).
+
         """
 
     def _setoption(self, args: list[str] | None = None) -> None:

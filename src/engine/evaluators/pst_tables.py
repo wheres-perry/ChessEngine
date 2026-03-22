@@ -1,5 +1,4 @@
-"""
-Piece-Square Tables for handcoded evaluation (Node E1).
+"""Piece-Square Tables for handcoded evaluation (Node E1).
 
 Contains middlegame and endgame piece-square tables for all piece types.
 Tables are from White's perspective (index 0 = a1, 63 = h8).
@@ -9,8 +8,7 @@ from engine._core import chess_engine_core as chess
 
 
 def make_table(values: list[int]) -> list[float]:
-    """
-    Create a 64-square table from 32 values (half board).
+    """Create a 64-square table from 32 values (half board).
 
     Takes values for ranks 1-4 and mirrors them for ranks 5-8.
     Converts from centipawns to pawns.
@@ -20,6 +18,7 @@ def make_table(values: list[int]) -> list[float]:
 
     Returns:
         List of 64 floats (pawns) for all squares.
+
     """
     as_float = [v / 100.0 for v in values]
     return as_float + as_float[::-1]
@@ -30,7 +29,6 @@ def make_table(values: list[int]) -> list[float]:
 # =============================================================================
 
 MG_PAWN_TABLE: list[float] = make_table(
-    """Middlegame piece-square table for pawns (White's perspective)."""
     [
         0,
         0,
@@ -68,7 +66,6 @@ MG_PAWN_TABLE: list[float] = make_table(
 )
 
 MG_KNIGHT_TABLE: list[float] = make_table(
-    """Middlegame piece-square table for knights (White's perspective)."""
     [
         -50,
         -40,
@@ -106,7 +103,6 @@ MG_KNIGHT_TABLE: list[float] = make_table(
 )
 
 MG_BISHOP_TABLE: list[float] = make_table(
-    """Middlegame piece-square table for bishops (White's perspective)."""
     [
         -20,
         -10,
@@ -144,7 +140,6 @@ MG_BISHOP_TABLE: list[float] = make_table(
 )
 
 MG_ROOK_TABLE: list[float] = make_table(
-    """Middlegame piece-square table for rooks (White's perspective)."""
     [
         0,
         0,
@@ -182,7 +177,6 @@ MG_ROOK_TABLE: list[float] = make_table(
 )
 
 MG_QUEEN_TABLE: list[float] = make_table(
-    """Middlegame piece-square table for queens (White's perspective)."""
     [
         -20,
         -10,
@@ -220,7 +214,6 @@ MG_QUEEN_TABLE: list[float] = make_table(
 )
 
 MG_KING_TABLE: list[float] = make_table(
-    """Middlegame piece-square table for kings (White's perspective)."""
     [
         -30,
         -40,
@@ -262,7 +255,6 @@ MG_KING_TABLE: list[float] = make_table(
 # =============================================================================
 
 EG_PAWN_TABLE: list[float] = make_table(
-    """Endgame piece-square table for pawns (White's perspective)."""
     [
         0,
         0,
@@ -300,7 +292,6 @@ EG_PAWN_TABLE: list[float] = make_table(
 )
 
 EG_KNIGHT_TABLE: list[float] = make_table(
-    """Endgame piece-square table for knights (White's perspective)."""
     [
         -50,
         -40,
@@ -338,7 +329,6 @@ EG_KNIGHT_TABLE: list[float] = make_table(
 )
 
 EG_BISHOP_TABLE: list[float] = make_table(
-    """Endgame piece-square table for bishops (White's perspective)."""
     [
         -20,
         -10,
@@ -376,7 +366,6 @@ EG_BISHOP_TABLE: list[float] = make_table(
 )
 
 EG_ROOK_TABLE: list[float] = make_table(
-    """Endgame piece-square table for rooks (White's perspective)."""
     [
         0,
         0,
@@ -414,7 +403,6 @@ EG_ROOK_TABLE: list[float] = make_table(
 )
 
 EG_QUEEN_TABLE: list[float] = make_table(
-    """Endgame piece-square table for queens (White's perspective)."""
     [
         -20,
         -10,
@@ -452,7 +440,6 @@ EG_QUEEN_TABLE: list[float] = make_table(
 )
 
 EG_KING_TABLE: list[float] = make_table(
-    """Endgame piece-square table for kings (White's perspective)."""
     [
         -50,
         -40,
