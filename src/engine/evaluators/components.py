@@ -170,8 +170,19 @@ class PawnStructureComponent(EvalComponent):
                 rank = chess.square_rank(sq)
 
                 # Doubled pawns
-                same_file = [p for p in pawns if chess.square_file(p) == file]
-                if len(same_file) > 1:
+                # We check if this pawn is the "lowest" rank pawn on its file
+                # If there are higher rank pawns of the same color, we penalize.
+                higher_rank_same_file = [
+                    p
+                    for p in pawns
+                    if chess.square_file(p) == file
+                    and (
+                        chess.square_rank(p) > rank
+                        if color == chess.WHITE
+                        else chess.square_rank(p) < rank
+                    )
+                ]
+                if higher_rank_same_file:
                     raw -= _DOUBLED_PENALTY_CP * sign
 
                 # Isolated pawns
@@ -288,20 +299,31 @@ class MobilityComponent(EvalComponent):
             Weighted mobility score (positive favors White).
 
         """
-        move_counts: dict[int, int] = {}
-        for m in board.legal_moves:
-            move_counts[m.from_square] = move_counts.get(m.from_square, 0) + 1
+        # Save original turn
+        original_turn = board.turn
 
         total = 0.0
-        for sq, cnt in move_counts.items():
-            piece = board.piece_at(sq)
+
+        # Calculate White mobility
+        board.turn = chess.WHITE
+        for m in board.generate_legal_moves():
+            piece = board.piece_at(m.from_square)
             if piece is None or piece.piece_type == chess.KING:
                 continue
             w = _MOBILITY_WEIGHTS.get(piece.piece_type, 0.0)
-            if piece.color == chess.WHITE:
-                total += cnt * w
-            else:
-                total -= cnt * w
+            total += w
+
+        # Calculate Black mobility
+        board.turn = chess.BLACK
+        for m in board.generate_legal_moves():
+            piece = board.piece_at(m.from_square)
+            if piece is None or piece.piece_type == chess.KING:
+                continue
+            w = _MOBILITY_WEIGHTS.get(piece.piece_type, 0.0)
+            total -= w
+
+        # Restore turn
+        board.turn = original_turn
 
         return total
 

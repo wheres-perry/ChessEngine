@@ -248,7 +248,6 @@ def test_setoption_no_name() -> None:
 def test_setoption_hash() -> None:
     """Update config when setting Hash option."""
     h = _handler()
-    h.config.search = MagicMock()
     _dispatch_and_capture(h, "setoption name Hash value 64")
     assert h.config.search.tt_size_mb == 64
 
@@ -256,7 +255,6 @@ def test_setoption_hash() -> None:
 def test_setoption_hash_invalid_value() -> None:
     """Handle invalid Hash option value gracefully without crashing."""
     h = _handler()
-    h.config.search = MagicMock()
     h.config.search.tt_size_mb = 16
     _dispatch_and_capture(h, "setoption name Hash value abc")
     assert h.config.search.tt_size_mb == 16
@@ -265,7 +263,6 @@ def test_setoption_hash_invalid_value() -> None:
 def test_setoption_hash_no_value() -> None:
     """Assume default behavior when setting Hash without 'value' keyword."""
     h = _handler()
-    h.config.search = MagicMock()
     h.config.search.tt_size_mb = 16
     _dispatch_and_capture(h, "setoption name Hash")
     assert h.config.search.tt_size_mb == 16

@@ -1,8 +1,10 @@
 """UCI Protocol Handler."""
 
+import contextlib
 import logging
 import sys
 from collections.abc import Callable
+from dataclasses import fields
 from typing import ClassVar
 
 from engine.config import EngineConfig
@@ -53,8 +55,28 @@ class UCIHandler:
     def _uci(self, _args: list[str] | None = None) -> None:
         """Handle uci identification handshake."""
         _out("id name ChessEngine")
-        _out("id author Copilot")
-        _out("option name Hash type spin default 16 min 1 max 1024")
+        _out("id author wheres-perry")
+
+        for config_obj in (self.config.search, self.config.evaluation):
+            for field in fields(config_obj):
+                name = field.name
+                if name in ("max_time", "max_depth", "tt_size_mb"):
+                    continue
+
+                value = getattr(config_obj, name)
+                if isinstance(value, bool):
+                    default_str = "true" if value else "false"
+                    _out(f"option name {name} type check default {default_str}")
+                elif isinstance(value, int):
+                    _out(
+                        f"option name {name} type spin default {value} "
+                        "min -1000000 max 1000000"
+                    )
+
+        _out(
+            f"option name Hash type spin default {self.config.search.tt_size_mb} "
+            "min 1 max 1024"
+        )
         _out("uciok")
 
     def _isready(self, _args: list[str] | None = None) -> None:
@@ -160,12 +182,17 @@ class UCIHandler:
         name = " ".join(name_parts)
 
         if name == "Hash":
-            try:
-                # Update config.search.tt_size_mb if it exists
-                if hasattr(self.config.search, "tt_size_mb"):
-                    self.config.search.tt_size_mb = int(value)
-            except ValueError:
-                pass
+            name = "tt_size_mb"
+
+        for config_obj in (self.config.search, self.config.evaluation):
+            if hasattr(config_obj, name):
+                current_value = getattr(config_obj, name)
+                if isinstance(current_value, bool):
+                    setattr(config_obj, name, value.lower() == "true")
+                elif isinstance(current_value, int):
+                    with contextlib.suppress(ValueError):
+                        setattr(config_obj, name, int(value))
+                break
 
     _CommandHandler = Callable[["UCIHandler", list[str] | None], None]
 

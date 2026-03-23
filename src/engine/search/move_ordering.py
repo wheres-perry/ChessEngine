@@ -213,38 +213,81 @@ class MoveSorter:
         return victim_value * 10 - attacker_value
 
     def see(self, board: chess.Board, move: chess.Move) -> int:
-        """Calculate a simplified SEE approximation for pruning/ordering decisions.
-
-        SEE (Static Exchange Evaluation) estimates the material gain/loss from
-        a capture sequence.
+        """Calculate a precise SEE (Static Exchange Evaluation) for pruning/ordering.
 
         Args:
             board: The current board state.
-            move: The capture move to evaluate.
+            move: The initial capture move to evaluate.
 
         Returns:
-            The estimated SEE value (victim value - attacker value).
+            The estimated SEE value (positive is good, negative is bad).
 
         """
         if not board.is_capture(move):
             return 0
-        victim_piece = board.piece_at(move.to_square)
-        attacker_piece = board.piece_at(move.from_square)
-        victim_value = (
-            self.PIECE_VALUES_CP[chess.PAWN]
-            if victim_piece is None and board.is_en_passant(move)
-            else self.PIECE_VALUES_CP.get(victim_piece.piece_type, 0)
-            if victim_piece is not None
-            else 0
-        )
-        attacker_value = (
-            self.PIECE_VALUES_CP.get(
-                attacker_piece.piece_type, self.PIECE_VALUES_CP[chess.PAWN]
+
+        # Create a copy of the board to simulate the capture sequence
+        sim_board = board.copy()
+
+        # Determine the sequence of gains
+        gains = []
+
+        # Push the initial move
+        victim_piece = sim_board.piece_at(move.to_square)
+        if victim_piece is None and sim_board.is_en_passant(move):
+            gain = self.PIECE_VALUES_CP[chess.PAWN]
+        else:
+            gain = (
+                self.PIECE_VALUES_CP.get(victim_piece.piece_type, 0)
+                if victim_piece
+                else 0
             )
-            if attacker_piece is not None
-            else self.PIECE_VALUES_CP[chess.PAWN]
-        )
-        return victim_value - attacker_value
+
+        gains.append(gain)
+
+        sim_board.push(move)
+
+        # Target square is where the pieces keep moving to
+        target_sq = move.to_square
+
+        # Simulate captures on the target square until no more captures are possible
+        while True:
+            # Find the least valuable attacker
+            best_attacker_move = None
+            lowest_attacker_val = float("inf")
+
+            for next_move in sim_board.generate_legal_moves():
+                if next_move.to_square == target_sq and sim_board.is_capture(next_move):
+                    attacker_piece = sim_board.piece_at(next_move.from_square)
+                    attacker_val = (
+                        self.PIECE_VALUES_CP.get(attacker_piece.piece_type, 0)
+                        if attacker_piece
+                        else 0
+                    )
+                    if attacker_val < lowest_attacker_val:
+                        lowest_attacker_val = attacker_val
+                        best_attacker_move = next_move
+
+            if not best_attacker_move:
+                break
+
+            # The piece captured is whatever was moved previously
+            captured_piece = sim_board.piece_at(target_sq)
+            gain = (
+                self.PIECE_VALUES_CP.get(captured_piece.piece_type, 0)
+                if captured_piece
+                else 0
+            )
+            gains.append(gain)
+
+            sim_board.push(best_attacker_move)
+
+        # Minimax backwards through the capture sequence
+        score = 0
+        for i in range(len(gains) - 1, -1, -1):
+            score = max(0, gains[i] - score)
+
+        return score
 
     def on_beta_cutoff(
         self,
