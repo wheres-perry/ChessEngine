@@ -23,7 +23,7 @@ def _dispatch_and_capture(handler: UCIHandler, *lines: str) -> list[str]:
     """Send one or more UCI lines and return all emitted output lines."""
     captured: list[str] = []
 
-    with patch("engine.uci._out", side_effect=lambda msg: captured.append(msg)):
+    with patch("engine.uci._out", side_effect=captured.append):
         for line in lines:
             handler._dispatch(line)
     return captured

@@ -1,6 +1,6 @@
 # ChessEngine
 
-A modular, high-performance chess engine written in Python with a heavily optimized C++ core. 
+A modular, high-performance chess engine written in Python with a heavily optimized C++ core.
 
 The central idea of this project is to provide a highly configurable chess engine that supports modular optimizations. This makes it especially useful for educational purposes, algorithmic comparisons, and repeatable benchmarking between different search and evaluation heuristics (e.g., comparing the performance gain of Null Move Pruning vs. pure Alpha-Beta Minimax).
 
@@ -67,7 +67,7 @@ These scripts will automatically launch the engine via Docker. The GUI will pars
 
 ## Configuration Flags
 
-The engine exposes all internal `SearchConfig` and `EvaluationConfig` parameters dynamically via UCI `setoption`. You can toggle features or tune integer parameters on the fly. 
+The engine exposes all internal `SearchConfig` and `EvaluationConfig` parameters dynamically via UCI `setoption`. You can toggle features or tune integer parameters on the fly.
 
 Some key toggles include:
 - `use_alpha_beta`: Enable/disable Alpha-Beta pruning.
@@ -99,5 +99,5 @@ docker run --rm chess_engine_dev nox -s tests_fast
 
 Run the full test suite (including slow benchmarks/parity tests):
 ```bash
-docker run --rm chess_engine_dev nox -s tests_full
+docker run --rm chess_engine_dev nox -s tests_all
 ```

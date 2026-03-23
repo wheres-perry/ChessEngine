@@ -122,6 +122,8 @@ ignore = [
     "PLR0915", # too-many-statements
     "S101",    # assert-used — common in tests/dev
     "S311",    # suspicious-non-cryptographic-random
+    "D203",    # incorrect-blank-line-before-class
+    "D213",    # multi-line-summary-second-line
 ]
 unfixable = []
 
