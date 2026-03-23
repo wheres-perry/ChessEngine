@@ -299,31 +299,25 @@ class MobilityComponent(EvalComponent):
             Weighted mobility score (positive favors White).
 
         """
-        # Save original turn
-        original_turn = board.turn
-
         total = 0.0
 
-        # Calculate White mobility
-        board.turn = chess.WHITE
-        for m in board.generate_legal_moves():
-            piece = board.piece_at(m.from_square)
-            if piece is None or piece.piece_type == chess.KING:
-                continue
-            w = _MOBILITY_WEIGHTS.get(piece.piece_type, 0.0)
-            total += w
+        def evaluate_moves(is_white: bool) -> float:
+            score = 0.0
+            for m in board.generate_legal_moves():
+                piece = board.piece_at(m.from_square)
+                if piece is None or piece.piece_type == chess.KING:
+                    continue
+                score += _MOBILITY_WEIGHTS.get(piece.piece_type, 0.0)
+            return score if is_white else -score
 
-        # Calculate Black mobility
-        board.turn = chess.BLACK
-        for m in board.generate_legal_moves():
-            piece = board.piece_at(m.from_square)
-            if piece is None or piece.piece_type == chess.KING:
-                continue
-            w = _MOBILITY_WEIGHTS.get(piece.piece_type, 0.0)
-            total -= w
+        # Current side
+        current_is_white = bool(board.turn)
+        total += evaluate_moves(current_is_white)
 
-        # Restore turn
-        board.turn = original_turn
+        # Other side
+        board.push_null()
+        total += evaluate_moves(not current_is_white)
+        board.pop()
 
         return total
 
