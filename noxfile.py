@@ -25,26 +25,14 @@ if TYPE_CHECKING:
     from nox.sessions import Session
 
 # --- Global options ---
-nox.options.default_venv_backend = "uv"
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = ["lint", "types", "tests_fast"]
 
 
 # --- Helpers ---
 def _install(session: Session) -> None:
-    """Shared install step: sync frozen lockfile with dev deps.
-
-    --active tells uv to use the currently activated venv (the nox-managed
-    one) rather than the project's .venv, which it would otherwise prefer.
-    """
-    session.run_install(
-        "uv",
-        "sync",
-        "--active",
-        "--frozen",
-        "--group",
-        "dev",
-    )
+    """Shared install step."""
+    session.install("-e", ".[dev]")
 
 
 # --- Safe sessions (every push) ---

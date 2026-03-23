@@ -10,16 +10,10 @@ requires-python = ">=3.11"
 dependencies = [
     "numpy>=2.3.5",
     "python-chess>=1.999",
-    "torch>=2.3.0",
 ]
 
 [project.optional-dependencies]
 analysis = ["jupyter", "pandas", "matplotlib", "seaborn"]
-
-# ──────────────────────────────────────────────────────────────────────
-# Dependency groups (PEP 735) — dev/CI tools only, not distributed
-# ──────────────────────────────────────────────────────────────────────
-[dependency-groups]
 dev = [
     "chess>=1.9.0",
     "pytest>=8.0.0",
