@@ -58,11 +58,12 @@ docker run --rm -i chess_engine_dev python -m engine
 ### Connecting to a GUI
 
 You can connect this engine to chess GUIs like Arena, Cute Chess, or Lucas Chess.
-Simply point the GUI to a batch script or shell script that executes:
-```bash
-docker run -i chess_engine_dev python -m engine
-```
-The GUI will automatically parse the `uci` output to dynamically generate a settings menu with all available configuration flags.
+Simply point the GUI's engine executable configuration to the provided wrapper scripts in the root directory:
+
+- **Windows**: Select `ChessEngine.bat`
+- **macOS / Linux**: Select `ChessEngine.sh` (ensure it has execute permissions: `chmod +x ChessEngine.sh`)
+
+These scripts will automatically launch the engine via Docker. The GUI will parse the `uci` output to dynamically generate a settings menu with all available configuration flags.
 
 ## Configuration Flags
 
