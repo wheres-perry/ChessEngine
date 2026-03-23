@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774213078400,
+  "lastUpdate": 1774252944020,
   "repoUrl": "https://github.com/wheres-perry/ChessEngine",
   "entries": {
     "Benchmark": [
@@ -432,6 +432,114 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0006007691400377753",
             "extra": "mean: 33.04922753571406 msec\nrounds: 28"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86326912+wheres-perry@users.noreply.github.com",
+            "name": "Ethan Perry",
+            "username": "wheres-perry"
+          },
+          "committer": {
+            "email": "86326912+wheres-perry@users.noreply.github.com",
+            "name": "Ethan Perry",
+            "username": "wheres-perry"
+          },
+          "distinct": true,
+          "id": "1290f91168e2e7651e67efb745bb626817baad8e",
+          "message": "fix: update README for test command and fix styling/linting errors",
+          "timestamp": "2026-03-23T07:54:49Z",
+          "tree_id": "d13c48dd478046d622937729efd160bfa6062505",
+          "url": "https://github.com/wheres-perry/ChessEngine/commit/1290f91168e2e7651e67efb745bb626817baad8e"
+        },
+        "date": 1774252942864,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/test_performance.py::test_full_game_cycle_300_ply",
+            "value": 2457.889190742309,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000008499215564417949",
+            "extra": "mean: 406.85316643505365 usec\nrounds: 2157"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_3",
+            "value": 8.162270561879673,
+            "unit": "iter/sec",
+            "range": "stddev: 0.001555405789679196",
+            "extra": "mean: 122.51492920000828 msec\nrounds: 5"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_5",
+            "value": 0.16153136500709606,
+            "unit": "iter/sec",
+            "range": "stddev: 0.01369415079029391",
+            "extra": "mean: 6.190748155666673 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_search_node_expansion_loop",
+            "value": 78.32723376030238,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006442775215199348",
+            "extra": "mean: 12.766951569618914 msec\nrounds: 79"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_promotion_heavy_movegen",
+            "value": 118323.05934276477,
+            "unit": "iter/sec",
+            "range": "stddev: 8.020973590426798e-8",
+            "extra": "mean: 8.45143799995185 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_castling_and_ep_movegen",
+            "value": 72730.70032687175,
+            "unit": "iter/sec",
+            "range": "stddev: 8.940058321740455e-8",
+            "extra": "mean: 13.749351999990722 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_push_pop_precomputed",
+            "value": 58069.6993184382,
+            "unit": "iter/sec",
+            "range": "stddev: 2.207275741230612e-7",
+            "extra": "mean: 17.220684999870173 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_instantiation_1000",
+            "value": 806.1682522203776,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000037721131338660623",
+            "extra": "mean: 1.2404358485288451 msec\nrounds: 713"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_single_move_toggle_50k",
+            "value": 23.070689221409335,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0009655895836670456",
+            "extra": "mean: 43.34504229167161 msec\nrounds: 24"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_copy_chain_stress",
+            "value": 1574.2695379191778,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000966389485688487",
+            "extra": "mean: 635.2152385046909 usec\nrounds: 1283"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_batch_legal_generation",
+            "value": 159.42373024508905,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002614180970434234",
+            "extra": "mean: 6.272591906252956 msec\nrounds: 160"
+          },
+          {
+            "name": "tests/benchmarks/test_search_metrics.py::test_search_metrics_full_suite",
+            "value": 29.640987499809228,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00022906807454930049",
+            "extra": "mean: 33.73706763333833 msec\nrounds: 30"
           }
         ]
       }
