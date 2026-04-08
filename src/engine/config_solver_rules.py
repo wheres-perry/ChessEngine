@@ -125,6 +125,18 @@ class ConfigSolverRules:
                 "Countermove heuristic requires history heuristic.",
                 Implies(b["use_countermove_heuristic"], b["use_history_heuristic"]),
             ),
+            (
+                "Killer moves require alpha-beta pruning.",
+                Implies(b["use_killer_moves"], b["use_alpha_beta"]),
+            ),
+            (
+                "History heuristic requires alpha-beta pruning.",
+                Implies(b["use_history_heuristic"], b["use_alpha_beta"]),
+            ),
+            (
+                "Countermove heuristic requires alpha-beta pruning.",
+                Implies(b["use_countermove_heuristic"], b["use_alpha_beta"]),
+            ),
             # Alpha-beta sub-features → parent flag
             (
                 "Aspiration windows require alpha-beta pruning.",
@@ -165,6 +177,10 @@ class ConfigSolverRules:
             (
                 "IID requires hash move ordering.",
                 Implies(b["use_iid"], b["use_hash_move_ordering"]),
+            ),
+            (
+                "IID requires alpha-beta pruning.",
+                Implies(b["use_iid"], b["use_alpha_beta"]),
             ),
             # TT aging
             (

@@ -33,7 +33,9 @@ class SearchConfig:
         if self.use_tt_aging and not self.use_transposition_table:
             msg = "TT aging requires transposition table to be enabled."
             raise ValueError(msg)
-        if self.use_killer_moves and not self.use_move_ordering:
+        if self.use_killer_moves and not (
+            self.use_move_ordering and self.use_alpha_beta
+        ):
             msg = (
                 "Killer heuristic requires both move ordering "
                 "and alpha-beta to be enabled."
@@ -207,7 +209,7 @@ class EngineConfig:
         if cfg.use_alpha_beta:
             s_flags.append("a-b")
         else:
-            return "Search: [Base Minimax]"
+            s_flags.append("Base Minimax")
 
         s_flags.append("IDDFS")
 

@@ -136,3 +136,33 @@ def test_transposition_table_records_hits_on_repeated_search() -> None:
     second_hits = engine.stats.tt_hits
 
     assert second_hits >= first_hits
+
+
+def test_non_alpha_beta_with_transposition_table_runs() -> None:
+    """Verify base minimax can still leverage TT exact-score reuse."""
+    config = EngineConfig(
+        search=_minimal_search_config(
+            use_alpha_beta=False,
+            use_transposition_table=True,
+            use_tt_aging=True,
+            use_move_ordering=False,
+            use_hash_move_ordering=False,
+            use_iid=False,
+        )
+    )
+    board = chess.Board.from_fen(
+        "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR w KQkq - 2 3"
+    )
+    engine = Minimax(board, MockEvaluator(), config)
+
+    score_1, move_1 = engine.find_best_move(depth=2)
+    hits_1 = engine.stats.tt_hits
+
+    score_2, move_2 = engine.find_best_move(depth=2)
+    hits_2 = engine.stats.tt_hits
+
+    assert score_1 is not None
+    assert score_2 is not None
+    assert move_1 is not None
+    assert move_2 is not None
+    assert hits_2 >= hits_1

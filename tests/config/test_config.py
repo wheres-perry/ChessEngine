@@ -33,6 +33,9 @@ def test_engine_config_save_load_json(tmp_path: Path):
     config.search.use_lmr = False
     config.search.use_null_move_pruning = False
     config.search.use_iid = False
+    config.search.use_killer_moves = False
+    config.search.use_history_heuristic = False
+    config.search.use_countermove_heuristic = False
     config.evaluation.use_mobility = False
 
     file_path = tmp_path / "config.json"
@@ -65,7 +68,7 @@ def test_engine_config_str_formatting():
     """Verifies EngineConfig string representation includes all feature flags."""
     config = EngineConfig(search_depth=5)
     config.search.use_alpha_beta = False
-    assert "Search: [Base Minimax]" in str(config)
+    assert "Base Minimax" in str(config)
 
     config.search = SearchConfig(
         use_alpha_beta=True,
@@ -93,6 +96,34 @@ def test_engine_config_str_formatting():
     assert "NMP" in s
     assert "Futility" in s
     assert "QS" in s
+
+    config.search = SearchConfig(
+        use_alpha_beta=False,
+        use_pvs=False,
+        use_move_ordering=False,
+        use_transposition_table=True,
+        use_tt_aging=True,
+        use_hash_move_ordering=False,
+        use_iid=False,
+        use_quiescence_search=False,
+        use_null_move_pruning=False,
+        use_lmr=False,
+        use_futility_pruning=False,
+        use_extended_futility_pruning=False,
+        use_reverse_futility_pruning=False,
+        use_check_extensions=False,
+        use_delta_pruning=False,
+        use_see_pruning_in_qs=False,
+        use_killer_moves=False,
+        use_history_heuristic=False,
+        use_countermove_heuristic=False,
+        use_mvv_lva=False,
+        use_see_ordering=False,
+        use_aspiration_windows=False,
+    )
+    s = str(config)
+    assert "Base Minimax" in s
+    assert "TT/Z+Age" in s
 
     config.evaluation = EvaluationConfig(
         use_pst=False,

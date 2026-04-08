@@ -271,9 +271,13 @@ class Minimax:
                 if self.search_cfg.use_alpha_beta:
                     hit_score = self.tt.try_get_score(entry, depth, alpha, beta)
                     if hit_score is not None:
+                        if ply == 0 and entry.best_move is not None:
+                            self.root_best_move = entry.best_move
                         self.stats.tt_hits += 1
                         return float(hit_score)
                 elif entry.bound == "exact" and entry.depth >= depth:
+                    if ply == 0 and entry.best_move is not None:
+                        self.root_best_move = entry.best_move
                     self.stats.tt_hits += 1
                     return float(entry.score)
 
@@ -401,6 +405,21 @@ class Minimax:
                     if index == 0:
                         self.stats.first_move_cuts += 1
                     if self.move_sorter is not None:
+                        move_key = (
+                            move.from_square,
+                            move.to_square,
+                            int(move.promotion),
+                        )
+                        if (
+                            self.search_cfg.use_killer_moves
+                            and move in self.move_sorter.killer_moves.get(ply, [])
+                        ):
+                            self.stats.killer_cuts += 1
+                        if (
+                            self.search_cfg.use_history_heuristic
+                            and self.move_sorter.history_table.get(move_key, 0) > 0
+                        ):
+                            self.stats.history_cuts += 1
                         self.move_sorter.on_beta_cutoff(
                             move=move,
                             ply=ply,

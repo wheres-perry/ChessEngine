@@ -90,6 +90,9 @@ class TestAlphaBetaDependencies:
         config.search.use_pvs = True
         config.search.use_alpha_beta = False
         config.search.use_move_ordering = True
+        config.search.use_killer_moves = False
+        config.search.use_history_heuristic = False
+        config.search.use_countermove_heuristic = False
         # Disable other features that also depend on alpha-beta
         config.search.use_aspiration_windows = False
         config.search.use_null_move_pruning = False
@@ -198,6 +201,87 @@ class TestMoveOrderingDependencies:
             with pytest.raises(ConfigSolverError):
                 solver.solve()
 
+    def test_killer_moves_require_alpha_beta(self):
+        """Test that killer moves cannot be enabled without alpha-beta."""
+        config = EngineConfig()
+        config.search.use_alpha_beta = False
+        config.search.use_move_ordering = True
+        config.search.use_killer_moves = True
+        config.search.use_pvs = False
+        config.search.use_aspiration_windows = False
+        config.search.use_null_move_pruning = False
+        config.search.use_futility_pruning = False
+        config.search.use_extended_futility_pruning = False
+        config.search.use_reverse_futility_pruning = False
+        config.search.use_quiescence_search = False
+        config.search.use_check_extensions = False
+        config.search.use_lmr = False
+        config.search.use_delta_pruning = False
+        config.search.use_see_pruning_in_qs = False
+        config.search.use_history_heuristic = False
+        config.search.use_countermove_heuristic = False
+
+        solver = ConfigSolver(config)
+        with pytest.raises(
+            ConfigSolverError,
+            match="Killer moves require alpha-beta pruning",
+        ):
+            solver.solve()
+
+    def test_history_requires_alpha_beta(self):
+        """Test that history heuristic cannot be enabled without alpha-beta."""
+        config = EngineConfig()
+        config.search.use_alpha_beta = False
+        config.search.use_move_ordering = True
+        config.search.use_history_heuristic = True
+        config.search.use_killer_moves = False
+        config.search.use_countermove_heuristic = False
+        config.search.use_pvs = False
+        config.search.use_aspiration_windows = False
+        config.search.use_null_move_pruning = False
+        config.search.use_futility_pruning = False
+        config.search.use_extended_futility_pruning = False
+        config.search.use_reverse_futility_pruning = False
+        config.search.use_quiescence_search = False
+        config.search.use_check_extensions = False
+        config.search.use_lmr = False
+        config.search.use_delta_pruning = False
+        config.search.use_see_pruning_in_qs = False
+
+        solver = ConfigSolver(config)
+        with pytest.raises(
+            ConfigSolverError,
+            match="History heuristic requires alpha-beta pruning",
+        ):
+            solver.solve()
+
+    def test_countermove_requires_alpha_beta(self):
+        """Test that countermove heuristic cannot be enabled without alpha-beta."""
+        config = EngineConfig()
+        config.search.use_alpha_beta = False
+        config.search.use_move_ordering = True
+        config.search.use_history_heuristic = True
+        config.search.use_countermove_heuristic = True
+        config.search.use_killer_moves = False
+        config.search.use_pvs = False
+        config.search.use_aspiration_windows = False
+        config.search.use_null_move_pruning = False
+        config.search.use_futility_pruning = False
+        config.search.use_extended_futility_pruning = False
+        config.search.use_reverse_futility_pruning = False
+        config.search.use_quiescence_search = False
+        config.search.use_check_extensions = False
+        config.search.use_lmr = False
+        config.search.use_delta_pruning = False
+        config.search.use_see_pruning_in_qs = False
+
+        solver = ConfigSolver(config)
+        with pytest.raises(
+            ConfigSolverError,
+            match="(History heuristic|Countermove heuristic) requires alpha-beta pruning",
+        ):
+            solver.solve()
+
 
 class TestSearchRefinementDependencies:
     """Test search refinement related dependencies."""
@@ -215,6 +299,37 @@ class TestSearchRefinementDependencies:
         with pytest.raises(
             ConfigSolverError,
             match="IID requires hash move ordering",
+        ):
+            solver.solve()
+
+    def test_iid_requires_alpha_beta(self):
+        """Test that IID cannot be enabled without alpha-beta."""
+        config = EngineConfig()
+        config.search.use_alpha_beta = False
+        config.search.use_iid = True
+        config.search.use_hash_move_ordering = True
+        config.search.use_move_ordering = True
+        config.search.use_transposition_table = True
+        config.search.use_tt_aging = True
+        config.search.use_pvs = False
+        config.search.use_aspiration_windows = False
+        config.search.use_null_move_pruning = False
+        config.search.use_futility_pruning = False
+        config.search.use_extended_futility_pruning = False
+        config.search.use_reverse_futility_pruning = False
+        config.search.use_quiescence_search = False
+        config.search.use_check_extensions = False
+        config.search.use_lmr = False
+        config.search.use_delta_pruning = False
+        config.search.use_see_pruning_in_qs = False
+        config.search.use_killer_moves = False
+        config.search.use_history_heuristic = False
+        config.search.use_countermove_heuristic = False
+
+        solver = ConfigSolver(config)
+        with pytest.raises(
+            ConfigSolverError,
+            match="IID requires alpha-beta pruning",
         ):
             solver.solve()
 
