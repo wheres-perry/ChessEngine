@@ -278,7 +278,8 @@ class TestMoveOrderingDependencies:
         solver = ConfigSolver(config)
         with pytest.raises(
             ConfigSolverError,
-            match="(History heuristic|Countermove heuristic) requires alpha-beta pruning",
+            match=r"(History heuristic|Countermove heuristic) requires alpha-beta "
+            r"pruning",
         ):
             solver.solve()
 
