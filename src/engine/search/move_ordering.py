@@ -1,4 +1,4 @@
-"""Move ordering heuristics for negamax search."""
+"""Move ordering heuristics for negamax search (C++ backed)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,80 @@ from engine._core import chess_engine_core as chess
 
 if TYPE_CHECKING:
     from engine.config import SearchConfig
+
+
+class _KillerMovesProxy:
+    """Dict-like proxy for C++ killer moves, supporting [ply] and .get()."""
+
+    __slots__ = ("_sorter",)
+
+    def __init__(self, sorter: chess.MoveSorter) -> None:
+        self._sorter = sorter
+
+    def __getitem__(self, ply: int) -> list[chess.Move]:
+        return list(self._sorter.get_killers(ply))
+
+    def get(
+        self, ply: int, default: list[chess.Move] | None = None
+    ) -> list[chess.Move]:
+        """Return killer moves for *ply*, or *default* if empty."""
+        killers = list(self._sorter.get_killers(ply))
+        if killers:
+            return killers
+        return default if default is not None else []
+
+    def clear(self) -> None:
+        """Clear all killer moves via reset."""
+        self._sorter.reset(clear_history=False, clear_killers=True)
+
+    def setdefault(
+        self, ply: int, default: list[chess.Move] | None = None
+    ) -> list[chess.Move]:
+        """Return killer moves for *ply*; unlike a real dict, does not insert."""
+        killers = list(self._sorter.get_killers(ply))
+        if killers:
+            return killers
+        return default if default is not None else []
+
+
+class _HistoryTableProxy:
+    """Dict-like proxy for C++ history table, supporting [(f,t,p)] and .get()."""
+
+    __slots__ = ("_sorter",)
+
+    def __init__(self, sorter: chess.MoveSorter) -> None:
+        self._sorter = sorter
+
+    def __getitem__(self, key: tuple[int, int, int]) -> int:
+        from_sq, to_sq, promo = key
+        val = self._sorter.get_history(from_sq, to_sq, promo)
+        if val == 0:
+            # Check if key actually exists in the table
+            table = self._sorter.get_history_table()
+            if key not in table:
+                raise KeyError(key)
+        return val
+
+    def get(self, key: tuple[int, int, int], default: int = 0) -> int:
+        """Return history score for *key*, or *default* if not present."""
+        table = self._sorter.get_history_table()
+        if key in table:
+            return table[key]
+        return default
+
+    def clear(self) -> None:
+        """Clear history and countermove tables."""
+        self._sorter.reset(clear_history=True, clear_killers=False)
+
+    def values(self) -> list[int]:
+        """Return all history values."""
+        return list(self._sorter.get_history_table().values())
+
+    def __len__(self) -> int:
+        return len(self._sorter.get_history_table())
+
+    def __bool__(self) -> bool:
+        return len(self._sorter.get_history_table()) > 0
 
 
 class MoveSorter:
@@ -28,24 +102,34 @@ class MoveSorter:
     }
 
     def __init__(self, config: SearchConfig) -> None:
-        """Initialize empty killer, history, and countermove tables.
+        """Initialize C++ MoveSorter from a SearchConfig.
 
         Args:
             config: The search configuration containing move ordering settings.
 
         """
         self.config = config
-        self.killer_moves: dict[int, list[chess.Move]] = {}
-        self.history_table: dict[tuple[int, int, int], int] = {}
+
+        cpp_cfg = chess.MoveSorterConfig()
+        cpp_cfg.use_move_ordering = config.use_move_ordering
+        cpp_cfg.use_mvv_lva = config.use_mvv_lva
+        cpp_cfg.use_history_heuristic = config.use_history_heuristic
+        cpp_cfg.use_countermove_heuristic = config.use_countermove_heuristic
+        cpp_cfg.use_see_ordering = config.use_see_ordering
+        cpp_cfg.use_killer_moves = config.use_killer_moves
+        cpp_cfg.use_hash_move_ordering = config.use_hash_move_ordering
+        cpp_cfg.history_max_score = config.history_max_score
+        cpp_cfg.killer_slots_per_ply = config.killer_slots_per_ply
+        cpp_cfg.see_capture_threshold = config.see_capture_threshold
+
+        self._cpp = chess.MoveSorter(cpp_cfg)
+        self.killer_moves: _KillerMovesProxy = _KillerMovesProxy(self._cpp)
+        self.history_table: _HistoryTableProxy = _HistoryTableProxy(self._cpp)
         self.countermove_table: dict[tuple[int, int, int], chess.Move] = {}
 
     def reset(self, clear_history: bool = True, clear_killers: bool = True) -> None:
         """Clear heuristic tables; each flag controls one table independently."""
-        if clear_killers:
-            self.killer_moves.clear()
-        if clear_history:
-            self.history_table.clear()
-            self.countermove_table.clear()
+        self._cpp.reset(clear_history=clear_history, clear_killers=clear_killers)
 
     def sort_moves(
         self,
@@ -68,24 +152,13 @@ class MoveSorter:
             The sorted list of moves in descending priority order.
 
         """
-        if not self.config.use_move_ordering or len(moves) <= 1:
-            return moves
-
-        scored_moves = [
-            (
-                self._score_move(
-                    board=board,
-                    move=move,
-                    ply=ply,
-                    hash_move=hash_move,
-                    previous_move=previous_move,
-                ),
-                move,
-            )
-            for move in moves
-        ]
-        scored_moves.sort(key=lambda item: item[0], reverse=True)
-        return [move for _, move in scored_moves]
+        return self._cpp.sort_moves(
+            board=board,
+            moves=moves,
+            ply=ply,
+            hash_move=hash_move,
+            previous_move=previous_move,
+        )
 
     def sort_tactical(
         self, board: chess.Board, moves: list[chess.Move]
@@ -100,117 +173,7 @@ class MoveSorter:
             The sorted list of tactical moves in descending priority order.
 
         """
-        scored_moves = [
-            (self._score_tactical_move(board, move), move) for move in moves
-        ]
-        scored_moves.sort(key=lambda item: item[0], reverse=True)
-        return [move for _, move in scored_moves]
-
-    def _score_move(
-        self,
-        board: chess.Board,
-        move: chess.Move,
-        ply: int,
-        hash_move: chess.Move | None,
-        previous_move: chess.Move | None,
-    ) -> int:
-        """Assign an integer priority score to a single move.
-
-        Args:
-            board: The current board state.
-            move: The move to score.
-            ply: The current ply (depth) in the search.
-            hash_move: The hash move from the transposition table, if any.
-            previous_move: The previous move made, for countermove heuristic.
-
-        Returns:
-            The integer priority score for the move.
-
-        """
-        if (
-            self.config.use_hash_move_ordering
-            and hash_move is not None
-            and move == hash_move
-        ):
-            return self.HASH_MOVE_SCORE
-
-        if board.is_capture(move) or self._is_promotion(move):
-            return self._score_tactical_move(board, move)
-
-        if self.config.use_killer_moves:
-            killers = self.killer_moves.get(ply, [])
-            if move in killers:
-                slot = killers.index(move)
-                return self.KILLER_BASE - (slot * 1024)
-
-        if self.config.use_countermove_heuristic and previous_move is not None:
-            key = self._move_key(previous_move)
-            countermove = self.countermove_table.get(key)
-            if countermove is not None and countermove == move:
-                return self.COUNTERMOVE_SCORE
-
-        if self.config.use_history_heuristic:
-            history = self.history_table.get(self._move_key(move), 0)
-            return min(history, int(self.config.history_max_score))
-
-        return 0
-
-    def _score_tactical_move(self, board: chess.Board, move: chess.Move) -> int:
-        """Score a capture or promotion using MVV-LVA, promotions, and SEE.
-
-        Args:
-            board: The current board state.
-            move: The tactical move to score.
-
-        Returns:
-            The integer priority score for the tactical move.
-
-        """
-        score = self.TACTICAL_BASE
-        if self.config.use_mvv_lva and board.is_capture(move):
-            score += self._mvv_lva(board, move)
-        if self._is_promotion(move):
-            score += self.PIECE_VALUES_CP.get(move.promotion, 0)
-        if self.config.use_see_ordering and board.is_capture(move):
-            see_value = self.see(board, move)
-            if see_value < self.config.see_capture_threshold:
-                score -= 50_000
-            else:
-                score += min(see_value, 5_000)
-        return score
-
-    def _mvv_lva(self, board: chess.Board, move: chess.Move) -> int:
-        """Return the MVV-LVA bonus for a capture move.
-
-        MVV-LVA (Most Valuable Victim - Least Valuable Aggressor) prioritizes
-        capturing high-value pieces with low-value pieces.
-
-        Args:
-            board: The current board state.
-            move: The capture move to evaluate.
-
-        Returns:
-            The MVV-LVA bonus score (victim_value * 10 - attacker_value).
-
-        """
-        victim_piece = board.piece_at(move.to_square)
-        attacker_piece = board.piece_at(move.from_square)
-
-        victim_value = (
-            self.PIECE_VALUES_CP[chess.PAWN]
-            if victim_piece is None and board.is_en_passant(move)
-            else self.PIECE_VALUES_CP.get(victim_piece.piece_type, 0)
-            if victim_piece is not None
-            else 0
-        )
-        attacker_value = (
-            self.PIECE_VALUES_CP.get(
-                attacker_piece.piece_type, self.PIECE_VALUES_CP[chess.PAWN]
-            )
-            if attacker_piece is not None
-            else self.PIECE_VALUES_CP[chess.PAWN]
-        )
-        return victim_value * 10 - attacker_value
+        return self._cpp.sort_tactical(board=board, moves=moves)
 
     def see(self, board: chess.Board, move: chess.Move) -> int:
         """Calculate a precise SEE (Static Exchange Evaluation) for pruning/ordering.
@@ -223,71 +186,7 @@ class MoveSorter:
             The estimated SEE value (positive is good, negative is bad).
 
         """
-        if not board.is_capture(move):
-            return 0
-
-        # Create a copy of the board to simulate the capture sequence
-        sim_board = board.copy()
-
-        # Determine the sequence of gains
-        gains = []
-
-        # Push the initial move
-        victim_piece = sim_board.piece_at(move.to_square)
-        if victim_piece is None and sim_board.is_en_passant(move):
-            gain = self.PIECE_VALUES_CP[chess.PAWN]
-        else:
-            gain = (
-                self.PIECE_VALUES_CP.get(victim_piece.piece_type, 0)
-                if victim_piece
-                else 0
-            )
-
-        gains.append(gain)
-
-        sim_board.push(move)
-
-        # Target square is where the pieces keep moving to
-        target_sq = move.to_square
-
-        # Simulate captures on the target square until no more captures are possible
-        while True:
-            # Find the least valuable attacker
-            best_attacker_move = None
-            lowest_attacker_val = float("inf")
-
-            for next_move in sim_board.generate_legal_moves():
-                if next_move.to_square == target_sq and sim_board.is_capture(next_move):
-                    attacker_piece = sim_board.piece_at(next_move.from_square)
-                    attacker_val = (
-                        self.PIECE_VALUES_CP.get(attacker_piece.piece_type, 0)
-                        if attacker_piece
-                        else 0
-                    )
-                    if attacker_val < lowest_attacker_val:
-                        lowest_attacker_val = attacker_val
-                        best_attacker_move = next_move
-
-            if not best_attacker_move:
-                break
-
-            # The piece captured is whatever was moved previously
-            captured_piece = sim_board.piece_at(target_sq)
-            gain = (
-                self.PIECE_VALUES_CP.get(captured_piece.piece_type, 0)
-                if captured_piece
-                else 0
-            )
-            gains.append(gain)
-
-            sim_board.push(best_attacker_move)
-
-        # Minimax backwards through the capture sequence
-        score = 0
-        for i in range(len(gains) - 1, -1, -1):
-            score = max(0, gains[i] - score)
-
-        return score
+        return self._cpp.see(board=board, move=move)
 
     def on_beta_cutoff(
         self,
@@ -307,29 +206,13 @@ class MoveSorter:
             is_tactical: Whether the cutoff move was tactical (capture/promotion).
 
         """
-        if is_tactical:
-            return
-
-        if self.config.use_killer_moves:
-            killers = self.killer_moves.setdefault(ply, [])
-            if move in killers:
-                return
-            killers.insert(0, move)
-            max_killers = max(1, self.config.killer_slots_per_ply)
-            if len(killers) > max_killers:
-                del killers[max_killers:]
-
-        if self.config.use_history_heuristic:
-            key = self._move_key(move)
-            bonus = depth * depth
-            current = self.history_table.get(key, 0)
-            self.history_table[key] = min(
-                current + bonus,
-                self.config.history_max_score,
-            )
-
-        if self.config.use_countermove_heuristic and previous_move is not None:
-            self.countermove_table[self._move_key(previous_move)] = move
+        self._cpp.on_beta_cutoff(
+            move=move,
+            ply=ply,
+            depth=depth,
+            previous_move=previous_move,
+            is_tactical=is_tactical,
+        )
 
     def history_saturation(self) -> float:
         """Return the history table saturation as a percentage (0-100).
@@ -340,34 +223,4 @@ class MoveSorter:
             The history table saturation percentage.
 
         """
-        if not self.config.use_history_heuristic or not self.history_table:
-            return 0.0
-        max_score = float(self.config.history_max_score)
-        avg_score = sum(self.history_table.values()) / len(self.history_table)
-        return min(100.0, (avg_score / max_score) * 100.0)
-
-    @staticmethod
-    def _is_promotion(move: chess.Move) -> bool:
-        """Check if a move is a promotion.
-
-        Args:
-            move: The move to check.
-
-        Returns:
-            True if the move is a promotion, False otherwise.
-
-        """
-        return int(move.promotion) != 0
-
-    @staticmethod
-    def _move_key(move: chess.Move) -> tuple[int, int, int]:
-        """Generate a hashable key for a move.
-
-        Args:
-            move: The move to generate a key for.
-
-        Returns:
-            A tuple of (from_square, to_square, promotion) representing the move.
-
-        """
-        return move.from_square, move.to_square, int(move.promotion)
+        return self._cpp.history_saturation()

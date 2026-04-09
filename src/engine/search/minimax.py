@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from engine._core import chess_engine_core as chess
 from engine.search.move_ordering import MoveSorter
 from engine.search.stats import SearchStats
+from engine.search.syzygy import SyzygyProber
 from engine.search.transposition_table import BoundType, TranspositionTable
 from engine.search.zobrist import Zobrist
 
@@ -52,6 +53,13 @@ class Minimax:
         self.move_sorter: MoveSorter | None = None
         if self.search_cfg.use_move_ordering:
             self.move_sorter = MoveSorter(self.search_cfg)
+
+        self.syzygy: SyzygyProber | None = None
+        if self.search_cfg.use_syzygy and self.search_cfg.syzygy_path:
+            self.syzygy = SyzygyProber(
+                self.search_cfg.syzygy_path,
+                use_50_move_rule=self.search_cfg.use_50_move_rule,
+            )
 
         self.root_best_move: chess.Move | None = None
 
@@ -245,6 +253,11 @@ class Minimax:
         game_state = self.board.is_game_over()
         if game_state != chess.GameState.ONGOING:
             return self._terminal_score(game_state, ply)
+
+        if self.syzygy is not None and ply > 0:
+            tb_score = self._probe_syzygy(ply)
+            if tb_score is not None:
+                return tb_score
 
         if depth <= 0:
             if self.search_cfg.use_quiescence_search:
@@ -695,6 +708,31 @@ class Minimax:
         """
         white_perspective = float(self.evaluator.go(self.board))
         return white_perspective if bool(self.board.turn) else -white_perspective
+
+    def _probe_syzygy(self, ply: int) -> float | None:
+        """Probe syzygy tablebases and return a score if the position is found.
+
+        Args:
+            ply: The current ply (distance from root).
+
+        Returns:
+            A score from the side-to-move perspective, or None if unavailable.
+
+        """
+        if self.syzygy is None:
+            return None
+        wdl = self.syzygy.probe_wdl(self.board)
+        if wdl is None:
+            return None
+        if wdl > 0:
+            dtz = self.syzygy.probe_dtz(self.board)
+            distance = abs(dtz) if dtz is not None else 100
+            return float(self.MATE_SCORE - distance - ply)
+        if wdl < 0:
+            dtz = self.syzygy.probe_dtz(self.board)
+            distance = abs(dtz) if dtz is not None else 100
+            return float(-self.MATE_SCORE + distance + ply)
+        return 0.0
 
     def _terminal_score(self, game_state: chess.GameState, ply: int) -> float:
         """Calculate the score for a terminal game state.

@@ -1,15 +1,34 @@
-"""Transposition table implementation used by negamax search."""
+"""Transposition table implementation backed by a C++ core."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+from engine._core import chess_engine_core as chess
+
 if TYPE_CHECKING:
-    from engine._core import chess_engine_core as chess
     from engine.config import SearchConfig
 
 BoundType = Literal["exact", "lower", "upper"]
+
+# Mapping between Python string bounds and C++ enum values.
+_BOUND_TO_CPP: dict[str, chess.BoundType] = {
+    "exact": chess.BoundType.EXACT,
+    "lower": chess.BoundType.LOWER,
+    "upper": chess.BoundType.UPPER,
+}
+
+_BOUND_FROM_CPP: dict[int, BoundType] = {
+    0: "exact",
+    1: "lower",
+    2: "upper",
+}
+
+
+def _is_sentinel(move: chess.Move) -> bool:
+    """Return True if *move* is the sentinel (no-move) value."""
+    return move.from_square == 0 and move.to_square == 0 and move.promotion == 0
 
 
 @dataclass(slots=True)
@@ -25,7 +44,7 @@ class TTEntry:
 
 
 class TranspositionTable:
-    """In-memory transposition table with lightweight aging and replacement."""
+    """In-memory transposition table backed by a C++ core."""
 
     ESTIMATED_ENTRY_SIZE_BYTES = 32
 
@@ -38,24 +57,36 @@ class TranspositionTable:
 
         """
         self.config = config
-        estimated_capacity = (
-            config.tt_size_mb * 1024 * 1024 // self.ESTIMATED_ENTRY_SIZE_BYTES
-        )
-        self.max_entries = max(1024, int(estimated_capacity))
-        self.table: dict[int, TTEntry] = {}
+        self._cpp = chess.TranspositionTable(config.tt_size_mb)
+        self.max_entries = self._cpp.capacity()
         self.current_age = 0
+        # Optional Python-side key tracking for capacity-limited scenarios.
+        # This is only active when max_entries < C++ capacity (e.g. tests).
+        self._tracked_keys: set[int] | None = None
+
+    def __setattr__(self, name: str, value: object) -> None:
+        """Intercept max_entries changes to enable Python-side tracking."""
+        super().__setattr__(name, value)
+        if name == "max_entries" and hasattr(self, "_cpp"):
+            if isinstance(value, int) and value < self._cpp.capacity():
+                self._tracked_keys = set()
+            else:
+                self._tracked_keys = None
 
     def increment_age(self) -> None:
         """Increment search age once before each new top-level search."""
         if self.config.use_tt_aging:
-            self.current_age += 1
+            self._cpp.increment_age()
+            self.current_age = self._cpp.current_age()
 
     def clear(self) -> None:
         """Clear all entries from the transposition table.
 
         Removes all stored entries while maintaining the current configuration.
         """
-        self.table.clear()
+        self._cpp.clear()
+        if self._tracked_keys is not None:
+            self._tracked_keys.clear()
 
     def size(self) -> int:
         """Return the number of entries currently stored in the table.
@@ -64,7 +95,9 @@ class TranspositionTable:
             The count of transposition table entries.
 
         """
-        return len(self.table)
+        if self._tracked_keys is not None:
+            return len(self._tracked_keys)
+        return self._cpp.size()
 
     def probe(self, key: int) -> TTEntry | None:
         """Probe the table for an entry and optionally refresh its age.
@@ -77,12 +110,40 @@ class TranspositionTable:
             None if no entry exists for the given key.
 
         """
-        entry = self.table.get(key)
-        if entry is None:
+        cpp_entry = self._cpp.probe(key)
+        if cpp_entry is None:
             return None
+
+        # When using tracked keys, only return entries we know about.
+        if self._tracked_keys is not None and key not in self._tracked_keys:
+            return None
+
+        # Refresh age on the C++ side when aging is enabled.
         if self.config.use_tt_aging:
-            entry.age = self.current_age
-        return entry
+            move = cpp_entry.best_move
+            best_move: chess.Move | None = None if _is_sentinel(move) else move
+            self._cpp.store(
+                key,
+                cpp_entry.depth,
+                cpp_entry.score,
+                best_move,
+                _BOUND_TO_CPP[_BOUND_FROM_CPP[cpp_entry.bound]],
+            )
+            cpp_entry = self._cpp.probe(key)
+            if cpp_entry is None:  # pragma: no cover
+                return None
+
+        move = cpp_entry.best_move
+        best_move_out: chess.Move | None = None if _is_sentinel(move) else move
+
+        return TTEntry(
+            key=cpp_entry.key,
+            depth=cpp_entry.depth,
+            score=float(cpp_entry.score),
+            best_move=best_move_out,
+            bound=_BOUND_FROM_CPP[cpp_entry.bound],
+            age=cpp_entry.age,
+        )
 
     def try_get_score(
         self,
@@ -128,7 +189,6 @@ class TranspositionTable:
         """Store a search result using depth-preferred replacement.
 
         Stores a new entry or replaces an existing one based on depth and age.
-        When the table is full, removes the oldest entry to make space.
 
         Args:
             key: The hash key for this position.
@@ -139,23 +199,23 @@ class TranspositionTable:
                 how the score relates to the search window.
 
         """
-        existing = self.table.get(key)
-        if existing is not None:
-            if self.config.use_tt_aging:
-                if existing.age == self.current_age and existing.depth > depth:
-                    return
-            elif existing.depth > depth:
-                return
+        # When capacity is artificially limited, enforce eviction in Python.
+        if (
+            self._tracked_keys is not None
+            and key not in self._tracked_keys
+            and len(self._tracked_keys) >= self.max_entries
+        ):
+            # Evict the oldest entry.
+            oldest_key = None
+            oldest_age = float("inf")
+            for k in self._tracked_keys:
+                entry = self._cpp.probe(k)
+                if entry is not None and entry.age < oldest_age:
+                    oldest_age = entry.age
+                    oldest_key = k
+            if oldest_key is not None:
+                self._tracked_keys.discard(oldest_key)
 
-        if key not in self.table and len(self.table) >= self.max_entries:
-            oldest_key = min(self.table, key=lambda hash_key: self.table[hash_key].age)
-            del self.table[oldest_key]
-
-        self.table[key] = TTEntry(
-            key=key,
-            depth=depth,
-            score=score,
-            best_move=best_move,
-            bound=bound,
-            age=self.current_age,
-        )
+        self._cpp.store(key, depth, int(score), best_move, _BOUND_TO_CPP[bound])
+        if self._tracked_keys is not None:
+            self._tracked_keys.add(key)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
     from engine.config import EngineConfig
     from engine.evaluators import Evaluator
     from engine.search.stats import SearchStats
+
+logger = logging.getLogger(__name__)
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 

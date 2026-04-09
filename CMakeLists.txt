@@ -15,12 +15,18 @@ pybind11_add_module(chess_engine_core
     src/engine/_cpp/move_generation/move_generation.cpp
     src/engine/_cpp/move_generation/bindings.cpp
     src/engine/_cpp/search/search.cpp
+    src/engine/_cpp/search/move_ordering.cpp
+    src/engine/_cpp/search/transposition_table.cpp
     src/engine/_cpp/search/zobrist.cpp
     src/engine/_cpp/search/bindings.cpp
     src/engine/_cpp/extractors/extractors.cpp
     src/engine/_cpp/extractors/bindings.cpp
     src/engine/_cpp/pgn/pgn.cpp
     src/engine/_cpp/pgn/bindings.cpp
+    src/engine/_cpp/eval/eval.cpp
+    src/engine/_cpp/eval/bindings.cpp
+    src/engine/_cpp/syzygy/syzygy.cpp
+    src/engine/_cpp/syzygy/bindings.cpp
 )
 
 target_include_directories(chess_engine_core PRIVATE
@@ -31,12 +37,18 @@ target_include_directories(chess_engine_core PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/search
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/extractors
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/pgn
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/eval
+    ${CMAKE_SOURCE_DIR}/src/engine/_cpp/syzygy
 )
 
 target_compile_definitions(chess_engine_core PRIVATE
     VERSION_INFO="dev"
     NDEBUG
 )
+
+# ── Threading (for Lazy SMP) ────────────────────────────────────────────
+find_package(Threads REQUIRED)
+target_link_libraries(chess_engine_core PRIVATE Threads::Threads)
 
 # Release-mode flags (scikit-build-core sets CMAKE_BUILD_TYPE=Release)
 if(NOT MSVC)
@@ -50,8 +62,9 @@ if(NOT MSVC)
         -flto
         -Wall
         -Wextra
+        -pthread
     )
-    target_link_options(chess_engine_core PRIVATE -flto -O3)
+    target_link_options(chess_engine_core PRIVATE -flto -O3 -pthread)
 else()
     target_compile_options(chess_engine_core PRIVATE /O2 /W3 /GL)
     target_link_options(chess_engine_core PRIVATE /LTCG)

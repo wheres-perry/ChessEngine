@@ -114,6 +114,19 @@ class SearchConfig:
     tt_size_mb: int = 64
     use_tt_aging: bool = True
 
+    # ========================================================================
+    # Endgame Tablebases
+    # ========================================================================
+    use_syzygy: bool = False
+    syzygy_path: str = ""
+    use_50_move_rule: bool = True
+
+    # ========================================================================
+    # Lazy SMP (Symmetric Multi-Processing)
+    # ========================================================================
+    use_lazy_smp: bool = False
+    smp_num_threads: int = 1
+
 
 @dataclass
 class EvaluationConfig:

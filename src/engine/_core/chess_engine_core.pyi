@@ -132,6 +132,51 @@ class Board:
     def perft(self, depth: int) -> int: ...
     def pretty(self) -> str: ...
 
+# ── Transposition Table ─────────────────────────────────────────────
+
+class BoundType:
+    EXACT: BoundType
+    LOWER: BoundType
+    UPPER: BoundType
+    @property
+    def name(self) -> str: ...
+    @property
+    def value(self) -> int: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __ne__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
+
+class TTEntry:
+    key: int
+    score: int
+    best_move: Move
+    depth: int
+    bound: int
+    age: int
+    def __repr__(self) -> str: ...
+
+class TranspositionTable:
+    def __init__(self, size_mb: int = 64) -> None: ...
+    def resize(self, size_mb: int) -> None: ...
+    def clear(self) -> None: ...
+    def increment_age(self) -> None: ...
+    def probe(self, key: int) -> TTEntry | None: ...
+    def try_get_score(
+        self, entry: TTEntry, depth: int, alpha: int, beta: int
+    ) -> int | None: ...
+    def store(
+        self,
+        key: int,
+        depth: int,
+        score: int,
+        best_move: Move | None,
+        bound: BoundType,
+    ) -> None: ...
+    def size(self) -> int: ...
+    def capacity(self) -> int: ...
+    def hashfull(self) -> int: ...
+    def current_age(self) -> int: ...
+
 class Zobrist:
     def __init__(self) -> None: ...
     def hash_board(self, board: Board) -> int: ...
@@ -141,28 +186,173 @@ class Zobrist:
     def set_current_hash(self, hash_val: int) -> None: ...
     def invalidate_hash(self) -> None: ...
 
+# ── SearchConfig ──────────────────────────────────────────────────────
+
+class SearchConfig:
+    # Move ordering
+    use_move_ordering: bool
+    use_mvv_lva: bool
+    use_history_heuristic: bool
+    use_countermove_heuristic: bool
+    use_see_ordering: bool
+    use_killer_moves: bool
+    use_hash_move_ordering: bool
+    history_max_score: int
+    killer_slots_per_ply: int
+    see_capture_threshold: int
+    # Search algorithms
+    use_alpha_beta: bool
+    use_pvs: bool
+    use_quiescence_search: bool
+    qs_max_depth: int
+    use_iid: bool
+    iid_min_depth: int
+    iid_depth_reduction: int
+    # Pruning
+    use_null_move_pruning: bool
+    nmp_reduction_r: int
+    nmp_min_depth: int
+    use_lmr: bool
+    lmr_min_depth: int
+    lmr_min_move_number: int
+    use_futility_pruning: bool
+    futility_margin_standard: int
+    use_extended_futility_pruning: bool
+    futility_margin_extended: int
+    use_reverse_futility_pruning: bool
+    rfp_margin_multiplier: int
+    rfp_max_depth: int
+    use_delta_pruning: bool
+    delta_margin: int
+    use_see_pruning_in_qs: bool
+    # State & hashing
+    use_aspiration_windows: bool
+    aspiration_window_margin: int
+    use_check_extensions: bool
+    max_check_extensions: int
+    use_transposition_table: bool
+    tt_size_mb: int
+    use_tt_aging: bool
+    # Syzygy
+    use_syzygy: bool
+    use_50_move_rule: bool
+    # Lazy SMP
+    use_lazy_smp: bool
+    smp_num_threads: int
+    # Time
+    max_time: float
+    has_max_time: bool
+    def __init__(self) -> None: ...
+
 class SearchStats:
     nodes: int
-    qsearch_nodes: int
     depth: int
     seldepth: int
-    score: int
-    best_move: Move | None
     tt_hits: int
     hashfull: int
     beta_cutoffs: int
     first_move_cuts: int
     killer_cuts: int
     history_cuts: int
+    qsearch_nodes: int
     null_move_cuts: int
     pvs_researches: int
+    lmr_researches: int
+    qs_see_pruning: int
+    qs_delta_pruning: int
+    check_extensions: int
+    iid_searches: int
     root_move_changes: int
+    history_saturation: float
+    score: int
+    best_move: Move
+    def __repr__(self) -> str: ...
 
 class Search:
-    def __init__(self, board: Board) -> None: ...
-    def search(self, depth: int) -> int: ...
+    def __init__(
+        self,
+        board: Board,
+        config: SearchConfig,
+        evaluator: CppEvaluator,
+        syzygy: CppSyzygyProber | None = None,
+    ) -> None: ...
+    def find_best_move(self, depth: int) -> tuple[int, Move]: ...
     def get_stats(self) -> SearchStats: ...
-    def reset_stats(self) -> None: ...
+    def reset_state(
+        self,
+        clear_tt: bool = True,
+        clear_history: bool = True,
+        clear_killers: bool = True,
+    ) -> None: ...
+
+class MoveSorterConfig:
+    use_move_ordering: bool
+    use_mvv_lva: bool
+    use_history_heuristic: bool
+    use_countermove_heuristic: bool
+    use_see_ordering: bool
+    use_killer_moves: bool
+    use_hash_move_ordering: bool
+    history_max_score: int
+    killer_slots_per_ply: int
+    see_capture_threshold: int
+    def __init__(self) -> None: ...
+
+class MoveSorter:
+    def __init__(self, config: MoveSorterConfig) -> None: ...
+    def sort_moves(
+        self,
+        board: Board,
+        moves: list[Move],
+        ply: int,
+        hash_move: Move | None,
+        previous_move: Move | None,
+    ) -> list[Move]: ...
+    def sort_tactical(self, board: Board, moves: list[Move]) -> list[Move]: ...
+    def see(self, board: Board, move: Move) -> int: ...
+    def on_beta_cutoff(
+        self,
+        move: Move,
+        ply: int,
+        depth: int,
+        previous_move: Move | None,
+        is_tactical: bool,
+    ) -> None: ...
+    def history_saturation(self) -> float: ...
+    def reset(self, clear_history: bool = True, clear_killers: bool = True) -> None: ...
+    def get_killers(self, ply: int) -> list[Move]: ...
+    def get_history(self, from_sq: int, to_sq: int, promo: int) -> int: ...
+    def get_history_table(self) -> dict[tuple[int, int, int], int]: ...
+    def get_killer_moves_dict(self) -> dict[int, list[Move]]: ...
+
+# ── Evaluator ──────────────────────────────────────────────────────
+
+class EvalConfig:
+    use_pst: bool
+    use_pawn_structure: bool
+    use_mobility: bool
+    use_king_safety: bool
+    game_stage_conscious: bool
+    def __init__(self) -> None: ...
+
+class CppEvaluator:
+    def __init__(self, config: EvalConfig) -> None: ...
+    def go(self, board: Board) -> int: ...
+
+# ── Syzygy ─────────────────────────────────────────────────────────
+
+class CppSyzygyProber:
+    def __init__(
+        self,
+        path: str,
+        use_50_move_rule: bool,
+        wdl_func: object,
+        dtz_func: object,
+    ) -> None: ...
+    @staticmethod
+    def piece_count(board: Board) -> int: ...
+    def probe_wdl(self, board: Board) -> int | None: ...
+    def probe_dtz(self, board: Board) -> int | None: ...
 
 # ── Free functions ───────────────────────────────────────────────────
 

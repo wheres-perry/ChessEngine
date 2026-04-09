@@ -17,6 +17,7 @@ testing.
 from engine.evaluators.base import EvalComponent, Evaluator, compute_game_phase
 from engine.evaluators.factory import (
     CompositeEvaluator,
+    CppEvaluatorWrapper,
     EvaluatorFactory,
     MockEvaluator,
     SimpleEvaluator,
@@ -24,6 +25,7 @@ from engine.evaluators.factory import (
 
 __all__ = [
     "CompositeEvaluator",
+    "CppEvaluatorWrapper",
     "EvalComponent",
     "Evaluator",
     "EvaluatorFactory",
