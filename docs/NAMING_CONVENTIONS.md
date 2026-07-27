@@ -38,10 +38,9 @@ When testing multiple edge cases of the same logic, **always** use parameterizat
     [
         ("4k3/8... w K - 0 1", 4, "Prevented castle due to block"),
         ("r3k3/8... b - - 0 1", 3, "No queen castle thru attacker"),
-    ]
+    ],
 )
-def test_move_generation_edge_cases(fen, expected_count, description):
-    ...
+def test_move_generation_edge_cases(fen, expected_count, description): ...
 ```
 
 ### C. Fixtures

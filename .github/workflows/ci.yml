@@ -1,15 +1,16 @@
 # ──────────────────────────────────────────────────────────────────────
-# Chess Engine CI/CD Pipeline
+# Moray CI/CD Pipeline
 #
 # Branching model:
-#   feature/*  →  dev  →  main (prod)
+#   feature/*  →  dev  →  main (release)
 #
-# Gate tiers:
-#   1. feature/*  — lint + types + fast tests       (every push)
-#   2. PR/dev/main — full tests                       (PRs + pushes to dev/main)
-#   3. dev push    — benchmark persistence + dashboard
-#   4. main PR     — benchmark regression compare
-#   5. main PR     — sanitizers
+# Hybrid Gate Architecture:
+#   1. feature/* pushes : lint + types + fast tests (~10s)
+#   2. dev PR / push    : full unit/integration/parity test suite (~1-2 min)
+#   3. dev push         : benchmark persistence + GitHub Pages dashboard
+#   4. PR label 'elo-test' or workflow_dispatch : Stockfish 18 Elo estimation
+#                         match + automated PR comment report
+#   5. main PR / release: full test suite + sanitizers + release Elo certification
 # ──────────────────────────────────────────────────────────────────────
 name: CI
 
@@ -18,45 +19,58 @@ on:
     branches: [main, dev, "feature/**"]
   pull_request:
     branches: [main, dev]
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      opponent_elo:
+        description: 'Stockfish 18 UCI_Elo rating'
+        required: true
+        default: '1700'
+      game_pairs:
+        description: 'Number of paired opening games (e.g. 30 = 60 games)'
+        required: true
+        default: '30'
+      search_depth:
+        description: 'Moray search depth'
+        required: true
+        default: '5'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ── Gate 1: Fast checks (every push, every PR) ──────────────────────
+  # ── Gate 1: Fast checks (every push to feature/*, dev, main) ───────
   lint-and-types:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: wntrblm/nox@main
-      - run: nox -s lint types
+      - run: uv run nox -s lint types
 
   tests-fast:
     needs: lint-and-types
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: wntrblm/nox@main
-      - run: nox -s tests_fast
+      - run: uv run nox -s tests_fast
 
-  # ── Gate 2: Full tests (PRs into dev/main, pushes to dev/main) ─────
+  # ── Gate 2: Full test suite (PRs into dev/main, pushes to dev/main) ─
   tests-all:
     needs: tests-fast
     if: >-
       github.event_name == 'pull_request'
       || github.ref == 'refs/heads/dev'
       || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-22.04
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: wntrblm/nox@main
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y build-essential
 
@@ -70,22 +84,21 @@ jobs:
 
       - name: Download Syzygy tables
         if: steps.cache-syzygy.outputs.cache-hit != 'true'
-        run: python scripts/download_syzygy.py
+        run: uv run python scripts/download_syzygy.py
 
-      - run: nox -s tests_all
+      - run: uv run nox -s tests_all
 
   # ── Gate 3: Benchmarks (dev branch — persist baselines) ────────────
   benchmarks:
     needs: tests-all
     if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: wntrblm/nox@main
       - name: Run benchmarks and save baseline
-        run: nox -s benchmarks
+        run: uv run nox -s benchmarks
 
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v4
@@ -109,14 +122,13 @@ jobs:
   benchmark-compare:
     needs: tests-all
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: wntrblm/nox@main
       - name: Run benchmarks
-        run: nox -s benchmarks
+        run: uv run nox -s benchmarks
 
       - name: Compare against baseline
         uses: benchmark-action/github-action-benchmark@v1
@@ -133,14 +145,56 @@ jobs:
   sanitizers:
     needs: tests-all
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: wntrblm/nox@main
       - name: Install build tools + ASan
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libasan6
-      - run: nox -s sanitizers
+          sudo apt-get install -y build-essential libasan8
+      - run: uv run nox -s sanitizers
+
+  # ── Gate 6: Elo Match (PR Label 'elo-test' / workflow_dispatch / main) ──
+  elo-test:
+    needs: tests-fast
+    if: >-
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'elo-test'))
+      || github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'pull_request' && github.base_ref == 'main')
+      || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Stockfish 18
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stockfish
+
+      - name: Run Stockfish Elo Match
+        id: run-elo
+        run: |
+          ELO="${{ inputs.opponent_elo || '1700' }}"
+          PAIRS="${{ inputs.game_pairs || '30' }}"
+          DEPTH="${{ inputs.search_depth || '5' }}"
+          uv run python scripts/match_stockfish.py --elo "$ELO" --pairs "$PAIRS" --depth "$DEPTH" | tee elo_report.txt
+
+      - name: Format PR Comment Markdown
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## ♟️ Moray Elo Estimation Benchmark Report" > elo_comment.md
+          echo "" >> elo_comment.md
+          echo "```text" >> elo_comment.md
+          cat elo_report.txt >> elo_comment.md
+          echo "```" >> elo_comment.md
+
+      - name: Post Elo Report on Pull Request
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: elo_comment.md
+          comment_tag: elo-benchmark-report

@@ -25,7 +25,7 @@
 ## Configuration & Tooling
 - [x] Dependency Resolution with z3 solver for config validation
 - [ ] Expand UCI options support (e.g., MultiPV, Hash size, Threads)
-- [ ] Automated Elo regression testing in CI
+- [x] Automated Elo regression testing in CI with Stockfish 18 & `elo-test` PR label
 
 ## Proposed Future Ideas
 - [ ] **Multi-threading (Lazy SMP)**: Parallelize search across multiple CPU cores.

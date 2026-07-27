@@ -246,6 +246,21 @@ All sessions use `uv` as the venv backend. The shared `_install()` helper runs `
 | `benchmarks`       | heavy | All benchmarks, JSON output, autosave          |
 | `sanitizers`       | heavy | Rebuild C++ with ASAN, run unit+smoke+search   |
 
+## Elo Benchmarking & CI Integration
+
+Moray includes automated Elo estimation against Stockfish 18.
+
+### Running Matches Locally
+```bash
+# Run a 60-game match against Stockfish 18 (1700 Elo) at depth 5
+uv run python scripts/match_stockfish.py --elo 1700 --pairs 30 --depth 5
+```
+
+### GitHub Actions Hybrid Elo Model
+- **`elo-test` PR Label**: Add the `elo-test` label to any Pull Request. The CI runner will execute a Stockfish 18 benchmark match and post a formatted markdown comment on the PR with win/draw/loss counts, score %, relative Elo difference, and 95% confidence intervals.
+- **`workflow_dispatch`**: Trigger a custom match on demand from the GitHub Actions UI with configurable opponent Elo rating, game counts, and search depth.
+- **Main Release Certification**: Merging to `main` runs full sanitizers (ASAN/UBSAN) and the release Elo certification campaign.
+
 ## Zobrist Hashing
 
 Zobrist hashing is implemented entirely in C++ (`src/engine/_cpp/zobrist_keys.hpp`) and exposed to Python via pybind11 as `moray_core.Zobrist`.

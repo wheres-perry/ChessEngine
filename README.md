@@ -101,3 +101,20 @@ Run the full test suite (including slow benchmarks/parity tests):
 ```bash
 docker run --rm moray_dev nox -s tests_all
 ```
+
+## Elo Benchmarking
+
+Moray includes automated Elo estimation against Stockfish 18.
+
+### Running Elo Matches Locally
+```bash
+# Run a 60-game benchmark match against Stockfish 18 (1700 Elo)
+uv run python scripts/match_stockfish.py --elo 1700 --pairs 30 --depth 5
+```
+
+### CI/CD Elo Pipeline & PR Labeling
+GitHub Actions uses a hybrid Elo testing model:
+- **Fast Feedback**: Every push to a feature branch runs linting, type-checking, and fast unit tests (~10s).
+- **On-Demand PR Elo Benchmark (`elo-test`)**: Add the **`elo-test`** label to any Pull Request. CI will automatically run a 60-game match against Stockfish 18, calculate the Elo rating difference with 95% confidence intervals, and post an automated markdown report directly in the PR comments.
+- **Manual Trigger (`workflow_dispatch`)**: Trigger a custom match from the GitHub Actions UI with custom opponent Elo rating, game count, and search depth.
+- **Release Certification**: Merging into `main` automatically runs full sanitizers (ASAN/UBSAN) and the release Elo certification campaign.

@@ -14,7 +14,6 @@
 
 #include "../board/board.hpp"
 
-
 namespace evaluators {
 
 [[nodiscard]] double compute_game_phase(const Board &board) noexcept;

@@ -189,43 +189,14 @@ module = "engine._core"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "nox"
+module = "engine._core.*"
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "nox.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "noxfile"
-disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
 module = "engine.*"
 disallow_untyped_calls = false
 disallow_untyped_defs = false
 warn_return_any = false
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-
-[[tool.mypy.overrides]]
-module = "torch.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pybind11.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "setuptools.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "engine._core.*"
-ignore_missing_imports = true
 
 # ──────────────────────────────────────────────────────────────────────
 # UV

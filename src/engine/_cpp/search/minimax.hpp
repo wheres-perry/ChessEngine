@@ -18,7 +18,6 @@
 #include "transposition_table.hpp"
 #include "zobrist.hpp"
 
-
 namespace search {
 
 // Statistics collected during a single search.  Mirror of the Python

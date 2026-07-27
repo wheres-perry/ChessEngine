@@ -30,15 +30,15 @@ This standard is automatically enforced via `ruff` in our CI pipeline using the 
 def extract_cnn(board: core.Board) -> np.ndarray:
     """Extract a spatial tensor representation of the chess board for CNN inference.
 
-    Treats the board as an image, encoding piece types, colors, side-to-move, 
-    and castling rights into distinct channels. The output is memory-mapped 
+    Treats the board as an image, encoding piece types, colors, side-to-move,
+    and castling rights into distinct channels. The output is memory-mapped
     directly from the C++ core for zero-copy performance.
 
     Args:
         board: The current C++ Bitboard state.
 
     Returns:
-        A 3D numpy array of shape (17, 8, 8) of type float32. 
+        A 3D numpy array of shape (17, 8, 8) of type float32.
         Channels 0-11 represent pieces, 12 is STM, 13-16 are castling rights.
     """
     pass
