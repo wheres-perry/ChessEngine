@@ -10,7 +10,7 @@ void init_extractors_bindings(py::module_ &m);
 void init_pgn_bindings(py::module_ &m);
 void init_evaluator_bindings(py::module_ &m);
 
-PYBIND11_MODULE(chess_engine_core, m) {
+PYBIND11_MODULE(moray_core, m) {
   m.doc() = "High-performance C++ chess engine core components";
 
   // Initialize each component's bindings

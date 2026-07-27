@@ -68,7 +68,7 @@ def _expect(process: subprocess.Popen[str], pattern: str, timeout: float = 2.0) 
 def test_uci_handshake(engine_process: subprocess.Popen[str]) -> None:
     """Test engine responds to 'uci' with 'id name', 'id author', and 'uciok'."""
     _send(engine_process, "uci")
-    assert _expect(engine_process, "id name ChessEngine")
+    assert _expect(engine_process, "id name Moray")
     assert _expect(engine_process, "id author")
     assert _expect(engine_process, "uciok")
 

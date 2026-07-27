@@ -1,4 +1,4 @@
-# ChessEngine
+# Moray
 
 A modular, high-performance chess engine written in Python with a heavily optimized C++ core.
 
@@ -23,7 +23,7 @@ The project uses Docker to provide a consistent development and execution enviro
 Build the development Docker image:
 
 ```bash
-docker build --target development -t chess_engine_dev .
+docker build --target development -t moray_dev .
 ```
 
 ## Running the Engine
@@ -45,13 +45,13 @@ isready
 position startpos moves e2e4 e7e5
 go depth 4
 quit
-"@ | docker run --rm -i chess_engine_dev python -m engine
+"@ | docker run --rm -i moray_dev python -m engine
 ```
 
 Or run it interactively:
 
 ```bash
-docker run --rm -i chess_engine_dev python -m engine
+docker run --rm -i moray_dev python -m engine
 ```
 *(Then type UCI commands like `uci`, `isready`, `position startpos`, `go depth 4`)*
 
@@ -60,8 +60,8 @@ docker run --rm -i chess_engine_dev python -m engine
 You can connect this engine to chess GUIs like Arena, Cute Chess, or Lucas Chess.
 Simply point the GUI's engine executable configuration to the provided wrapper scripts in the root directory:
 
-- **Windows**: Select `ChessEngine.bat`
-- **macOS / Linux**: Select `ChessEngine.sh` (ensure it has execute permissions: `chmod +x ChessEngine.sh`)
+- **Windows**: Select `Moray.bat`
+- **macOS / Linux**: Select `Moray.sh` (ensure it has execute permissions: `chmod +x Moray.sh`)
 
 These scripts will automatically launch the engine via Docker. The GUI will parse the `uci` output to dynamically generate a settings menu with all available configuration flags.
 
@@ -84,20 +84,20 @@ The project uses `nox` for automation within the Docker container.
 
 Run code linters and formatters:
 ```bash
-docker run --rm chess_engine_dev nox -s lint
+docker run --rm moray_dev nox -s lint
 ```
 
 Run type checking:
 ```bash
-docker run --rm chess_engine_dev nox -s types
+docker run --rm moray_dev nox -s types
 ```
 
 Run the fast test suite:
 ```bash
-docker run --rm chess_engine_dev nox -s tests_fast
+docker run --rm moray_dev nox -s tests_fast
 ```
 
 Run the full test suite (including slow benchmarks/parity tests):
 ```bash
-docker run --rm chess_engine_dev nox -s tests_all
+docker run --rm moray_dev nox -s tests_all
 ```

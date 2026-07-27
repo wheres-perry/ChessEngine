@@ -7,7 +7,7 @@ replacement, aging, and capacity eviction.
 
 from __future__ import annotations
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 from engine.config import SearchConfig
 from engine.search.transposition_table import TranspositionTable
 

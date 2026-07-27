@@ -1,6 +1,6 @@
 """Thin Python wrapper around the C++ negamax searcher.
 
-The real search loop lives in ``engine._core.chess_engine_core.CppMinimax``.
+The real search loop lives in ``engine._core.moray_core.CppMinimax``.
 This module preserves the legacy ``Minimax`` import path and exposes the
 attributes the existing test suite and factory layer touch directly
 (``stats``, ``tt``, ``move_sorter``, ``zobrist``, ``start_time``,
@@ -12,7 +12,7 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 from engine.search.move_ordering import MoveSorter
 from engine.search.stats import SearchStats
 from engine.search.transposition_table import TranspositionTable

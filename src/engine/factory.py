@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from engine._core import chess_engine_core as core
+from engine._core import moray_core as core
 from engine.config_solver import ConfigSolver
 from engine.evaluators import EvaluatorFactory
 from engine.search.minimax import Minimax

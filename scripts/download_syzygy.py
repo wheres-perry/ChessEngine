@@ -46,7 +46,7 @@ MIRROR_BASE = "https://tablebase.lichess.ovh/tables/standard"
 WDL_DIR = f"{MIRROR_BASE}/3-4-5-wdl/"
 DTZ_DIR = f"{MIRROR_BASE}/3-4-5-dtz/"
 
-USER_AGENT = "ChessEngine-SyzygyDownloader/1.0"
+USER_AGENT = "Moray-SyzygyDownloader/1.0"
 
 DEFAULT_SYZYGY_DIR = Path("data/syzygy")
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from engine._core import chess_engine_core as core  # type: ignore
+from engine._core import moray_core as core  # type: ignore
 
 
 def verify_game_state(

@@ -6,7 +6,7 @@ preserve the legacy ``engine.evaluators.components`` path.
 
 from __future__ import annotations
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 _ev = chess.evaluators
 

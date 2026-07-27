@@ -15,7 +15,7 @@ from typing import Any, cast
 import pytest
 
 from engine import EngineConfig, create_engine_runtime
-from engine._core import chess_engine_core as core
+from engine._core import moray_core as core
 from engine.factory import CoreAdapter, CoreBoardAdapter, create_core_adapter
 
 # ============================================================================

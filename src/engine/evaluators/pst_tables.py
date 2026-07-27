@@ -4,7 +4,7 @@ Contains middlegame and endgame piece-square tables for all piece types.
 Tables are from White's perspective (index 0 = a1, 63 = h8).
 """
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 
 def make_table(values: list[int]) -> list[float]:

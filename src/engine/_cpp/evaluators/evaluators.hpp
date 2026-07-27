@@ -14,13 +14,6 @@
 
 #include "../board/board.hpp"
 
-#if defined(__GNUC__) || defined(__clang__)
-#define EV_LIKELY(x) __builtin_expect(!!(x), 1)
-#define EV_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#else
-#define EV_LIKELY(x) (x)
-#define EV_UNLIKELY(x) (x)
-#endif
 
 namespace evaluators {
 

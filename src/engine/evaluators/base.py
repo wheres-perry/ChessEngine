@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 # Re-export the C++ game-phase helper under the original name.
 compute_game_phase = chess.evaluators.compute_game_phase

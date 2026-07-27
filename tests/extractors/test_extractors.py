@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from engine._core import chess_engine_core as core
+from engine._core import moray_core as core
 
 
 def test_extract_cnn_starting_position() -> None:

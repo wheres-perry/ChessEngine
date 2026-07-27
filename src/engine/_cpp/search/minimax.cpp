@@ -161,21 +161,20 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
                         std::optional<Move> previous_move,
                         int extensions_left) {
   stats_.nodes += 1;
-  if (MM_UNLIKELY(ply > stats_.seldepth)) {
+  if (ply > stats_.seldepth) {
     stats_.seldepth = ply;
   }
 
-  if (MM_UNLIKELY(stats_.nodes % TIME_CHECK_INTERVAL == 0 &&
-                  check_time_limit())) {
+  if (stats_.nodes % TIME_CHECK_INTERVAL == 0 && check_time_limit()) {
     return relative_eval();
   }
 
   const GameState game_state = board_.is_game_over();
-  if (MM_UNLIKELY(game_state != GameState::ONGOING)) {
+  if (game_state != GameState::ONGOING) {
     return terminal_score(game_state, ply);
   }
 
-  if (MM_UNLIKELY(depth <= 0)) {
+  if (depth <= 0) {
     if (config_.use_quiescence_search) {
       return quiescence(alpha, beta, ply, 0);
     }
@@ -183,8 +182,8 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
   }
 
   bool in_check = board_.is_check();
-  if (config_.use_check_extensions && MM_UNLIKELY(in_check) &&
-      extensions_left > 0 && config_.use_alpha_beta) {
+  if (config_.use_check_extensions && in_check && extensions_left > 0 &&
+      config_.use_alpha_beta) {
     depth += 1;
     extensions_left -= 1;
     stats_.check_extensions += 1;
@@ -192,15 +191,15 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
 
   const auto key_opt = current_hash();
   std::optional<Move> hash_move;
-  if (MM_LIKELY(tt_ != nullptr && key_opt.has_value())) {
+  if (tt_ != nullptr && key_opt.has_value()) {
     TTEntry *entry = tt_->probe(*key_opt);
     if (entry != nullptr) {
       if (entry->has_best_move) {
         hash_move = entry->best_move;
       }
-      if (MM_LIKELY(config_.use_alpha_beta)) {
+      if (config_.use_alpha_beta) {
         auto hit_score = tt_->try_get_score(*entry, depth, alpha, beta);
-        if (MM_UNLIKELY(hit_score.has_value())) {
+        if (hit_score.has_value()) {
           if (ply == 0 && entry->has_best_move) {
             root_best_move_ = entry->best_move;
           }
@@ -223,7 +222,7 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
       !in_check && depth <= config_.rfp_max_depth && beta < POS_INF) {
     const double margin =
         static_cast<double>(config_.rfp_margin_multiplier * depth);
-    if (MM_UNLIKELY(static_eval - margin >= beta)) {
+    if (static_eval - margin >= beta) {
       return beta;
     }
   }
@@ -233,7 +232,7 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
       beta < POS_INF) {
     const double null_score =
         null_move_search(depth, beta, ply, extensions_left);
-    if (MM_UNLIKELY(null_score >= beta)) {
+    if (null_score >= beta) {
       stats_.null_move_cuts += 1;
       return beta;
     }
@@ -295,10 +294,10 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
 
     pop_move_with_hash(saved_hash);
 
-    if (MM_UNLIKELY(score > best_score)) {
+    if (score > best_score) {
       best_score = score;
       best_move = move;
-      if (MM_UNLIKELY(ply == 0)) {
+      if (ply == 0) {
         if (!root_best_move_.has_value() || *root_best_move_ != move) {
           stats_.root_move_changes += 1;
         }
@@ -306,9 +305,9 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
       }
     }
 
-    if (MM_LIKELY(config_.use_alpha_beta)) {
+    if (config_.use_alpha_beta) {
       alpha = std::max(alpha, score);
-      if (MM_UNLIKELY(alpha >= beta)) {
+      if (alpha >= beta) {
         stats_.beta_cutoffs += 1;
         if (index == 0) {
           stats_.first_move_cuts += 1;

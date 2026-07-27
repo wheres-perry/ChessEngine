@@ -2,7 +2,7 @@
 # Project metadata
 # ──────────────────────────────────────────────────────────────────────
 [project]
-name = "chessengine"
+name = "Moray"
 version = "0.1.0"
 description = "High-performance chess engine with ML evaluation"
 authors = [{ name = "Your Name", email = "you@example.com" }]

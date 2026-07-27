@@ -1,4 +1,4 @@
-# ChessEngine Development Roadmap
+# Moray Development Roadmap
 
 ## Core Testing & Stability
 - [ ] Setup Elo tests with configs and games (simulated and real)

@@ -7,7 +7,7 @@ to ensure PST-based evaluation behaves correctly across all phases.
 import chess as pychess
 import pytest
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 from engine.evaluators.pst_tables import (
     PIECE_SQUARE_TABLES_EG,
     PIECE_SQUARE_TABLES_MG,

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 BoundType = Literal["exact", "lower", "upper"]
 

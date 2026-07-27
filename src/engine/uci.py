@@ -54,7 +54,7 @@ class UCIHandler:
 
     def _uci(self, _args: list[str] | None = None) -> None:
         """Handle uci identification handshake."""
-        _out("id name ChessEngine")
+        _out("id name Moray")
         _out("id author wheres-perry")
 
         for config_obj in (self.config.search, self.config.evaluation):

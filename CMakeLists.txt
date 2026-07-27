@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(chessengine LANGUAGES CXX)
+project(Moray LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(pybind11 CONFIG REQUIRED)
 
 # ── Extension module ─────────────────────────────────────────────────
-pybind11_add_module(chess_engine_core
+pybind11_add_module(moray_core
     src/engine/_cpp/main_bindings.cpp
     src/engine/_cpp/board/board.cpp
     src/engine/_cpp/board/bindings.cpp
@@ -28,7 +28,7 @@ pybind11_add_module(chess_engine_core
     src/engine/_cpp/evaluators/eval_bindings.cpp
 )
 
-target_include_directories(chess_engine_core PRIVATE
+target_include_directories(moray_core PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/_core
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/board
@@ -39,14 +39,14 @@ target_include_directories(chess_engine_core PRIVATE
     ${CMAKE_SOURCE_DIR}/src/engine/_cpp/evaluators
 )
 
-target_compile_definitions(chess_engine_core PRIVATE
+target_compile_definitions(moray_core PRIVATE
     VERSION_INFO="dev"
     NDEBUG
 )
 
 # Release-mode flags (scikit-build-core sets CMAKE_BUILD_TYPE=Release)
 if(NOT MSVC)
-    target_compile_options(chess_engine_core PRIVATE
+    target_compile_options(moray_core PRIVATE
         -O3
         -march=native
         -mtune=native
@@ -57,20 +57,20 @@ if(NOT MSVC)
         -Wall
         -Wextra
     )
-    target_link_options(chess_engine_core PRIVATE -flto -O3)
+    target_link_options(moray_core PRIVATE -flto -O3)
 else()
-    target_compile_options(chess_engine_core PRIVATE /O2 /W3 /GL)
-    target_link_options(chess_engine_core PRIVATE /LTCG)
+    target_compile_options(moray_core PRIVATE /O2 /W3 /GL)
+    target_link_options(moray_core PRIVATE /LTCG)
 endif()
 
 # ── Place .so directly in source tree (needed for editable installs) ──
 # Editable (inplace) builds don't run cmake --install, so we force the
 # output directory so the .so lands where Python can find it.
-set_target_properties(chess_engine_core PROPERTIES
+set_target_properties(moray_core PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/src/engine/_core"
 )
 
 # For wheel builds (non-editable), scikit-build-core uses cmake --install.
-install(TARGETS chess_engine_core
+install(TARGETS moray_core
     DESTINATION engine/_core
 )

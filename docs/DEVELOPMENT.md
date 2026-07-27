@@ -33,12 +33,12 @@ The C++ extension is built with **scikit-build-core** + **CMake** (replaced the 
 | File                              | Role                                                                 |
 | --------------------------------- | -------------------------------------------------------------------- |
 | `pyproject.toml` `[build-system]` | Declares `scikit-build-core` + `pybind11` as build deps              |
-| `CMakeLists.txt`                  | Compiles `chess_engine_core` pybind11 module from `src/engine/_cpp/` |
+| `CMakeLists.txt`                  | Compiles `moray_core` pybind11 module from `src/engine/_cpp/` |
 
 ### How it works
 
 - `uv sync --group dev` triggers an **editable inplace build**: CMake compiles the `.so` directly into `src/engine/_core/`.
-- A `.pth` file adds `/workspace/src` to `sys.path`, so imports use `from engine._core import chess_engine_core`.
+- A `.pth` file adds `/workspace/src` to `sys.path`, so imports use `from engine._core import moray_core`.
 - For wheel builds (non-editable), CMake's `install()` places the `.so` in the wheel at `engine/_core/`.
 
 ### Rebuilding after C++ changes
@@ -248,7 +248,7 @@ All sessions use `uv` as the venv backend. The shared `_install()` helper runs `
 
 ## Zobrist Hashing
 
-Zobrist hashing is implemented entirely in C++ (`src/engine/_cpp/zobrist_keys.hpp`) and exposed to Python via pybind11 as `chess_engine_core.Zobrist`.
+Zobrist hashing is implemented entirely in C++ (`src/engine/_cpp/zobrist_keys.hpp`) and exposed to Python via pybind11 as `moray_core.Zobrist`.
 
 - Keys are generated at **compile time** using a `constexpr` SplitMix64 PRNG seeded from a fixed constant - no runtime initialization cost.
 - Tables are **cache-aligned** (`alignas(64)`) for L1 performance.
@@ -257,7 +257,7 @@ Zobrist hashing is implemented entirely in C++ (`src/engine/_cpp/zobrist_keys.hp
 - `make_null_move_hash(board)` - O(1) incremental hash for a null move (toggles side-to-move and removes en-passant square).
 - `get_current_hash()` / `set_current_hash(h)` - read/write the stored hash value.
 
-The Python wrapper lives in `src/engine/search/zobrist.py` and simply re-exports `Zobrist = chess_engine_core.Zobrist`.
+The Python wrapper lives in `src/engine/search/zobrist.py` and simply re-exports `Zobrist = moray_core.Zobrist`.
 
 Microbenchmarks are in `scripts/bench_zobrist.py`:
 
@@ -307,7 +307,7 @@ Note: foundational toggles such as `search.use_alpha_beta`, `search.use_move_ord
 
 ## C++ Board API Notes
 
-The C++ board (`engine._core.chess_engine_core`) differs from python-chess in a few ways:
+The C++ board (`engine._core.moray_core`) differs from python-chess in a few ways:
 
 | python-chess                    | C++ Board                     | Notes                                           |
 | ------------------------------- | ----------------------------- | ----------------------------------------------- |

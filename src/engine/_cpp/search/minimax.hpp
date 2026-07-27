@@ -18,13 +18,6 @@
 #include "transposition_table.hpp"
 #include "zobrist.hpp"
 
-#if defined(__GNUC__) || defined(__clang__)
-#define MM_LIKELY(x) __builtin_expect(!!(x), 1)
-#define MM_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#else
-#define MM_LIKELY(x) (x)
-#define MM_UNLIKELY(x) (x)
-#endif
 
 namespace search {
 

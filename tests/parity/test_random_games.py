@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import chess as pychess
 import pytest
 
-from engine._core import chess_engine_core as core
+from engine._core import moray_core as core
 
 # Test configuration
 NUM_GAMES = 100

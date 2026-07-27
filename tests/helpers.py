@@ -1,6 +1,6 @@
 """Helper functions for tests to reduce code duplication."""
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 
 def make_candidate_move(board: chess.Board, candidate_moves: list[str]) -> bool:

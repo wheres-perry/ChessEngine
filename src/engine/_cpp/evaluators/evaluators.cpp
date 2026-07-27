@@ -442,7 +442,7 @@ double KingSafetyComponent::score(const Board &board,
   for (const Color color : {Color::WHITE, Color::BLACK}) {
     const double sign = (color == Color::WHITE) ? 1.0 : -1.0;
     auto ks = board.king(color);
-    if (EV_UNLIKELY(!ks.has_value())) {
+    if (!ks.has_value()) {
       continue;
     }
     const int kf = static_cast<int>(square_file(*ks));

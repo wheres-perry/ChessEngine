@@ -1,6 +1,6 @@
-# ChessEngine Comment Style Guide
+# Moray Comment Style Guide
 
-This guide establishes the standard for commenting and documenting code across the `ChessEngine` project. As a high-performance, architecturally complex project, the goal of our comments is to explain **why** and **how**, never *what*.
+This guide establishes the standard for commenting and documenting code across the `Moray` project. As a high-performance, architecturally complex project, the goal of our comments is to explain **why** and **how**, never *what*.
 
 ## 1. Core Philosophy
 

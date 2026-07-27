@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 from engine.evaluators.components import (
     KingSafetyComponent,
     MaterialComponent,
@@ -27,7 +27,7 @@ _ev = chess.evaluators
 CompositeEvaluator = _ev.CompositeEvaluator
 
 # The native IEvaluator pybind11 class cannot be expressed in the current
-# chess_engine_core.pyi stub as a regular importable type, so we fall back
+# moray_core.pyi stub as a regular importable type, so we fall back
 # to ``object`` under TYPE_CHECKING and resolve to the real class at
 # runtime.  Both MockEvaluator and SimpleEvaluator subclass it so that C++
 # code (Minimax, CompositeEvaluator.add_component) can dispatch natively.

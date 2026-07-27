@@ -10,7 +10,7 @@ from engine.evaluators import MockEvaluator
 from engine.search.minimax import Minimax
 
 if TYPE_CHECKING:
-    from engine._core import chess_engine_core as chess
+    from engine._core import moray_core as chess
     from engine.config import EngineConfig
 
 

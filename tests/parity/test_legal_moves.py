@@ -5,7 +5,7 @@ from __future__ import annotations
 import chess as pychess
 import pytest
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 PARITY_FENS: list[str] = [
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",

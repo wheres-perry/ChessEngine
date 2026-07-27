@@ -6,7 +6,7 @@ module preserves the legacy import path so callers keep working unchanged.
 
 from __future__ import annotations
 
-from engine._core import chess_engine_core as chess
+from engine._core import moray_core as chess
 
 MoveSorter = chess.MoveSorter
 

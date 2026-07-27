@@ -1,6 +1,6 @@
-# ChessEngine Naming & Conventions Guide
+# Moray Naming & Conventions Guide
 
-This guide establishes the standard for naming variables, functions, classes, and tests across the `ChessEngine` project. Consistency is key to a maintainable and readable codebase.
+This guide establishes the standard for naming variables, functions, classes, and tests across the `Moray` project. Consistency is key to a maintainable and readable codebase.
 
 ## 1. Core Python Naming Conventions (PEP 8)
 

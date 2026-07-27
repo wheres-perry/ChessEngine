@@ -217,7 +217,7 @@ def sanitizers(session: Session) -> None:
             "--active",
             "--frozen",
             "--reinstall-package",
-            "chessengine",
+            "Moray",
             "--group",
             "dev",
             env=build_env,
@@ -244,7 +244,7 @@ def sanitizers(session: Session) -> None:
             "--active",
             "--frozen",
             "--reinstall-package",
-            "chessengine",
+            "Moray",
             "--group",
             "dev",
         )
