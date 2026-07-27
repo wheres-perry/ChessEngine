@@ -91,3 +91,32 @@ def test_go_fen(engine_process: subprocess.Popen[str]) -> None:
     _send(engine_process, f"position fen {_START_FEN}")
     _send(engine_process, "go depth 1")
     assert _expect(engine_process, "bestmove")
+
+
+def test_go_reported_issue_position_with_time_control(
+    engine_process: subprocess.Popen[str],
+) -> None:
+    """Test engine handles reported move sequence and time control."""
+    position_cmd = (
+        "position startpos moves "
+        "e2e4 b8c6 b1c3 g8f6 d2d4 g7g6 f1b5 c6b4 a2a3 b4c6 "
+        "b5c6 d7c6 g1f3 c8g4 e1g1 g4f3 d1f3 d8d4 c1e3 d4c4 "
+        "a1d1 a7a5 e4e5 f6g4 d1d4 c4f1 g1f1"
+    )
+    _send(engine_process, position_cmd)
+    _send(engine_process, "go wtime 120000 btime 4400 winc 0 binc 0")
+
+    assert engine_process.stdout is not None
+    start = time.time()
+    best_move_line = ""
+    while time.time() - start < 3.0:
+        line = engine_process.stdout.readline()
+        if not line:
+            break
+        if "bestmove" in line:
+            best_move_line = line.strip()
+            break
+
+    assert best_move_line != ""
+    assert "bestmove 0000" not in best_move_line
+    assert "bestmove g4h2" in best_move_line
