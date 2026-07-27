@@ -26,6 +26,8 @@
 - [x] Dependency Resolution with z3 solver for config validation
 - [ ] Expand UCI options support (e.g., MultiPV, Hash size, Threads)
 - [x] Automated Elo regression testing in CI with Stockfish 18 & `elo-test` PR label
+- [ ] Release Python GIL during C++ search (`py::call_guard<py::gil_scoped_release>()`) for non-blocking multi-threading
+- [ ] Optional Standalone C++ UCI Executable Target (`moray_uci`) in `CMakeLists.txt` for single-binary distribution
 
 ## Proposed Future Ideas
 - [ ] **Multi-threading (Lazy SMP)**: Parallelize search across multiple CPU cores.
