@@ -8,7 +8,8 @@ replacement, aging, and capacity eviction.
 from __future__ import annotations
 
 from engine._core import moray_core as chess
-from engine.config import SearchConfig
+from engine.config import EngineConfig, SearchConfig
+from engine.factory import create_engine
 from engine.search.transposition_table import TranspositionTable
 
 
@@ -42,6 +43,20 @@ def test_lower_bound_cutoff_logic() -> None:
 
     assert tt.try_get_score(entry, depth=4, alpha=-10, beta=50) == 80.0
     assert tt.try_get_score(entry, depth=4, alpha=-10, beta=90) is None
+
+
+def test_root_tt_cutoff_without_best_move_returns_legal_move() -> None:
+    """Verify search never returns None on TT root hit without best move."""
+    fen = "r3kb1r/1pp1pp1p/2p3p1/p3P3/3R2n1/P1N1BQ2/1PP2PPP/5K2 b kq - 0 14"
+    engine = create_engine(EngineConfig())
+    engine.set_fen(fen)
+
+    key = engine.searcher.zobrist.hash_board(engine.board)
+    engine.searcher.tt.store(key, 4, -312.0, None, "exact")
+
+    _score, move = engine.find_best_move(depth=4)
+    assert move is not None
+    assert move.uci() in [m.uci() for m in engine.board.generate_legal_moves()]
 
 
 def test_upper_bound_cutoff_logic() -> None:

@@ -1,4 +1,3 @@
-# ── Project-specific ─────────────────────────────────────────────────
 *.zip
 *.pt
 *.pth
@@ -11,7 +10,7 @@ data/models/
 .docker-cache
 validation/
 
-# ── CMake / scikit-build-core (in-place editable build artifacts) ────
+# C++ stuff
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
@@ -23,13 +22,13 @@ build.ninja
 .cmake/
 .skbuild-info.json
 
-# ── Python bytecode / C extensions ───────────────────────────────────
+# Python bytecode / C extensions
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-# ── Packaging / distribution ────────────────────────────────────────
+# Packaging / distribution
 build/
 dist/
 *.egg-info/
@@ -38,7 +37,7 @@ dist/
 wheels/
 MANIFEST
 
-# ── Testing & coverage ──────────────────────────────────────────────
+# Testing & coverage
 .nox/
 .tox/
 .pytest_cache/
@@ -51,14 +50,12 @@ coverage.xml
 *.py,cover
 .benchmarks/
 
-# ── Tooling caches ──────────────────────────────────────────────────
+# Caches/venv
 .mypy_cache/
 .dmypy.json
 .ruff_cache/
 .pytype/
 .pyre/
-
-# ── UV / venv ────────────────────────────────────────────────────────
 .uv/
 .uv-cache/
 .env
@@ -66,7 +63,7 @@ coverage.xml
 env/
 venv/
 
-# ── IDE & editor ────────────────────────────────────────────────────
+# Editor Files
 *.code-workspace
 .idea/
 *.DS_Store

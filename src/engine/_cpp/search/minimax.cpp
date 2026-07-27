@@ -103,6 +103,18 @@ Minimax::Result Minimax::find_best_move(int depth) {
     return result;
   }
 
+  const std::vector<Move> legal_moves = board_.generate_legal_moves();
+  if (legal_moves.empty()) {
+    return result;
+  }
+
+  // Mandatory safeguard: if search completed without setting a root best move,
+  // pick the first legal move as a fallback so the engine never returns nullopt
+  // / 0000.
+  if (!root_best_move_.has_value()) {
+    root_best_move_ = legal_moves[0];
+  }
+
   if (tt_ != nullptr && tt_->max_entries() > 0) {
     stats_.hashfull =
         static_cast<int>((tt_->size() * 1000) / tt_->max_entries());
@@ -200,18 +212,30 @@ double Minimax::negamax(int depth, double alpha, double beta, int ply,
       if (config_.use_alpha_beta) {
         auto hit_score = tt_->try_get_score(*entry, depth, alpha, beta);
         if (hit_score.has_value()) {
-          if (ply == 0 && entry->has_best_move) {
-            root_best_move_ = entry->best_move;
+          if (ply == 0) {
+            if (entry->has_best_move) {
+              root_best_move_ = entry->best_move;
+              stats_.tt_hits += 1;
+              return *hit_score;
+            }
+            // If at root and entry has no best move, do not cut off so
+            // root_best_move_ is populated.
+          } else {
+            stats_.tt_hits += 1;
+            return *hit_score;
           }
-          stats_.tt_hits += 1;
-          return *hit_score;
         }
       } else if (entry->bound == TTBound::EXACT && entry->depth >= depth) {
-        if (ply == 0 && entry->has_best_move) {
-          root_best_move_ = entry->best_move;
+        if (ply == 0) {
+          if (entry->has_best_move) {
+            root_best_move_ = entry->best_move;
+            stats_.tt_hits += 1;
+            return entry->score;
+          }
+        } else {
+          stats_.tt_hits += 1;
+          return entry->score;
         }
-        stats_.tt_hits += 1;
-        return entry->score;
       }
     }
   }

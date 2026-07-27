@@ -133,16 +133,44 @@ class UCIHandler:
                 self.runtime.board.push_uci(move)
 
     def _go(self, args: list[str] | None = None) -> None:
-        """Handle go command."""
+        """Handle go command with time control parsing."""
         if args is None:
             args = []
+
         depth = 4
         if "depth" in args:
-            try:
+            with contextlib.suppress(ValueError, IndexError):
                 idx = args.index("depth")
                 depth = int(args[idx + 1])
-            except (ValueError, IndexError):
-                pass
+
+        # Time control allocation
+        if "movetime" in args:
+            with contextlib.suppress(ValueError, IndexError):
+                idx = args.index("movetime")
+                mtime_ms = int(args[idx + 1])
+                self.config.search.max_time = max(0.01, mtime_ms / 1000.0)
+        elif "wtime" in args or "btime" in args:
+            side_is_white = "b" not in self.runtime.board.fen().split()[1]
+            my_time_key = "wtime" if side_is_white else "btime"
+            my_inc_key = "winc" if side_is_white else "binc"
+
+            my_time_ms = 30000
+            my_inc_ms = 0
+
+            if my_time_key in args:
+                with contextlib.suppress(ValueError, IndexError):
+                    idx = args.index(my_time_key)
+                    my_time_ms = int(args[idx + 1])
+
+            if my_inc_key in args:
+                with contextlib.suppress(ValueError, IndexError):
+                    idx = args.index(my_inc_key)
+                    my_inc_ms = int(args[idx + 1])
+
+            # Allocate time per move: ~1/20th of remaining time + 80% of increment
+            time_sec = (my_time_ms / 20.0 + my_inc_ms * 0.8) / 1000.0
+            max_time_sec = max(0.01, min(my_time_ms / 1000.0 * 0.95, time_sec))
+            self.config.search.max_time = max_time_sec
 
         _score, best_move = self.runtime.searcher.search(depth)
 
@@ -223,7 +251,7 @@ def main() -> None:
             handler._dispatch(line)
         except KeyboardInterrupt:
             break
-        except (ValueError, OSError):
+        except (ValueError, OSError, RuntimeError):
             logging.exception("Error processing UCI command")
             continue
 
