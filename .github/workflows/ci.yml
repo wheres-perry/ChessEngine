@@ -39,6 +39,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   # ── Gate 1: Fast checks (every push to feature/*, dev, main) ───────
   lint-and-types:
