@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785177472483,
+  "lastUpdate": 1785390895712,
   "repoUrl": "https://github.com/wheres-perry/Moray",
   "entries": {
     "Benchmark": [
@@ -1080,6 +1080,114 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00019415452695689214",
             "extra": "mean: 26.1838000526327 msec\nrounds: 38"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86326912+wheres-perry@users.noreply.github.com",
+            "name": "Ethan Perry",
+            "username": "wheres-perry"
+          },
+          "committer": {
+            "email": "86326912+wheres-perry@users.noreply.github.com",
+            "name": "Ethan Perry",
+            "username": "wheres-perry"
+          },
+          "distinct": true,
+          "id": "a2a48f5ff278a5053b247cb5323a14c6fa37de5d",
+          "message": "fix(ci): add explicit write permissions for gh-pages benchmark publishing and PR comments",
+          "timestamp": "2026-07-29T23:48:45-06:00",
+          "tree_id": "d88c09c78c2510665c894edfd6bc6ed944f7dc02",
+          "url": "https://github.com/wheres-perry/Moray/commit/a2a48f5ff278a5053b247cb5323a14c6fa37de5d"
+        },
+        "date": 1785390895179,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/benchmarks/test_performance.py::test_full_game_cycle_300_ply",
+            "value": 3102.9883714532248,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000010343024272298351",
+            "extra": "mean: 322.26997986836454 usec\nrounds: 2583"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_3",
+            "value": 9.786465296964167,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00041062847850393224",
+            "extra": "mean: 102.18193899999903 msec\nrounds: 5"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_perft_traversal_depth_5",
+            "value": 0.19079474436140836,
+            "unit": "iter/sec",
+            "range": "stddev: 0.07367302376323603",
+            "extra": "mean: 5.241234518000003 sec\nrounds: 3"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_search_node_expansion_loop",
+            "value": 99.82281729433083,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002718468684246556",
+            "extra": "mean: 10.017749720001063 msec\nrounds: 100"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_promotion_heavy_movegen",
+            "value": 139818.64403304257,
+            "unit": "iter/sec",
+            "range": "stddev: 1.1710546634794425e-7",
+            "extra": "mean: 7.152122000007921 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_castling_and_ep_movegen",
+            "value": 81404.5475509909,
+            "unit": "iter/sec",
+            "range": "stddev: 2.2633546649379834e-7",
+            "extra": "mean: 12.284326000013834 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_push_pop_precomputed",
+            "value": 78897.57989553439,
+            "unit": "iter/sec",
+            "range": "stddev: 3.3224948193405113e-7",
+            "extra": "mean: 12.674660000016047 usec\nrounds: 10"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_bulk_instantiation_1000",
+            "value": 976.2755711206249,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00008000451470702674",
+            "extra": "mean: 1.0243009551618123 msec\nrounds: 959"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_single_move_toggle_50k",
+            "value": 30.773466419985446,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0007261193563012241",
+            "extra": "mean: 32.49552670967747 msec\nrounds: 31"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_copy_chain_stress",
+            "value": 2607.9159053277535,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000018328835551165666",
+            "extra": "mean: 383.44794705883106 usec\nrounds: 2550"
+          },
+          {
+            "name": "tests/benchmarks/test_performance.py::test_batch_legal_generation",
+            "value": 182.11432587210152,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00007293872650344422",
+            "extra": "mean: 5.491056209945272 msec\nrounds: 181"
+          },
+          {
+            "name": "tests/benchmarks/test_search_metrics.py::test_search_metrics_full_suite",
+            "value": 37.20348965796817,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00017453425628047179",
+            "extra": "mean: 26.87919894594678 msec\nrounds: 37"
           }
         ]
       }
