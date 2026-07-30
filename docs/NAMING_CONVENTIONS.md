@@ -48,7 +48,7 @@ def test_move_generation_edge_cases(fen, expected_count, description): ...
 *   **Naming:** Fixtures should be named as nouns representing what they provide (e.g., `starting_board`, `mock_uci_stream`). Do not prefix them with `setup_` or `get_`.
 *   **Scope:** Be mindful of fixture scope. Use `scope="session"` or `scope="module"` for expensive setups (like loading large PGN files) to keep the test suite fast.
 
-## 3. C++ Naming Conventions (Google Style)
+## 3. C++ Naming Conventions
 
 The C++ backend bindings follow a slightly modified Google C++ Style Guide, optimized for Python integration.
 

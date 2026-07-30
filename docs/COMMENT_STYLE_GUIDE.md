@@ -56,10 +56,10 @@ C++ code enforces a strict separation between the **API Contract** and the **Imp
 ```cpp
 /**
  * @brief Computes the pseudo-legal moves for a sliding piece using magic bitboards.
- * 
- * This uses a precomputed hash table to bypass loop-based ray tracing, 
+ *
+ * This uses a precomputed hash table to bypass loop-based ray tracing,
  * reducing move generation time to O(1).
- * 
+ *
  * @param sq The square of the sliding piece (0-63).
  * @param occupied The bitboard of all currently occupied squares.
  * @return A bitboard containing all attacked squares.
@@ -73,7 +73,7 @@ C++ code enforces a strict separation between the **API Contract** and the **Imp
 Bitboard get_ray_attacks(int sq, Bitboard occupied) noexcept {
     // Mask out the relevant occupancy for this square's rays
     Bitboard blockers = occupied & get_ray_mask(sq);
-    
+
     // Hash the blockers to find the precomputed attack subset
     int magic_index = (blockers * MAGIC_NUMBERS[sq]) >> MAGIC_SHIFTS[sq];
     return ATTACK_TABLE[sq][magic_index];
@@ -91,7 +91,7 @@ Use the following prefixes for inline comments to ensure they are caught by IDE 
 
 ## 5. Automated Enforcement
 
-To ensure these standards are maintained, the following `ruff` configuration is enforced in `pyproject.toml`:
+The following `ruff` configuration is enforced in `pyproject.toml`:
 
 *   `D100`, `D101`, `D102`, `D103`: Enforce docstrings on modules, classes, and public methods.
 *   `D205`: Enforce that the summary line starts on the same line as the opening quotes.
