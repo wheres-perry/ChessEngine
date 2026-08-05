@@ -1,3 +1,5 @@
+This project is still in development
+
 # Moray
 
 A modular, high-performance chess engine written in Python with a heavily optimized C++ core.
